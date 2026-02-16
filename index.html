@@ -13,9 +13,7 @@
     <style>
         body, button, input, select, textarea, div, span, label { font-family: 'Nanum Gothic', sans-serif !important; }
         
-        body { 
-            overflow: hidden; background: #f8fafc; display: flex; flex-direction: column; height: 100vh; 
-        }
+        body { overflow: hidden; background: #f8fafc; display: flex; flex-direction: column; height: 100vh; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -160,19 +158,27 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
+        /* 캡쳐 모드 시 스타일 제어 */
         .capture-mode {
             width: 900px !important; max-width: none !important; overflow: visible !important;
             padding: 40px !important; background: white !important;
         }
         .capture-mode .hidden.print-only { display: block !important; }
         .capture-mode #compareTableContainer { overflow: visible !important; }
+        
+        /* [v6.1.1 Fix] 캡처 모드에서 인쇄 금지 요소 강제 숨김 */
+        .capture-mode .no-print { display: none !important; }
 
         @media print {
             @page { margin: 0; size: auto; }
             body * { visibility: hidden; }
             #compareModal, #compareModal * { visibility: visible; }
             #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; z-index: 9999; overflow: visible !important; padding: 1.5cm; }
+            
+            /* [v6.1.1 Fix] 인쇄 시에도 인쇄 금지 요소 강제 숨김 */
+            .no-print { display: none !important; }
             #compareModal .no-print { display: none !important; }
+            
             #compareModal .print-only { display: block !important; }
             .modal-backdrop { background: none !important; }
             .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; }
@@ -211,7 +217,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1 Secure</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.1</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -382,23 +388,19 @@
     </div>
 
     <script>
-        // [v6.1] 비밀번호 인증 로직 (세션 스토리지 사용)
         const MASTER_PIN = "74757410";
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 접속 시 세션(Session) 확인 - 브라우저를 완전히 끄기 전까지는 인증 유지
             if (sessionStorage.getItem('isAuthorized') === 'true') {
                 document.getElementById('loginOverlay').classList.add('hidden');
             } else {
                 document.getElementById('pinInput').focus();
             }
 
-            // 엔터키 입력 시 자동 확인
             document.getElementById('pinInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') checkPin();
             });
 
-            // 기존 초기화 로직
             initRentDropdown(); initSaleDropdown(); initAreaDropdown(); renderChips();
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             document.getElementById('searchInput').addEventListener('input', (e) => updateFilter('search', e.target.value));
@@ -414,15 +416,14 @@
             });
         });
 
-        // [v6.1] 비밀번호 체크 함수
         function checkPin() {
             const input = document.getElementById('pinInput').value;
             if (input === MASTER_PIN) {
-                sessionStorage.setItem('isAuthorized', 'true'); // 인증 성공 상태 저장
-                document.getElementById('loginOverlay').classList.add('hidden'); // 잠금화면 숨김
+                sessionStorage.setItem('isAuthorized', 'true');
+                document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('pinError').classList.add('hidden');
             } else {
-                document.getElementById('pinError').classList.remove('hidden'); // 에러 메시지 표시
+                document.getElementById('pinError').classList.remove('hidden');
                 document.getElementById('pinInput').value = '';
                 document.getElementById('pinInput').focus();
             }
@@ -467,6 +468,8 @@
         const TEXT_COLOR_MAP = { '매매': '#7f1d1d', '임대': '#064e3b', '매매/임대': '#1e3a8a', '타부동산': '#c2410c', '매매완료': '#64748b', '임대완료': '#64748b', '전광교마을': '#581c87', '작업필요': '#000000', '작업불가': '#4b5563', '미정': '#64748b' };
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
+
+        let state = { allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set() };
 
         function initRentDropdown() {
             const dd = document.getElementById('rentDropdown'); dd.innerHTML = '';
@@ -949,6 +952,7 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
+        // [v6.1.1] html2canvas 공유/캡처
         async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
