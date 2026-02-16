@@ -158,16 +158,14 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* 캡쳐 모드 시 스타일 제어 */
         .capture-mode {
             width: 900px !important; max-width: none !important; overflow: visible !important;
             padding: 40px !important; background: white !important;
         }
+        /* 캡쳐 모드일때 X버튼 등 인쇄 금지 요소들을 강제로 다 숨김 */
+        .capture-mode .no-print { display: none !important; }
         .capture-mode .hidden.print-only { display: block !important; }
         .capture-mode #compareTableContainer { overflow: visible !important; }
-        
-        /* [v6.1.1 Fix] 캡처 모드에서 인쇄 금지 요소 강제 숨김 */
-        .capture-mode .no-print { display: none !important; }
 
         @media print {
             @page { margin: 0; size: auto; }
@@ -175,7 +173,7 @@
             #compareModal, #compareModal * { visibility: visible; }
             #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; z-index: 9999; overflow: visible !important; padding: 1.5cm; }
             
-            /* [v6.1.1 Fix] 인쇄 시에도 인쇄 금지 요소 강제 숨김 */
+            /* 인쇄 시에도 인쇄 금지 요소 강제 숨김 */
             .no-print { display: none !important; }
             #compareModal .no-print { display: none !important; }
             
@@ -217,7 +215,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.1</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.2 Final</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -225,7 +223,8 @@
                     <i class="ph-bold ph-upload-simple"></i>
                     <span id="fileNameDisplay" class="max-w-[70px] md:max-w-none truncate">엑셀 열기</span>
                 </label>
-                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden">
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onclick="this.value=null;">
+                
                 <button onclick="toggleMobileMenu()" class="md:hidden text-yellow-300 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition relative z-50">
                     <i class="ph-bold ph-list text-xl"></i>
                 </button>
@@ -389,9 +388,22 @@
 
     <script>
         const MASTER_PIN = "74757410";
+        let sessionAuth = false; // [v6.1.2 Fix] 로컬 파일 실행 시 sessionStorage 보안 오류 우회용 변수
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('isAuthorized') === 'true') {
+            
+            // [v6.1.2 Fix] 가장 먼저 파일 업로드 이벤트 등록 (어떤 에러가 발생해도 파일 업로드는 작동하도록)
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            
+            try {
+                if (sessionStorage.getItem('isAuthorized') === 'true') {
+                    sessionAuth = true;
+                }
+            } catch(e) {
+                // 로컬 환경이나 시크릿 모드에서 sessionStorage가 막혀있어도 에러 없이 넘어가도록 처리
+            }
+
+            if (sessionAuth) {
                 document.getElementById('loginOverlay').classList.add('hidden');
             } else {
                 document.getElementById('pinInput').focus();
@@ -402,7 +414,6 @@
             });
 
             initRentDropdown(); initSaleDropdown(); initAreaDropdown(); renderChips();
-            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             document.getElementById('searchInput').addEventListener('input', (e) => updateFilter('search', e.target.value));
             document.getElementById('exitFilter').addEventListener('change', (e) => updateFilter('exit', e.target.value));
             document.getElementById('statusGroupFilter').addEventListener('change', (e) => updateFilter('group', e.target.value));
@@ -419,7 +430,8 @@
         function checkPin() {
             const input = document.getElementById('pinInput').value;
             if (input === MASTER_PIN) {
-                sessionStorage.setItem('isAuthorized', 'true');
+                sessionAuth = true;
+                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('pinError').classList.add('hidden');
             } else {
@@ -579,7 +591,9 @@
         function unhighlightGroup(uniqueGId) { if(!uniqueGId) return; const targets = document.querySelectorAll(`.unit-box[data-unique-group="${uniqueGId}"]`); targets.forEach(el => el.classList.remove('group-hover')); }
 
         function handleFileUpload(e) {
-            const file = e.target.files[0]; if (!file) return; document.getElementById('fileNameDisplay').innerText = file.name;
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            document.getElementById('fileNameDisplay').innerText = file.name;
             const reader = new FileReader();
             reader.onload = (evt) => {
                 try {
@@ -952,7 +966,6 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
-        // [v6.1.1] html2canvas 공유/캡처
         async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
