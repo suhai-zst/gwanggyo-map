@@ -158,16 +158,26 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* 캡쳐 공유 모드 시 UI 고정 */
-        .capture-mode {
-            width: 900px !important; max-width: none !important; overflow: visible !important;
-            padding: 30px !important; background: white !important; height: auto !important; max-height: none !important;
+        /* [v6.1.5 Fix] 캡처용 컨테이너 (화면 확대를 막기 위해 화면 밖으로 보내버림) */
+        .capture-mode-container {
+            position: fixed !important;
+            top: -9999px !important;
+            left: 0 !important;
+            width: 900px !important;
+            max-width: none !important;
+            z-index: -999 !important;
+            background: white !important;
         }
-        .capture-mode .no-print { display: none !important; }
-        .capture-mode .hidden.print-only { display: block !important; }
-        .capture-mode #compareTableContainer { overflow: visible !important; }
+        .capture-mode-container #compareContent {
+            width: 900px !important;
+            max-width: none !important;
+            overflow: visible !important;
+            padding: 40px !important;
+        }
+        .capture-mode-container .no-print { display: none !important; }
+        .capture-mode-container .hidden.print-only { display: block !important; }
+        .capture-mode-container #compareTableContainer { overflow: visible !important; }
 
-        /* [v6.1.4 Fix] 1페이지 인쇄를 위한 다이어트 CSS */
         @media print {
             @page { margin: 10mm; size: A4 portrait; }
             body * { visibility: hidden; }
@@ -182,20 +192,16 @@
             .modal-backdrop { background: none !important; }
             .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; }
             
-            /* 표 간격 축소 */
             table { width: 100%; border-collapse: collapse; font-size: 11px; }
             th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
             th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            /* 여백 최소화 */
             #printTitle { font-size: 1.25rem !important; }
             .mt-6 { margin-top: 0.75rem !important; }
             .mb-6 { margin-bottom: 0.75rem !important; }
             .mt-8 { margin-top: 0.75rem !important; }
             .pt-4 { padding-top: 0.5rem !important; }
             .p-8 { padding: 0.5rem !important; }
-            
-            /* 전문가 의견 메모장 높이 축소 */
             textarea { height: 60px !important; border-color: #cbd5e1 !important; color: #000 !important; }
         }
     </style>
@@ -227,7 +233,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.4 Final</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.5 Final</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -235,7 +241,7 @@
                     <i class="ph-bold ph-upload-simple"></i>
                     <span id="fileNameDisplay" class="max-w-[70px] md:max-w-none truncate">엑셀 열기</span>
                 </label>
-                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onclick="this.value=null;">
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden">
                 
                 <button onclick="toggleMobileMenu()" class="md:hidden text-yellow-300 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition relative z-50">
                     <i class="ph-bold ph-list text-xl"></i>
@@ -401,7 +407,6 @@
     </div>
 
     <script>
-        // [v6.1.4 Fix] 비밀번호 변경
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
@@ -978,41 +983,94 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
+        // [v6.1.5 Fix] 캡처 시 화면 찌그러짐 방지 및 모바일 대체(Fallback) 팝업 구현
         async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
             
+            const modalContainer = document.querySelector('.modal-container');
             const content = document.getElementById('compareContent');
-            content.classList.add('capture-mode');
+            
+            // 화면 밖으로 보내서 티 안 나게 캡처 준비 (줌인 현상 방지)
+            modalContainer.classList.add('capture-mode-container');
             
             try {
-                const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-                content.classList.remove('capture-mode');
+                // html2canvas 옵션: 윈도우 너비를 강제로 900으로 고정하여 PC뷰처럼 캡처
+                const canvas = await html2canvas(content, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff',
+                    windowWidth: 900
+                });
+                
+                // 원상 복구
+                modalContainer.classList.remove('capture-mode-container');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 
                 canvas.toBlob(async (blob) => {
                     const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
+                    let shareSuccess = false;
+                    
+                    // 1. 모바일 기본 공유 기능 (Web Share API) 시도
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try { await navigator.share({ files: [file], title: '광교마을 상가 비교 견적서' }); } 
-                        catch (err) { console.log('Share canceled', err); }
-                    } else {
-                        const link = document.createElement('a');
-                        link.download = '상가_비교견적서.jpg';
-                        link.href = URL.createObjectURL(blob);
-                        link.click();
-                        alert('이미지가 다운로드 되었습니다. (PC 등 공유 미지원 환경)');
+                        try { 
+                            await navigator.share({ files: [file], title: '광교마을 상가 비교 견적서' }); 
+                            shareSuccess = true;
+                        } catch (err) { 
+                            // 사용자가 직접 취소한 경우(AbortError)가 아니면 실패로 간주
+                            if (err.name !== 'AbortError') shareSuccess = false;
+                            else shareSuccess = true; 
+                        }
+                    }
+                    
+                    // 2. 공유 실패(미지원 환경, 카카오톡 인앱 브라우저 등) 시 대안 실행
+                    if (!shareSuccess) {
+                        const imgUrl = URL.createObjectURL(blob);
+                        if (window.innerWidth > 768) {
+                            // PC: 자동 다운로드
+                            const link = document.createElement('a');
+                            link.download = '상가_비교견적서.jpg';
+                            link.href = imgUrl;
+                            link.click();
+                        } else {
+                            // 모바일: "길게 눌러서 저장" 화면 띄우기
+                            showImageFallback(imgUrl);
+                        }
                     }
                 }, 'image/jpeg', 0.9);
                 
             } catch (e) {
                 console.error(e);
-                content.classList.remove('capture-mode');
+                modalContainer.classList.remove('capture-mode-container');
                 btn.innerHTML = originalText; btn.disabled = false;
-                alert('이미지 생성 중 오류가 발생했습니다.');
+                alert('이미지 캡처 중 오류가 발생했습니다.');
             }
+        }
+
+        // [v6.1.5 Fix] 폰에서 직접 저장/공유할 수 있게 해주는 팝업
+        function showImageFallback(imgUrl) {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 bg-black/90 z-[99999] flex flex-col items-center justify-center p-4';
+            overlay.innerHTML = `
+                <div class="w-full max-w-lg bg-white rounded-xl overflow-hidden flex flex-col" style="max-height: 90vh;">
+                    <div class="p-4 bg-slate-50 flex justify-between items-center border-b border-slate-200">
+                        <span class="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="ph-fill ph-download-simple text-emerald-600 text-lg"></i> 이미지 저장 / 공유
+                        </span>
+                        <button onclick="this.closest('.fixed').remove()" class="p-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 font-bold text-xs transition shadow-sm">닫기 ✕</button>
+                    </div>
+                    <div class="p-3 bg-red-50 text-xs text-red-600 font-bold text-center border-b border-red-100">
+                        👇 아래 이미지를 <span class="underline text-red-700 text-sm">길게 꾹~ 눌러서</span><br>'이미지 저장' 또는 '공유'를 선택하세요.
+                    </div>
+                    <div class="overflow-y-auto p-3 bg-slate-200 flex-1">
+                        <img src="${imgUrl}" class="w-full h-auto shadow-md rounded border border-slate-300" style="-webkit-touch-callout: default;">
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
         }
 
         function openBuildingModal(bName) {
