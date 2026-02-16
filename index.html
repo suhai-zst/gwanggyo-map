@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>광교마을 상가 지도</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body, button, input, select, textarea, div, span, label { font-family: 'Nanum Gothic', sans-serif !important; }
+        
+        body { 
+            overflow: hidden; background: #f8fafc; display: flex; flex-direction: column; height: 100vh; 
+        }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        .brand-input, .brand-select {
+            -webkit-appearance: none; appearance: none; background-color: #047857; color: #fde047;
+            border: 1px solid #065f46; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 700;
+            padding: 0.5rem 2rem 0.5rem 0.75rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fde047' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em;
+            cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .brand-input:hover, .brand-select:hover { background-color: #059669; }
+        .brand-input:focus, .brand-select:focus { outline: 2px solid #facc15; border-color: transparent; }
+        .brand-select option { background-color: white; color: black; }
+
+        .brand-search {
+            background-color: #047857; color: #fde047; border: 1px solid #065f46; border-radius: 0.5rem;
+            font-size: 0.875rem; font-weight: 700; padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .brand-search::placeholder { color: rgba(253, 224, 71, 0.5); }
+        .brand-search:hover { background-color: #059669; }
+        .brand-search:focus { outline: 2px solid #facc15; border-color: transparent; }
+
+        .multi-select-container { position: relative; }
+        .multi-select-btn { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background-color: #047857; color: #fde047; border: 1px solid #065f46;
+            border-radius: 0.5rem; font-size: 0.75rem; padding: 0.5rem 0.5rem;
+            font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .multi-select-btn:hover { background-color: #059669; }
+        
+        .multi-select-dropdown { 
+            position: absolute; top: 100%; left: 0; width: 12rem; 
+            background-color: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); z-index: 9999; 
+            margin-top: 0.25rem; display: none; padding: 0.5rem; 
+            max-height: 300px; overflow-y: auto; color: black;
+        }
+        .multi-select-dropdown.show { display: block; }
+        .multi-option { @apply flex items-center gap-2 p-2 hover:bg-emerald-50 rounded cursor-pointer text-xs font-bold text-slate-800 transition-colors; }
+
+        :root {
+            --c-sale: #fca5a5; --c-rent: #6ee7b7; --c-mix: #93c5fd; --c-vacant: #fdba74;
+            --c-done: #e2e8f0; --c-other: #fdba74;
+            --c-work-need: #fcd34d; --c-work-no: #e5e7eb; --c-unknown: #ffffff;
+            --border-corner: #06b6d4; --group-border: #8b5cf6; 
+        }
+
+        .unit-box { transition: all 0.2s; position: relative; box-sizing: border-box; }
+        .unit-box.dimmed { opacity: 0.15; filter: grayscale(100%); }
+        .unit-box.is-grouped { box-shadow: inset 0 0 0 1px var(--group-border); border-style: solid; }
+        .unit-box.is-grouped::after { content: ''; position: absolute; top: 1px; left: 1px; right: 1px; bottom: 1px; border: 1px dashed var(--group-border); pointer-events: none; opacity: 0.7; }
+        .unit-box.group-hover { transform: scale(1.05); z-index: 50; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; background-color: #f3e8ff !important; }
+
+        .bg-st-매매 { background-color: #fef2f2; border: 1px solid #f87171; color: #b91c1c; }
+        .bg-st-임대 { background-color: #ecfdf5; border: 1px solid #34d399; color: #047857; }
+        .bg-st-매매임대 { background-color: #eff6ff; border: 1px solid #60a5fa; color: #1d4ed8; }
+        .bg-st-완료 { background-color: #f1f5f9; border: 1px solid #94a3b8; color: #64748b; }
+        .bg-st-타부동산 { background-color: #fff7ed; border: 2px solid #f97316; color: #c2410c; }
+        .bg-st-작업필요 { background-color: #fffbeb; border: 2px solid #f59e0b; color: #000000; }
+        .bg-st-작업불가 { background-color: #e5e7eb; border: 1px solid #9ca3af; color: #4b5563; text-decoration: line-through; }
+        .bg-st-전광교마을 { background-color: #faf5ff; border: 1px solid #a78bfa; color: #6b21a8; }
+        .bg-st-미정 { background-color: #ffffff; border: 1px solid #e2e8f0; color: #94a3b8; }
+
+        .pos-front { border-bottom: 5px solid var(--st-border) !important; }
+        .pos-back { border-top: 5px solid var(--st-border) !important; }
+        .pos-side { border-left: 5px solid var(--st-border) !important; border-right: 5px solid var(--st-border) !important; }
+        .pos-inner { border: 2px dashed #94a3b8 !important; }
+        .pos-corner { border-bottom: 5px solid var(--border-corner) !important; border-left: 5px solid var(--border-corner) !important; border-right: 5px solid var(--border-corner) !important; }
+
+        .done-badge { position: absolute; top: -6px; right: -6px; font-size: 9px; padding: 1px 4px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 20; color: white; font-weight: bold; }
+        .done-badge.sale { background-color: #64748b; } 
+        .done-badge.rent { background-color: #4f46e5; }
+
+        .status-chip { @apply px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer border transition-all shadow-sm flex items-center justify-center whitespace-nowrap; }
+        .status-chip.inactive { background-color: #ffffff !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; box-shadow: none; }
+        
+        .brand-header { background-color: #064e3b; color: #fde047; }
+        
+        @keyframes pulse-star { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .imp-star { animation: pulse-star 2s infinite; z-index: 20; }
+        .ad-warn-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: #ef4444; border-radius: 50%; box-shadow: 0 0 4px rgba(239,68,68,0.8); z-index: 15; }
+
+        .btn-compare {
+            position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+            width: 22px; height: 22px; background: white; border: 1px solid #cbd5e1;
+            border-radius: 50%; color: #64748b; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; cursor: pointer; z-index: 40; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-compare:hover { background: #f1f5f9; color: #0f172a; transform: translateX(-50%) scale(1.1); }
+        .btn-compare.selected { background: #059669; border-color: #047857; color: #fde047; box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.5); }
+
+        #comparisonBar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #064e3b; color: white; padding: 10px 20px; border-radius: 50px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); z-index: 100; display: flex; align-items: center; gap: 15px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #comparisonBar.hidden-bar { transform: translate(-50%, 150%); }
+
+        .mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; gap: 4px; border: 1px solid #e2e8f0; }
+        .mode-btn { flex: 1; padding: 6px 16px; text-align: center; font-size: 12px; font-weight: 800; border-radius: 6px; cursor: pointer; color: #64748b; transition: all 0.2s; display: flex; align-items: center; gap: 4px; justify-content: center; }
+        .mode-btn:hover { background: #e2e8f0; }
+        .mode-btn.active { background: white; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .mode-btn.active.rent { color: #059669; border: 1px solid #059669; }
+        .mode-btn.active.sale { color: #dc2626; border: 1px solid #dc2626; }
+
+        .brand-search { width: 100%; }
+        .brand-select { width: 100%; }
+        .multi-select-btn { width: 100%; }
+        
+        @media (min-width: 768px) {
+            .brand-search { width: 14rem; }
+            .brand-select { width: auto; }
+            .multi-select-btn { width: 6.5rem; }
+        }
+
+        #statusToggleBar::-webkit-scrollbar { display: none; } 
+        #statusToggleBar { -ms-overflow-style: none; scrollbar-width: none; } 
+
+        .detail-panel-base { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 60; }
+        
+        @media (max-width: 767px) {
+            .detail-panel-base { 
+                position: fixed; left: 0; bottom: 0; width: 100%; height: 85vh; 
+                border-top: 1px solid #e2e8f0; border-radius: 24px 24px 0 0; 
+                transform: translateY(100%); box-shadow: 0 -10px 25px rgba(0,0,0,0.2); 
+            }
+            .detail-panel-base.show { transform: translateY(0); }
+            .modal-container { width: 95vw !important; padding: 0 !important; }
+        }
+        
+        @media (min-width: 768px) {
+            .detail-panel-base { 
+                position: absolute; right: 0; top: 0; bottom: 0; width: 400px; 
+                border-left: 1px solid #e2e8f0; transform: translateX(100%); 
+            }
+            .detail-panel-base.show { transform: translateX(0); }
+        }
+
+        .capture-mode {
+            width: 900px !important; max-width: none !important; overflow: visible !important;
+            padding: 40px !important; background: white !important;
+        }
+        .capture-mode .hidden.print-only { display: block !important; }
+        .capture-mode #compareTableContainer { overflow: visible !important; }
+
+        @media print {
+            @page { margin: 0; size: auto; }
+            body * { visibility: hidden; }
+            #compareModal, #compareModal * { visibility: visible; }
+            #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; z-index: 9999; overflow: visible !important; padding: 1.5cm; }
+            #compareModal .no-print { display: none !important; }
+            #compareModal .print-only { display: block !important; }
+            .modal-backdrop { background: none !important; }
+            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #333 !important; padding: 6px !important; color: black !important; }
+            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+            .print-bg-green { background-color: #065f46 !important; -webkit-print-color-adjust: exact; color: #fde047 !important; }
+            .print-text-orange { color: #fb923c !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+    
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph-fill ph-lock-key text-3xl text-emerald-600"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-slate-800 mb-2">광교마을 상가 지도</h2>
+            <p class="text-slate-500 text-sm mb-6 font-bold">관리자 전용 시스템입니다.<br>비밀번호를 입력해주세요.</p>
+            
+            <input type="password" id="pinInput" class="w-full text-center text-3xl tracking-[0.3em] font-extrabold p-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 outline-none mb-4 transition-all" placeholder="••••••••">
+            
+            <button onclick="checkPin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl transition text-lg shadow-md flex items-center justify-center gap-2">
+                <i class="ph-bold ph-sign-in"></i> 접속하기
+            </button>
+            <p id="pinError" class="text-red-500 text-xs font-bold mt-3 hidden">비밀번호가 일치하지 않습니다.</p>
+        </div>
+    </div>
+
+    <header class="brand-header flex flex-col z-50 shadow-lg flex-shrink-0 no-print py-2 px-4 w-full relative">
+        <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-2">
+                <h1 class="text-lg md:text-xl font-extrabold flex items-center gap-2 text-yellow-300">
+                    <i class="ph-fill ph-map-trifold"></i>
+                    <span class="hidden md:inline">광교마을 상가 지도</span>
+                    <span class="md:hidden">상가 지도</span>
+                </h1>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1 Secure</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <label for="fileInput" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-yellow-300 rounded-lg text-xs md:text-sm cursor-pointer border border-white/20 font-bold shadow-inner">
+                    <i class="ph-bold ph-upload-simple"></i>
+                    <span id="fileNameDisplay" class="max-w-[70px] md:max-w-none truncate">엑셀 열기</span>
+                </label>
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden">
+                <button onclick="toggleMobileMenu()" class="md:hidden text-yellow-300 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition relative z-50">
+                    <i class="ph-bold ph-list text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mainFilters" class="hidden md:flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2 mt-3 w-full relative z-50">
+            <div class="relative flex-1 md:flex-none">
+                <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-yellow-300/70"></i>
+                <input type="text" id="searchInput" placeholder="상호, 호수, 건물명..." class="brand-search">
+            </div>
+            <button onclick="resetFilters()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition border border-slate-300 shadow-sm flex items-center justify-center gap-1 flex-1 md:flex-none">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> 초기화
+            </button>
+            <div class="flex gap-1 md:gap-2 w-full md:w-auto">
+                <div class="flex items-center justify-center gap-1 cursor-pointer bg-black/20 px-1.5 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-black/30 transition border border-black/20 flex-1 md:flex-none" onclick="toggleRoadside()" id="roadsideToggleBtn">
+                    <span class="text-[11px] md:text-xs font-bold text-yellow-300 flex items-center"><i class="ph-fill ph-road-horizon mr-1"></i> <span class="hidden sm:inline">역대로변</span><span class="sm:hidden">대로변</span></span>
+                    <div id="roadsideToggleBg" class="w-6 h-3 md:w-8 h-4 bg-black/40 rounded-full relative transition-colors duration-200"><div id="roadsideToggleKnob" class="w-2.5 h-2.5 md:w-3 md:h-3 bg-white rounded-full absolute left-0.5 top-[1px] md:top-0.5 transition-transform duration-200 shadow-sm"></div></div>
+                </div>
+                <select id="exitFilter" class="brand-select flex-1 md:flex-none text-[11px] md:text-xs !px-1.5 !pr-6"><option value="all">출구 전체</option></select>
+                <select id="statusGroupFilter" class="brand-select flex-1 md:flex-none text-[11px] md:text-xs !px-1.5 !pr-6"><option value="all">그룹 전체</option><option value="매매관련">매매 관련</option><option value="임대관련">임대 관련</option><option value="완료">완료 건</option></select>
+            </div>
+            <div class="flex gap-2 flex-1 md:flex-none">
+                <div class="multi-select-container flex-1 md:flex-none">
+                    <div class="multi-select-btn" onclick="toggleAreaDropdown()"><span>평수</span><i class="ph-bold ph-caret-down"></i></div>
+                    <div id="areaDropdown" class="multi-select-dropdown"></div>
+                </div>
+                <div class="multi-select-container flex-1 md:flex-none">
+                    <div class="multi-select-btn" onclick="toggleRentDropdown()"><span>월세</span><i class="ph-bold ph-caret-down"></i></div>
+                    <div id="rentDropdown" class="multi-select-dropdown"></div>
+                </div>
+                <div class="multi-select-container flex-1 md:flex-none">
+                    <div class="multi-select-btn" onclick="toggleSaleDropdown()"><span>매매</span><i class="ph-bold ph-caret-down"></i></div>
+                    <div id="saleDropdown" class="multi-select-dropdown"></div>
+                </div>
+            </div>
+            <div class="h-6 w-px bg-white/20 mx-1 hidden lg:block"></div>
+            <div class="flex gap-2 flex-1 md:flex-none">
+                <div class="flex flex-1 md:flex-none items-center justify-center gap-2 cursor-pointer bg-black/20 px-3 py-2 md:py-1.5 rounded-lg hover:bg-black/30 transition border border-black/20" id="importantToggleBtn" onclick="toggleImportant()">
+                    <span class="text-xs font-bold text-yellow-300 flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>
+                    <div id="impToggleBg" class="w-8 h-4 bg-black/40 rounded-full relative transition-colors duration-200"><div id="impToggleKnob" class="w-3 h-3 bg-white rounded-full absolute left-0.5 top-0.5 transition-transform duration-200 shadow-sm"></div></div>
+                </div>
+                <div class="flex flex-1 md:flex-none items-center justify-center gap-2 cursor-pointer bg-black/20 px-3 py-2 md:py-1.5 rounded-lg hover:bg-black/30 transition border border-black/20" id="summaryToggleBtn" onclick="toggleSummary()">
+                    <span class="text-xs font-bold text-yellow-100">요약 보기</span>
+                    <div id="summaryToggleBg" class="w-8 h-4 bg-black/40 rounded-full relative transition-colors duration-200"><div id="summaryToggleKnob" class="w-3 h-3 bg-white rounded-full absolute left-0.5 top-0.5 transition-transform duration-200 shadow-sm"></div></div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div id="mobileMenuBackdrop" class="fixed inset-0 bg-transparent z-40 hidden md:hidden" onclick="closeMobileMenu()"></div>
+
+    <div id="statusToggleBar" class="h-12 bg-white border-b border-slate-200 z-30 flex items-center px-4 gap-2 overflow-x-auto whitespace-nowrap flex-nowrap flex-shrink-0 shadow-sm no-print w-full hidden">
+        <button id="toggleAllBtn" onclick="toggleAllStatus()" class="status-chip flex-shrink-0 bg-emerald-800 text-yellow-300 border-emerald-900 shadow-md hover:bg-emerald-900 active px-4">전체 끄기</button>
+        <div class="h-6 w-px bg-slate-200 mx-1 flex-shrink-0"></div>
+        <div id="statusChipsContainer" class="flex gap-2 p-1 flex-nowrap flex-shrink-0"></div>
+        <div class="h-6 w-px bg-slate-200 mx-1 flex-shrink-0"></div>
+        <div id="historyChipsContainer" class="flex gap-2 p-1 bg-slate-50 rounded-lg px-2 flex-nowrap flex-shrink-0"></div>
+    </div>
+
+    <main class="flex-1 flex relative w-full overflow-hidden">
+        <aside class="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] no-print">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center"><label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none hover:text-emerald-700 transition"><input type="checkbox" id="checkAllBuildings" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" checked><span>건물 목록</span></label><span id="buildingCountBadge" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">0/0</span></div>
+            <div id="buildingList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+        </aside>
+        
+        <div id="detailBackdrop" class="fixed inset-0 bg-black/20 z-50 hidden transition-opacity md:hidden" onclick="closeDetail()"></div>
+
+        <section class="flex-1 bg-slate-100 relative flex flex-col overflow-hidden min-w-0 w-full">
+            <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none z-0 no-print px-6 text-center">
+                <i class="ph-duotone ph-microsoft-excel-logo text-7xl mb-4 text-emerald-600/50"></i>
+                <p class="text-xl font-extrabold text-slate-600">상가 지도 시스템</p>
+                <p class="text-sm mt-2 text-slate-500 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">상단 <b>'엑셀 열기'</b> 버튼을 눌러 데이터를 불러오세요.</p>
+            </div>
+            <div id="stackingContainer" class="flex-1 overflow-y-auto p-4 md:p-6 z-10 space-y-6 md:space-y-8 hidden no-print pb-32"></div>
+        </section>
+
+        <aside id="detailPanel" class="bg-white flex flex-col detail-panel-base">
+            <div class="h-1.5 w-12 bg-slate-200 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
+            
+            <div class="h-14 md:h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-5 bg-white md:bg-slate-50/80">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg"><i class="ph-duotone ph-info text-emerald-600"></i> 상세 정보</h3>
+                <div class="flex items-center gap-2 md:gap-3">
+                    <div class="flex items-center gap-1.5 bg-white px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-slate-200 cursor-pointer shadow-sm hover:bg-slate-50 transition" onclick="togglePrivacy()">
+                        <div id="privacyIndicator" class="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                        <span id="privacyLabel" class="text-[10px] md:text-xs font-bold text-slate-600 select-none">고객용</span>
+                    </div>
+                    <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600 p-1.5 md:p-2 hover:bg-slate-100 rounded-lg transition"><i class="ph-bold ph-x text-lg md:text-xl"></i></button>
+                </div>
+            </div>
+            <div id="detailContent" class="flex-1 overflow-y-auto p-4 md:p-6 pb-12"><div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60"><i class="ph-duotone ph-hand-tap text-4xl mb-2"></i><p class="text-sm font-bold">호실을 선택해주세요</p></div></div>
+        </aside>
+    </main>
+
+    <div id="comparisonBar" class="hidden-bar no-print">
+        <div class="flex items-center gap-2 text-sm font-bold"><i class="ph-fill ph-shopping-cart text-yellow-300 text-lg"></i> <span class="hidden md:inline">비교함</span> <span id="compareCount" class="bg-white text-emerald-800 px-2 py-0.5 rounded-full text-xs">0</span></div>
+        <div class="h-4 w-px bg-white/30 ml-2 md:ml-0"></div>
+        <button onclick="openCompareModal()" class="hover:text-yellow-300 transition text-sm font-bold flex items-center gap-1 bg-emerald-700 px-3 py-1.5 rounded-lg ml-2 border border-emerald-600 shadow-inner"><i class="ph-bold ph-arrows-left-right"></i> 비교</button>
+        <button onclick="clearCompare()" class="hover:text-red-300 transition text-xs opacity-80 ml-2 underline underline-offset-2">비우기</button>
+    </div>
+
+    <div id="compareModal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm modal-backdrop p-4" onclick="if(event.target === this) closeCompareModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[900px] max-h-[90vh] flex flex-col overflow-hidden modal-container relative">
+            <div class="h-auto md:h-16 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center px-4 md:px-6 py-3 md:py-0 bg-slate-50 gap-3 md:gap-0 no-print">
+                <h3 class="text-base md:text-lg font-extrabold text-slate-800 flex items-center gap-2"><i class="ph-fill ph-file-text text-emerald-600"></i> 비교 견적서</h3>
+                <div class="mode-toggle w-full md:w-auto">
+                    <div id="modeRent" class="mode-btn active rent" onclick="setCompareMode('rent')"><i class="ph-bold ph-storefront"></i> 임대</div>
+                    <div id="modeSale" class="mode-btn" onclick="setCompareMode('sale')"><i class="ph-bold ph-chart-line-up"></i> 매수</div>
+                </div>
+                <button onclick="closeCompareModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg md:static"><i class="ph-bold ph-x text-lg"></i></button>
+            </div>
+            
+            <div id="compareContent" class="flex-1 overflow-y-auto p-4 md:p-8 bg-white relative">
+                <div class="hidden print-only mb-6 border-b-2 border-slate-800 pb-4">
+                    <h1 id="printTitle" class="text-2xl font-black text-slate-900">상가 매물 비교 견적서</h1>
+                    <p class="text-sm text-slate-500 mt-1" id="printDate"></p>
+                </div>
+                <div id="compareTableContainer" class="overflow-x-auto pb-4"></div>
+                <div class="mt-6">
+                    <h4 class="font-bold text-slate-700 mb-2 text-sm">📝 전문가 의견</h4>
+                    <textarea id="compareMemo" class="w-full border border-slate-300 rounded-lg p-3 text-sm h-20 md:h-24 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="여기에 브리핑 내용을 입력하세요. (인쇄 시 포함됩니다)"></textarea>
+                </div>
+                
+                <div class="hidden print-only mt-8 pt-4 border-t border-slate-200 print-bg-green rounded-lg p-6">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="font-bold text-lg text-yellow-300">광교마을부동산 공인중개사사무소</p>
+                            <p class="text-sm text-yellow-300 mt-1">대표 공인중개사 양 선 휘</p>
+                            <p class="text-sm text-yellow-300">경기도 용인시 수지구 상현동 1131</p>
+                            <p class="text-sm mt-1 font-bold print-text-orange">상현역 1번출구</p>
+                            <p class="text-xl font-extrabold print-text-orange mt-1">031-255-7373</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-yellow-300">송 영 재 이사</p>
+                            <p class="text-sm text-yellow-300 mt-1">상가 및 투자 상담</p>
+                            <p class="text-xl font-extrabold print-text-orange mt-1">010-6570-7475</p>
+                            <p class="text-base text-yellow-300 font-sans">vsong.w.zest@gmail.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-3 md:p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2 no-print">
+                <button id="shareBtn" onclick="shareCompare()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-share-network"></i> 공유</button>
+                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
+                <button onclick="closeCompareModal()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="buildingModal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) closeBuildingModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 bg-slate-50 relative z-10">
+                <div class="flex items-center gap-2"><h3 id="modalTitle" class="text-base md:text-lg font-extrabold text-slate-800">건물 정보</h3>
+                <button onclick="togglePrivacy()" class="p-1 rounded-full hover:bg-slate-200 transition" title="보안 모드 전환"><i id="modalLockIcon" class="ph-bold ph-lock-key text-slate-400"></i></button></div>
+                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1.5 md:p-2 hover:bg-slate-200 rounded-lg cursor-pointer"><i class="ph-bold ph-x pointer-events-none"></i></button>
+            </div>
+            <div id="modalContent" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"></div>
+        </div>
+    </div>
+
+    <script>
+        // [v6.1] 비밀번호 인증 로직 (세션 스토리지 사용)
+        const MASTER_PIN = "74757410";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // 접속 시 세션(Session) 확인 - 브라우저를 완전히 끄기 전까지는 인증 유지
+            if (sessionStorage.getItem('isAuthorized') === 'true') {
+                document.getElementById('loginOverlay').classList.add('hidden');
+            } else {
+                document.getElementById('pinInput').focus();
+            }
+
+            // 엔터키 입력 시 자동 확인
+            document.getElementById('pinInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') checkPin();
+            });
+
+            // 기존 초기화 로직
+            initRentDropdown(); initSaleDropdown(); initAreaDropdown(); renderChips();
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            document.getElementById('searchInput').addEventListener('input', (e) => updateFilter('search', e.target.value));
+            document.getElementById('exitFilter').addEventListener('change', (e) => updateFilter('exit', e.target.value));
+            document.getElementById('statusGroupFilter').addEventListener('change', (e) => updateFilter('group', e.target.value));
+            document.getElementById('checkAllBuildings').addEventListener('change', (e) => toggleAllBuildings(e.target.checked));
+            document.addEventListener('click', (e) => { 
+                if (!e.target.closest('.multi-select-container')) {
+                    document.getElementById('rentDropdown').classList.remove('show');
+                    document.getElementById('saleDropdown').classList.remove('show');
+                    document.getElementById('areaDropdown').classList.remove('show');
+                }
+            });
+        });
+
+        // [v6.1] 비밀번호 체크 함수
+        function checkPin() {
+            const input = document.getElementById('pinInput').value;
+            if (input === MASTER_PIN) {
+                sessionStorage.setItem('isAuthorized', 'true'); // 인증 성공 상태 저장
+                document.getElementById('loginOverlay').classList.add('hidden'); // 잠금화면 숨김
+                document.getElementById('pinError').classList.add('hidden');
+            } else {
+                document.getElementById('pinError').classList.remove('hidden'); // 에러 메시지 표시
+                document.getElementById('pinInput').value = '';
+                document.getElementById('pinInput').focus();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mainFilters');
+            const backdrop = document.getElementById('mobileMenuBackdrop');
+            if(menu.classList.contains('hidden')) {
+                menu.classList.replace('hidden', 'flex');
+                backdrop.classList.remove('hidden');
+            } else { closeMobileMenu(); }
+        }
+        function closeMobileMenu() {
+            document.getElementById('mainFilters').classList.replace('flex', 'hidden');
+            document.getElementById('mobileMenuBackdrop').classList.add('hidden');
+        }
+
+        document.getElementById('stackingContainer').addEventListener('click', function(e) {
+            if (!e.target.closest('.unit-box') && !e.target.closest('.btn-compare')) { closeDetail(); }
+        });
+
+        let touchStartY = 0;
+        const detailPanelElem = document.getElementById('detailPanel');
+        detailPanelElem.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive: true});
+        detailPanelElem.addEventListener('touchend', e => {
+            const touchEndY = e.changedTouches[0].clientY;
+            if (touchEndY - touchStartY > 50) { 
+                const content = document.getElementById('detailContent');
+                if (content.scrollTop <= 0 || e.target.closest('.h-14')) { closeDetail(); }
+            }
+        }, {passive: true});
+
+        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-200', label: '100~200만', min: 100, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
+        const AREA_RANGES = [ { id: '10under', label: '10평 ↓', min: 0, max: 10 }, { id: '10-20', label: '10~20평', min: 10, max: 20 }, { id: '20-30', label: '20~30평', min: 20, max: 30 }, { id: '30-40', label: '30~40평', min: 30, max: 40 }, { id: '40-50', label: '40~50평', min: 40, max: 50 }, { id: '50-60', label: '50~60평', min: 50, max: 60 }, { id: '60-70', label: '60~70평', min: 60, max: 70 }, { id: '70-80', label: '70~80평', min: 70, max: 80 }, { id: '80-100', label: '80~100평', min: 80, max: 100 }, { id: '100over', label: '100평 ↑', min: 100, max: 9999 } ];
+        const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
+        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
+
+        const STATUS_ACTIVE = ['매매', '임대', '매매/임대', '작업필요', '타부동산', '미정'];
+        const STATUS_HISTORY = ['매매완료', '임대완료', '전광교마을', '작업불가'];
+        const COLOR_MAP = { '매매': '#fca5a5', '임대': '#6ee7b7', '매매/임대': '#93c5fd', '타부동산': '#fdba74', '매매완료': '#e2e8f0', '임대완료': '#e2e8f0', '전광교마을': '#d8b4fe', '작업필요': '#fcd34d', '작업불가': '#e5e7eb', '미정': '#ffffff' };
+        const TEXT_COLOR_MAP = { '매매': '#7f1d1d', '임대': '#064e3b', '매매/임대': '#1e3a8a', '타부동산': '#c2410c', '매매완료': '#64748b', '임대완료': '#64748b', '전광교마을': '#581c87', '작업필요': '#000000', '작업불가': '#4b5563', '미정': '#64748b' };
+        const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
+        const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
+
+        function initRentDropdown() {
+            const dd = document.getElementById('rentDropdown'); dd.innerHTML = '';
+            RENT_RANGES.forEach(r => {
+                const div = document.createElement('div'); div.className = 'multi-option';
+                div.innerHTML = `<input type="checkbox" value="${r.id}" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"> <span>${r.label}</span>`;
+                div.querySelector('input').addEventListener('change', (e) => { if(e.target.checked) state.checkedRentRanges.add(r.id); else state.checkedRentRanges.delete(r.id); applySmartSelection(); });
+                dd.appendChild(div);
+            });
+        }
+        function toggleRentDropdown() { document.getElementById('rentDropdown').classList.toggle('show'); document.getElementById('saleDropdown').classList.remove('show'); document.getElementById('areaDropdown').classList.remove('show'); }
+
+        function initSaleDropdown() {
+            const dd = document.getElementById('saleDropdown'); dd.innerHTML = '';
+            SALE_RANGES.forEach(r => {
+                const div = document.createElement('div'); div.className = 'multi-option';
+                div.innerHTML = `<input type="checkbox" value="${r.id}" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"> <span>${r.label}</span>`;
+                div.querySelector('input').addEventListener('change', (e) => { if(e.target.checked) state.checkedSaleRanges.add(r.id); else state.checkedSaleRanges.delete(r.id); applySmartSelection(); });
+                dd.appendChild(div);
+            });
+        }
+        function toggleSaleDropdown() { document.getElementById('saleDropdown').classList.toggle('show'); document.getElementById('rentDropdown').classList.remove('show'); document.getElementById('areaDropdown').classList.remove('show'); }
+
+        function initAreaDropdown() {
+            const dd = document.getElementById('areaDropdown'); dd.innerHTML = '';
+            AREA_RANGES.forEach(r => {
+                const div = document.createElement('div'); div.className = 'multi-option';
+                div.innerHTML = `<input type="checkbox" value="${r.id}" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"> <span>${r.label}</span>`;
+                div.querySelector('input').addEventListener('change', (e) => { if(e.target.checked) state.checkedAreaRanges.add(r.id); else state.checkedAreaRanges.delete(r.id); applySmartSelection(); });
+                dd.appendChild(div);
+            });
+        }
+        function toggleAreaDropdown() { document.getElementById('areaDropdown').classList.toggle('show'); document.getElementById('rentDropdown').classList.remove('show'); document.getElementById('saleDropdown').classList.remove('show'); }
+
+        function toggleRoadside() { state.isRoadsideMode = !state.isRoadsideMode; setToggleUI('roadsideToggle', state.isRoadsideMode); applySmartSelection(); }
+
+        function renderChips() {
+            const c1 = document.getElementById('statusChipsContainer'); const c2 = document.getElementById('historyChipsContainer');
+            c1.innerHTML = ''; c2.innerHTML = '';
+            STATUS_ACTIVE.forEach(st => createChip(st, c1, state.activeStatus));
+            STATUS_HISTORY.forEach(st => createChip(st, c2, state.historyStatus));
+        }
+        
+        function createChip(st, container, setRef) {
+            const btn = document.createElement('button');
+            const isActive = setRef.has(st);
+            btn.className = `status-chip flex-shrink-0 ${isActive ? 'active' : 'inactive'}`;
+            btn.innerText = st;
+            if (isActive) { btn.style.backgroundColor = COLOR_MAP[st]; btn.style.color = TEXT_COLOR_MAP[st]; btn.style.borderColor = 'transparent'; } 
+            else { btn.style.backgroundColor = '#ffffff'; btn.style.color = '#94a3b8'; btn.style.borderColor = '#e2e8f0'; }
+            btn.onclick = () => {
+                if (setRef.has(st)) {
+                    setRef.delete(st); btn.classList.replace('active', 'inactive'); btn.style.backgroundColor = '#ffffff'; btn.style.color = '#94a3b8'; btn.style.borderColor = '#e2e8f0';
+                } else {
+                    setRef.add(st); btn.classList.replace('inactive', 'active'); btn.style.backgroundColor = COLOR_MAP[st]; btn.style.color = TEXT_COLOR_MAP[st]; btn.style.borderColor = 'transparent';
+                }
+                updateAllToggleBtnState(); applySmartSelection();
+            };
+            container.appendChild(btn);
+        }
+
+        function toggleAllStatus() {
+            const btn = document.getElementById('toggleAllBtn');
+            if(btn.innerText === "전체 끄기") { 
+                state.activeStatus.clear(); state.historyStatus.clear(); btn.innerText = "전체 켜기"; btn.classList.add('inactive'); 
+            } else { 
+                state.activeStatus = new Set([...STATUS_ACTIVE]); state.historyStatus = new Set([...STATUS_HISTORY]); btn.innerText = "전체 끄기"; btn.classList.remove('inactive'); 
+            }
+            renderChips(); applySmartSelection();
+        }
+        
+        function updateAllToggleBtnState() { const btn = document.getElementById('toggleAllBtn'); if(state.activeStatus.size === 0 && state.historyStatus.size === 0) { btn.innerText = "전체 켜기"; btn.classList.add('inactive'); } else { btn.innerText = "전체 끄기"; btn.classList.remove('inactive'); } }
+
+        function resetFilters() {
+            state.search = ''; state.filterExit = 'all'; state.filterStatusGroup = 'all';
+            state.checkedRentRanges.clear(); state.checkedSaleRanges.clear(); state.checkedAreaRanges.clear(); 
+            state.isImportantMode = false; state.isSummaryMode = false; state.isRoadsideMode = false;
+            state.activeStatus = new Set([...STATUS_ACTIVE]); state.historyStatus = new Set([...STATUS_HISTORY]);
+            state.checkedBuildings = new Set(state.buildings);
+            document.getElementById('searchInput').value = ''; document.getElementById('exitFilter').value = 'all'; document.getElementById('statusGroupFilter').value = 'all';
+            document.querySelectorAll('.multi-select-dropdown input').forEach(cb => cb.checked = false);
+            setToggleUI('summaryToggle', false); setToggleUI('impToggle', false); setToggleUI('roadsideToggle', false);
+            state.comparisonList.clear(); state.splitGroups.clear(); updateCompareBar();
+            renderChips(); updateAllToggleBtnState(); renderList(); renderStacking();
+        }
+        function setToggleUI(idPrefix, isActive) { const bg = document.getElementById(idPrefix + 'Bg'); const knob = document.getElementById(idPrefix + 'Knob'); const activeColor = idPrefix === 'impToggle' ? 'bg-yellow-500' : (idPrefix === 'roadsideToggle' ? 'bg-blue-500' : 'bg-emerald-500'); if(isActive) { bg.classList.replace('bg-black/30', activeColor); bg.classList.replace('bg-black/40', activeColor); knob.classList.replace('left-0.5', 'translate-x-4'); } else { bg.className = bg.className.replace(activeColor, 'bg-black/40'); knob.classList.replace('translate-x-4', 'left-0.5'); } }
+        function toggleSummary() { state.isSummaryMode = !state.isSummaryMode; setToggleUI('summaryToggle', state.isSummaryMode); renderStacking(); }
+        function toggleImportant() { state.isImportantMode = !state.isImportantMode; setToggleUI('impToggle', state.isImportantMode); applySmartSelection(); }
+        
+        function togglePrivacy() { 
+            state.isPrivacyMode = !state.isPrivacyMode; 
+            const ind = document.getElementById('privacyIndicator'); const lab = document.getElementById('privacyLabel'); 
+            const lockIcon = document.getElementById('modalLockIcon');
+            if(state.isPrivacyMode) { 
+                ind.className = "w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"; lab.innerText = "고객용"; 
+                if(lockIcon) { lockIcon.className = "ph-bold ph-lock-key text-green-600"; }
+            } else { 
+                ind.className = "w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"; lab.innerText = "관리용"; 
+                if(lockIcon) { lockIcon.className = "ph-bold ph-lock-key-open text-red-500"; }
+            } 
+            if(!document.getElementById('buildingModal').classList.contains('hidden')) { openBuildingModal(document.getElementById('modalTitle').innerText); }
+            const panel = document.getElementById('detailPanel'); const curId = panel.dataset.currentId; 
+            if(curId && panel.classList.contains('show')) { const d = state.allData.find(x => x.id == curId); if(d) renderDetail(d); }
+        }
+
+        function highlightGroup(uniqueGId) { if(!uniqueGId) return; const targets = document.querySelectorAll(`.unit-box[data-unique-group="${uniqueGId}"]`); targets.forEach(el => el.classList.add('group-hover')); }
+        function unhighlightGroup(uniqueGId) { if(!uniqueGId) return; const targets = document.querySelectorAll(`.unit-box[data-unique-group="${uniqueGId}"]`); targets.forEach(el => el.classList.remove('group-hover')); }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0]; if (!file) return; document.getElementById('fileNameDisplay').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = new Uint8Array(evt.target.result); const wb = XLSX.read(data, { type: 'array' });
+                    const wsUnit = wb.Sheets[wb.SheetNames[0]]; 
+                    const rawUnit = XLSX.utils.sheet_to_json(wsUnit, { defval: '' });
+                    const buildingSheetName = wb.SheetNames.find(n => n.includes('건물정보'));
+                    if(buildingSheetName) { 
+                        const wsBuild = wb.Sheets[buildingSheetName]; 
+                        const rawBuild = XLSX.utils.sheet_to_json(wsBuild, { defval: '' }); 
+                        rawBuild.forEach(r => { const bName = (r['건물명'] || '').trim(); if(bName) state.buildingInfoMap[bName] = r; }); 
+                    }
+                    processData(rawUnit.map(r => { const nr = {}; Object.keys(r).forEach(k => nr[k.replace(/\s+/g,'')] = r[k]); return nr; }));
+                } catch (err) { alert('파일 읽기 오류: ' + err.message); console.error(err); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseNum(val) { if (!val) return 0; if (typeof val === 'number') return val; return parseFloat(val.toString().replace(/,/g, '')) || 0; }
+
+        function processData(data) {
+            const today = new Date();
+            state.allData = data.map((r, i) => {
+                if (!r['건물'] && !r['건물명']) return null;
+                const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
+                const f = String(r['층'] || '').replace('층','').trim(); 
+                const u = String(r['호수'] || r['호'] || '').trim(); 
+                
+                const rawSt = (r['상태'] || '').trim(); const rawHist = (r['거래내역'] || '').trim();
+                let finalSt = '미정'; let displaySt = rawSt || rawHist || '미정';
+                if (rawSt) finalSt = normalizeStatus(rawSt); else if (rawHist) finalSt = normalizeStatus(rawHist);
+                
+                const rent = parseNum(r['월세']); const price = parseNum(r['매매가']); const deposit = parseNum(r['보증금']); const premium = parseNum(r['권리금']);
+                let areaP = 0; if (r['전용평수']) areaP = parseNum(r['전용평수']); else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
+                let areaS = 0; if (r['분양평수']) areaS = parseNum(r['분양평수']); else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
+                let ppSell = parseNum(r['매매평단가']); let ppRent = parseNum(r['임대평단가']);
+                let yieldRate = 0; if (price > 0 && rent > 0) { const cost = price - deposit; if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); }
+                let rawImp = ''; Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
+                let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
+                let adDateStr = (r['광고일'] || '').toString().trim(); let isAdWarn = false;
+                if (adDateStr && adDateStr.match(/\d/)) { let d = new Date(adDateStr); if(!isNaN(d.getTime())) { const expiry = new Date(d); expiry.setDate(d.getDate() + 30); const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; } }
+                
+                const gId = (r['통합'] || '').trim();
+                const storeName = String(r['업체명'] || r['상호'] || '').trim();
+                const tenantReal = String(r['임차인'] || '').trim(); 
+                const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
+                const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
+
+                return { 
+                    id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
+                    area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), 
+                    tenant: tenantReal, store_name: storeName, 
+                    memo: String(r['협의내용'] || r['메모'] || '').trim(), 
+                    price_sell: price, deposit: deposit, rent: rent, premium: premium, 
+                    owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
+                    pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_ad_warn: isAdWarn, ad_date: adDateStr, 
+                    pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
+                    group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0
+                };
+            }).filter(x => x);
+
+            const groupAreaMap = {}; const groupPriceMap = {};
+            state.allData.forEach(d => {
+                if(d.unique_group_id) {
+                    if(!groupAreaMap[d.unique_group_id]) { groupAreaMap[d.unique_group_id] = 0; groupPriceMap[d.unique_group_id] = 0; }
+                    groupAreaMap[d.unique_group_id] += d.area_p; groupPriceMap[d.unique_group_id] += (d.price_sell || 0);
+                }
+            });
+            state.allData.forEach(d => {
+                if(d.unique_group_id) { d.total_area_p = groupAreaMap[d.unique_group_id]; d.total_price_sell = groupPriceMap[d.unique_group_id]; } 
+                else { d.total_area_p = d.area_p; d.total_price_sell = d.price_sell; }
+            });
+            
+            if (!state.allData.length) { alert('유효 데이터 없음 (헤더를 확인해주세요)'); return; }
+            state.buildings = [...new Set(state.allData.map(d => d.building))].sort(); 
+            state.buildings.sort((a,b) => {
+                const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
+                const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
+                if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
+            });
+            
+            state.checkedBuildings = new Set(state.buildings);
+            updateExits(); document.getElementById('statusToggleBar').classList.remove('hidden'); document.getElementById('emptyState').classList.add('hidden'); document.getElementById('stackingContainer').classList.remove('hidden'); renderList(); renderStacking();
+        }
+
+        function normalizeStatus(st) {
+            const s = st.replace(/\s+/g,'');
+            if(s.includes('매매') && s.includes('임대')) return '매매/임대';
+            if(s.includes('임대완료')) return '임대완료'; if(s.includes('매매완료')) return '매매완료';
+            if(s === '매매') return '매매'; if(s === '임대') return '임대'; 
+            if(s.includes('작업필요')) return '작업필요'; if(s.includes('작업불가')) return '작업불가';
+            if(s.includes('전광교마을')) return '전광교마을'; if(s.includes('타부동산')) return '타부동산';
+            return '미정';
+        }
+
+        function updateExits() { const exits = [...new Set(state.allData.map(d => d.exit).filter(Boolean))].sort(); document.getElementById('exitFilter').innerHTML = `<option value="all">출구 전체</option>` + exits.map(e => `<option value="${e}">${e}</option>`).join(''); }
+        function updateFilter(k, v) { if (k === 'search') state.search = v.toLowerCase(); if (k === 'exit') state.filterExit = v; if (k === 'group') state.filterStatusGroup = v; applySmartSelection(); }
+        
+        function checkMatch(d) {
+            if (state.search) { 
+                const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
+                const txt = `${d.building} ${d.unit} ${d.store_name} ${d.tenant} ${d.memo} ${d.rawStatus} ${d.owner} ${d.owner_tel} ${d.tenant_tel} ${d.floor}층`.toLowerCase();
+                const isMatch = terms.every(term => txt.includes(term));
+                if (!isMatch) return false;
+            }
+            if (state.filterExit !== 'all' && d.exit !== state.filterExit) return false;
+            if (state.checkedAreaRanges.size > 0) {
+                const p = d.total_area_p; let pass = false;
+                state.checkedAreaRanges.forEach(rid => {
+                    const range = AREA_RANGES.find(x => x.id === rid);
+                    if (range.min === 0) { if (p >= 0 && p <= range.max) pass = true; } 
+                    else { if (p > range.min && p <= range.max) pass = true; }
+                });
+                if (!pass) return false;
+            }
+            if (state.checkedRentRanges.size > 0) { 
+                const r = d.rent; let pass = false; 
+                state.checkedRentRanges.forEach(rid => { 
+                    const range = RENT_RANGES.find(x => x.id === rid); 
+                    if (range.min === 0) { if (r > 0 && r <= range.max) pass = true; } 
+                    else { if (r > range.min && r <= range.max) pass = true; }
+                }); 
+                if (!pass) return false; 
+            }
+            if (state.checkedSaleRanges.size > 0) { 
+                const s = d.total_price_sell; let pass = false; 
+                state.checkedSaleRanges.forEach(rid => { 
+                    const range = SALE_RANGES.find(x => x.id === rid); 
+                    if (range.min === 0) { if (s > 0 && s <= range.max) pass = true; } 
+                    else { if (s > range.min && s <= range.max) pass = true; }
+                }); 
+                if (!pass) return false; 
+            }
+            if (state.isRoadsideMode) {
+                const bName = d.building.replace(/\s/g, ''); 
+                const isRoadside = ROADSIDE_TARGETS.some(t => bName.includes(t.replace(/\s/g, '')));
+                if (!isRoadside) return false;
+            }
+            if (state.isImportantMode && !d.is_imp) return false;
+            const s = d.status;
+            if (state.filterStatusGroup === '매매관련') { if (!['매매', '매매/임대'].includes(s)) return false; }
+            else if (state.filterStatusGroup === '임대관련') { if (!['임대', '매매/임대', '타부동산'].includes(s)) return false; }
+            else if (state.filterStatusGroup === '완료') { if (!s.includes('완료')) return false; }
+            if (STATUS_ACTIVE.includes(d.status) && !state.activeStatus.has(d.status)) return false;
+            if (STATUS_HISTORY.includes(d.status) && !state.historyStatus.has(d.status)) return false;
+            return true;
+        }
+
+        function applySmartSelection() {
+            const isFilterActive = state.search || state.filterExit !== 'all' || state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0 || state.isImportantMode || state.isRoadsideMode || state.filterStatusGroup !== 'all' || state.activeStatus.size !== STATUS_ACTIVE.length || state.historyStatus.size !== STATUS_HISTORY.length;
+            if (isFilterActive) { const newChecked = new Set(); state.buildings.forEach(b => { if (state.allData.filter(d => d.building === b).some(checkMatch)) newChecked.add(b); }); state.checkedBuildings = newChecked; } 
+            else { state.checkedBuildings = new Set(state.buildings); }
+            renderList(); renderStacking();
+        }
+
+        function renderList() {
+            const list = document.getElementById('buildingList'); list.innerHTML = '';
+            document.getElementById('buildingCountBadge').innerText = `${state.checkedBuildings.size}/${state.buildings.length}`; 
+            document.getElementById('checkAllBuildings').checked = state.checkedBuildings.size === state.buildings.length;
+            let lastExit = '';
+            state.buildings.forEach(b => {
+                const units = state.allData.filter(d => d.building === b); 
+                const currentExit = units[0]?.exit || '기타';
+                if(currentExit !== lastExit) {
+                    const divider = document.createElement('div');
+                    divider.className = "text-[10px] font-bold text-emerald-600 text-center py-1 mt-2 mb-1 border-b border-emerald-100 bg-emerald-50/50";
+                    divider.innerText = `---- ${currentExit} ----`;
+                    list.appendChild(divider); lastExit = currentExit;
+                }
+                const vacant = units.filter(d => d.status === '공실').length; 
+                const isChk = state.checkedBuildings.has(b); const hasMatch = units.some(checkMatch);
+                const div = document.createElement('div'); div.className = `flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 cursor-pointer ${isChk ? 'bg-emerald-50' : ''}`;
+                div.onclick = (e) => { if (e.target.type !== 'checkbox') toggleBuilding(b); };
+                div.innerHTML = `<div class="flex items-center gap-2 overflow-hidden"><input type="checkbox" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" ${isChk ? 'checked' : ''} onchange="toggleBuilding('${b}')"><span class="text-xs font-bold truncate ${hasMatch ? 'text-slate-800' : 'text-slate-400'}">${b}</span></div>${vacant > 0 ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 rounded-full font-bold">${vacant}</span>` : ''}`; list.appendChild(div);
+            });
+        }
+        function toggleBuilding(b) { if (state.checkedBuildings.has(b)) state.checkedBuildings.delete(b); else state.checkedBuildings.add(b); renderList(); renderStacking(); }
+        function toggleAllBuildings(chk) { state.checkedBuildings = chk ? new Set(state.buildings) : new Set(); renderList(); renderStacking(); }
+
+        function calcGroupedStats(units, type) {
+            let processedGroups = new Set(); let sumPrice = 0; let sumArea = 0;
+            units.forEach(u => {
+                let gid = u.unique_group_id || `single_${u.id}`; 
+                if (processedGroups.has(gid)) return; processedGroups.add(gid);
+                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                let groupPrice = 0; let groupArea = 0;
+                members.forEach(m => { const area = m.area_p || 0; if (type === 'sell') groupPrice += m.price_sell; else groupPrice += m.rent; groupArea += area; });
+                if (groupPrice > 0 && groupArea >= 1) { sumPrice += groupPrice; sumArea += groupArea; }
+            });
+            return sumArea > 0 ? sumPrice / sumArea : 0;
+        }
+        
+        function fmtRentAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '만원'; }
+        function fmtSellAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {maximumFractionDigits: 0}) + '만원'; }
+
+        function renderStacking() {
+            const container = document.getElementById('stackingContainer'); container.innerHTML = '';
+            [...state.checkedBuildings].sort((a,b) => {
+                const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
+                const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
+                if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
+            }).forEach(b => {
+                const units = state.allData.filter(d => d.building === b); if (!units.length) return;
+                const avgSell = calcGroupedStats(units, 'sell'); const avgRent = calcGroupedStats(units, 'rent');
+                const wrapper = document.createElement('div'); wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden";
+                wrapper.innerHTML = `<div class="bg-slate-50 px-3 md:px-4 py-3 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2"><div class="flex items-center gap-3"><h3 class="font-extrabold text-base md:text-lg text-slate-800">${b}</h3><button onclick="openBuildingModal('${b}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] md:text-xs font-bold text-slate-600 border border-slate-300">상세</button></div><div class="flex gap-2 text-[10px] md:text-xs"><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(매매)</span> <strong class="text-red-500">${fmtSellAvg(avgSell)}</strong></span><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(임대)</span> <strong class="text-emerald-600">${fmtRentAvg(avgRent)}</strong></span></div></div>`;
+                const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
+                const fCont = document.createElement('div'); fCont.className = "p-3 md:p-4 space-y-2"; let visCnt = 0;
+                floors.forEach(f => {
+                    const fUnits = units.filter(u => u.floor === f).sort((x,y) => x.unit.localeCompare(y.unit, undefined, {numeric: true})); const hasMatch = fUnits.some(checkMatch);
+                    const avgRentF = calcGroupedStats(fUnits, 'rent');
+                    if (!state.isSummaryMode || hasMatch) {
+                        visCnt++; const row = document.createElement('div'); row.className = "flex items-stretch min-h-[76px] border-b border-slate-100 pb-2 last:border-0";
+                        row.innerHTML = `<div class="w-12 md:w-16 flex-shrink-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500 rounded-l-lg p-1 border-r border-slate-200"><span class="font-extrabold text-sm md:text-base leading-none">${f}층</span><span class="text-[9px] md:text-[10px] text-emerald-600 font-bold mt-1 leading-none text-center">${fmtRentAvg(avgRentF)}</span></div>`;
+                        const grid = document.createElement('div'); grid.className = "flex-1 flex flex-wrap gap-2 items-center pl-2 md:pl-3";
+                        fUnits.forEach(u => {
+                            const isM = checkMatch(u); const cls = STATUS_CLASS_MAP[u.status] || 'bg-st-미정'; const w = Math.max(80, Math.min(200, u.area_p * 6));
+                            let borderClass = ''; 
+                            if (u.pos === '코너') borderClass = 'pos-corner'; else if (u.pos === '전면') borderClass = 'pos-front'; else if (u.pos === '후면') borderClass = 'pos-back'; else if (u.pos === '측면') borderClass = 'pos-side'; else if (u.pos === '내측') borderClass = 'pos-inner';
+                            const borderColor = BORDER_COLOR_MAP[u.status] || '#94a3b8';
+                            const yieldStr = u.yield > 0 ? `<span class="text-red-600 bg-white/60 px-0.5 rounded ml-1 text-[9px]">${u.yield}%</span>` : '';
+                            const star = u.is_imp ? `<i class="ph-fill ph-star text-yellow-500 absolute top-1 right-1 text-xs z-10 imp-star drop-shadow-sm"></i>` : '';
+                            const adWarn = u.is_ad_warn ? `<div class="ad-warn-dot"></div>` : '';
+                            const linkIcon = u.group_id ? `<i class="ph-bold ph-link text-blue-500 ml-1 text-[10px]"></i>` : ''; 
+                            const groupClass = u.group_id ? 'is-grouped' : '';
+                            let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
+                            const el = document.createElement('div'); el.className = `unit-box relative rounded-lg p-2 md:p-2.5 cursor-pointer border hover:scale-[1.02] hover:shadow-md ${cls} ${borderClass} ${groupClass} ${!isM ? 'dimmed' : ''}`;
+                            el.style.width = `${w}px`; el.style.height = "76px";
+                            el.style.setProperty('--st-border', borderColor);
+                            el.dataset.uniqueGroup = u.unique_group_id; 
+                            el.onmouseenter = () => highlightGroup(u.unique_group_id);
+                            el.onmouseleave = () => unhighlightGroup(u.unique_group_id);
+                            
+                            const isSelected = state.comparisonList.has(u.id);
+                            const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" onclick="toggleCompare(event, ${u.id})"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'}"></i></div>`;
+
+                            el.innerHTML = `${star} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><span class="font-extrabold text-xs md:text-sm truncate w-10/12 text-slate-800 flex items-center">${u.unit}${linkIcon}</span></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
+                            el.onclick = () => renderDetail(u); grid.appendChild(el);
+                        });
+                        row.appendChild(grid); fCont.appendChild(row);
+                    }
+                });
+                if (visCnt > 0) { wrapper.appendChild(fCont); container.appendChild(wrapper); }
+            });
+        }
+
+        function toggleCompare(e, id) {
+            e.stopPropagation();
+            const target = state.allData.find(d => d.id === id);
+            let idsToToggle = [id];
+            if(target.unique_group_id) { idsToToggle = state.allData.filter(d => d.unique_group_id === target.unique_group_id).map(d => d.id); }
+            const isAdding = !state.comparisonList.has(id);
+            idsToToggle.forEach(tid => { if(isAdding) state.comparisonList.add(tid); else state.comparisonList.delete(tid); });
+            updateCompareBar(); renderStacking();
+        }
+
+        function updateCompareBar() {
+            const bar = document.getElementById('comparisonBar');
+            const cnt = document.getElementById('compareCount');
+            cnt.innerText = state.comparisonList.size;
+            if (state.comparisonList.size > 0) bar.classList.remove('hidden-bar'); else bar.classList.add('hidden-bar');
+        }
+
+        function clearCompare() { state.comparisonList.clear(); state.splitGroups.clear(); updateCompareBar(); renderStacking(); }
+
+        function setCompareMode(mode) {
+            state.compareMode = mode;
+            document.getElementById('modeRent').className = `mode-btn ${mode==='rent'?'active rent':''}`;
+            document.getElementById('modeSale').className = `mode-btn ${mode==='sale'?'active sale':''}`;
+            openCompareModal();
+        }
+
+        function toggleSplit(gid) {
+            if(state.splitGroups.has(gid)) state.splitGroups.delete(gid); else state.splitGroups.add(gid);
+            openCompareModal(); 
+        }
+
+        function removeFromCompare(id) {
+            if (state.comparisonList.has(id)) { state.comparisonList.delete(id); openCompareModal(); updateCompareBar(); renderStacking(); }
+        }
+
+        function openCompareModal() {
+            const modal = document.getElementById('compareModal');
+            const container = document.getElementById('compareTableContainer');
+            const dateSpan = document.getElementById('printDate');
+            dateSpan.innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+            const printTitle = document.getElementById('printTitle');
+            if (state.compareMode === 'rent') { printTitle.innerText = "상가 임대 비교 견적서"; } 
+            else { printTitle.innerText = "상가 매매/투자 비교 견적서"; }
+
+            const rawList = Array.from(state.comparisonList).map(id => state.allData.find(d => d.id === id));
+            if (rawList.length === 0) { closeCompareModal(); return; }
+
+            const processedList = []; const processedGroups = new Set();
+            rawList.forEach(item => {
+                if (!item.unique_group_id) { processedList.push(item); } 
+                else {
+                    const gid = item.unique_group_id;
+                    if (state.splitGroups.has(gid)) { processedList.push(item); } 
+                    else {
+                        if (!processedGroups.has(gid)) {
+                            processedGroups.add(gid);
+                            const groupMembers = state.allData.filter(d => d.unique_group_id === gid);
+                            const sumArea = groupMembers.reduce((acc, cur) => acc + cur.area_p, 0);
+                            const sumDep = groupMembers.reduce((acc, cur) => acc + (cur.deposit||0), 0);
+                            const sumRent = groupMembers.reduce((acc, cur) => acc + (cur.rent||0), 0);
+                            const sumPrem = groupMembers.reduce((acc, cur) => acc + (cur.premium||0), 0);
+                            const sumPrice = groupMembers.reduce((acc, cur) => acc + (cur.price_sell||0), 0);
+                            
+                            let yieldRate = 0; 
+                            if(sumPrice > 0 && sumRent > 0) {
+                                const cost = sumPrice - sumDep;
+                                if(cost > 0) yieldRate = ((sumRent*12)/cost*100).toFixed(2);
+                            }
+                            const ppRent = sumArea > 0 ? (sumRent/sumArea) : 0; const ppSell = sumArea > 0 ? (sumPrice/sumArea) : 0;
+
+                            const mergedItem = {
+                                ...item, unit: groupMembers.map(m => m.unit).join(', '),
+                                area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
+                                yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
+                            };
+                            processedList.push(mergedItem);
+                        }
+                    }
+                }
+            });
+
+            let html = `<table class="w-full text-xs md:text-sm text-center border border-slate-300 whitespace-nowrap">
+                <thead class="bg-slate-100 font-bold text-slate-700">
+                    <tr><th class="p-2 md:p-3 border w-20 md:w-24 bg-slate-200">구분</th>`;
+            
+            processedList.forEach(d => {
+                let controlBtn = '';
+                if (d.unique_group_id) {
+                    if (d.isVirtual) {
+                        controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border rounded px-1 text-slate-500 hover:text-blue-600 no-print">🔗분리</button>`;
+                    } else {
+                        controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
+                    }
+                } else {
+                    controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
+                }
+                html += `<th class="p-2 md:p-3 border">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-slate-500">${d.building}</span>
+                        <span class="text-emerald-700 text-sm">${d.unit}호${controlBtn}</span>
+                    </div>
+                </th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            const commonRows = [ { label: '상호명', val: d => d.store_name || '-' }, { label: '전용면적', val: d => `${d.area_p.toFixed(1)}평` } ];
+            const rentRows = [ { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `<strong class="text-emerald-700">${fmtNum(d.rent)}</strong>` }, { label: '권리금', val: d => d.premium ? fmtNum(d.premium) : '-' }, { label: '평당 임대가', val: d => d.pp_rent ? fmtRentAvg(d.pp_rent) : '-' } ];
+            const saleRows = [ { label: '매매가', val: d => `<span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>` }, { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `${fmtNum(d.rent)}` }, { label: '수익률', val: d => d.yield > 0 ? `<span class="text-red-500 font-bold">${d.yield}%</span>` : '-' }, { label: '평당 매매가', val: d => d.pp_sell ? fmtSellAvg(d.pp_sell) : '-' } ];
+            const bottomRows = [ { label: '관리비', val: d => state.buildingInfoMap[d.building]?.['관리비'] || '-' }, { label: '방향/위치', val: d => `${d.dir} / ${d.pos}` } ];
+
+            let activeRows = state.compareMode === 'rent' ? [...commonRows, ...rentRows, ...bottomRows] : [...commonRows, ...saleRows, ...bottomRows];
+
+            activeRows.forEach(r => {
+                html += `<tr><td class="p-2 md:p-3 border font-bold bg-slate-50">${r.label}</td>`;
+                processedList.forEach(d => html += `<td class="p-2 md:p-3 border font-medium">${r.val(d)}</td>`);
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
+
+        async function shareCompare() {
+            const btn = document.getElementById('shareBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
+            btn.disabled = true;
+            
+            const content = document.getElementById('compareContent');
+            content.classList.add('capture-mode');
+            
+            try {
+                const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                content.classList.remove('capture-mode');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ files: [file], title: '광교마을 상가 비교 견적서' }); } 
+                        catch (err) { console.log('Share canceled', err); }
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = '상가_비교견적서.jpg';
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                        alert('이미지가 다운로드 되었습니다. (PC 등 공유 미지원 환경)');
+                    }
+                }, 'image/jpeg', 0.9);
+                
+            } catch (e) {
+                console.error(e);
+                content.classList.remove('capture-mode');
+                btn.innerHTML = originalText; btn.disabled = false;
+                alert('이미지 생성 중 오류가 발생했습니다.');
+            }
+        }
+
+        function openBuildingModal(bName) {
+            const info = state.buildingInfoMap[bName] || {}; const units = state.allData.filter(d => d.building === bName);
+            const modal = document.getElementById('buildingModal'); document.getElementById('modalTitle').innerText = bName;
+            
+            const total = units.length; 
+            const rentCnt = units.filter(d => d.status.includes('임대') && !d.status.includes('완료')).length; 
+            const saleCnt = units.filter(d => d.status.includes('매매') && !d.status.includes('완료')).length; 
+            const otherCnt = units.filter(d => d.status === '타부동산').length;
+
+            const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
+            let tableHTML = `<table class="w-full text-xs text-center border border-slate-200"><thead class="bg-slate-100 font-bold"><tr><th class="p-2 border">구분</th><th class="p-2 border">임대평단가</th><th class="p-2 border">매매평단가</th></tr></thead><tbody>`;
+            floors.forEach(f => {
+                if (f === '1') {
+                    const f1Units = units.filter(u => u.floor === '1');
+                    const positions = ['전면', '후면', '측면', '코너', '내측'];
+                    positions.forEach(pos => {
+                        const subUnits = f1Units.filter(u => u.pos === pos);
+                        if (subUnits.length > 0) {
+                            const rAvg = calcGroupedStats(subUnits, 'rent'); const sAvg = calcGroupedStats(subUnits, 'sell');
+                            tableHTML += `<tr><td class="p-2 border font-bold text-slate-600">1층 (${pos})</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
+                        }
+                    });
+                    const rAvg1 = calcGroupedStats(f1Units, 'rent'); const sAvg1 = calcGroupedStats(f1Units, 'sell');
+                    tableHTML += `<tr class="bg-emerald-50/50"><td class="p-2 border font-extrabold text-emerald-700">1층 (전체)</td><td class="p-2 border font-bold">${fmtRentAvg(rAvg1)}</td><td class="p-2 border text-red-600 font-bold">${fmtSellAvg(sAvg1)}</td></tr>`;
+                } else {
+                    const subUnits = units.filter(u => u.floor === f);
+                    const rAvg = calcGroupedStats(subUnits, 'rent'); const sAvg = calcGroupedStats(subUnits, 'sell');
+                    tableHTML += `<tr><td class="p-2 border font-bold">${f}층</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
+                }
+            });
+            tableHTML += `</tbody></table>`;
+            
+            let infoHTML = ''; 
+            const jibunAddr = info['지번 주소 - 상현동'] ? `상현동 ${info['지번 주소 - 상현동']}` : '-';
+            const mkRow = (lbl, val) => `<div class="flex flex-col"><span class="text-xs text-slate-400 font-bold">${lbl}</span><span class="font-bold text-slate-800">${val || '-'}</span></div>`;
+            
+            let statsHTML = '';
+            if (state.isPrivacyMode) {
+                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('도로명 주소', info['도로명 주소'])}</div>`;
+            } else {
+                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('관리실', info['관리실'])} ${mkRow('관리실 전화', info['관리실 전화'])} ${mkRow('건물 담당자', info['건물 담당자'])} ${mkRow('도로명 주소', info['도로명 주소'])} ${mkRow('지번 주소', jibunAddr)}</div><div class="mt-4"><h4 class="font-bold text-sm mb-1 text-slate-600">📝 관리자 메모</h4><p class="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">${info['기타설명'] || '내용 없음'}</p></div>`;
+                statsHTML = `<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4"><h4 class="font-bold text-sm mb-2 text-slate-600">📊 관리자 통계</h4><div class="grid grid-cols-4 gap-2 text-center text-xs"><div class="bg-slate-100 p-2 rounded"><div class="text-slate-500">총 호실</div><div class="font-bold text-lg">${total}</div></div><div class="bg-blue-50 p-2 rounded"><div class="text-blue-500">임대진행</div><div class="font-bold text-lg text-blue-600">${rentCnt}</div></div><div class="bg-red-50 p-2 rounded"><div class="text-red-500">매매진행</div><div class="font-bold text-lg text-red-600">${saleCnt}</div></div><div class="bg-orange-50 p-2 rounded"><div class="text-orange-500">타부동산</div><div class="font-bold text-lg text-orange-600">${otherCnt}</div></div></div></div>`;
+            }
+            document.getElementById('modalContent').innerHTML = `${infoHTML}${statsHTML}<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4">${tableHTML}</div>`;
+            modal.classList.remove('hidden');
+        }
+        function closeBuildingModal() { document.getElementById('buildingModal').classList.add('hidden'); }
+
+        function fmtNum(v) { if(!v) return '-'; const num = parseFloat(v.toString().replace(/,/g, '')); return isNaN(num) ? v : num.toLocaleString(); }
+        
+        function renderDetail(d) {
+            const panel = document.getElementById('detailPanel'); document.getElementById('detailContent').innerHTML = ''; 
+            panel.classList.add('show'); 
+            document.getElementById('detailBackdrop').classList.remove('hidden');
+            panel.dataset.currentId = d.id; const badgeCls = STATUS_CLASS_MAP[d.status];
+            
+            let targets = [d]; if (d.unique_group_id) { targets = state.allData.filter(x => x.unique_group_id === d.unique_group_id); }
+            const isGroup = targets.length > 1;
+
+            const sumArea = targets.reduce((acc, cur) => acc + parseFloat(cur.area_p), 0);
+            const sumAreaS = targets.reduce((acc, cur) => acc + parseFloat(cur.area_s), 0);
+            const sumDep = targets.reduce((acc, cur) => acc + (cur.deposit || 0), 0);
+            const sumRent = targets.reduce((acc, cur) => acc + (cur.rent || 0), 0);
+            const sumPrice = targets.reduce((acc, cur) => acc + (cur.price_sell || 0), 0);
+            const sumPrem = targets.reduce((acc, cur) => acc + (parseInt(cur.premium) || 0), 0);
+            
+            const owners = [...new Set(targets.map(t => t.owner).filter(Boolean))].join(', ');
+            const ownerTels = [...new Set(targets.map(t => t.owner_tel).filter(Boolean))].join(' / ');
+            const tenants = [...new Set(targets.map(t => t.tenant).filter(Boolean))].join(', ');
+            const tenantTels = [...new Set(targets.map(t => t.tenant_tel).filter(Boolean))].join(' / ');
+            const combinedMemo = [...new Set(targets.map(t => t.memo).filter(Boolean))].join('\n---\n');
+
+            const groupPPRent = sumArea > 0 ? (sumRent / sumArea) : 0; 
+            const groupPPSell = sumArea > 0 ? (sumPrice / sumArea) : 0;
+
+            const unitTitle = isGroup ? targets.map(t => t.unit).join(', ') + '호' : d.unit + '호';
+            const groupBadge = isGroup ? '<span class="px-2 py-0.5 bg-violet-100 text-violet-600 text-xs font-bold rounded border border-violet-200 ml-1 whitespace-nowrap">🔗 통합매물</span>' : '';
+            
+            let adBadge = ''; if(d.is_ad_warn) adBadge = `<span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded border border-red-200 ml-1 whitespace-nowrap">🔥 만료 임박 (~${d.ad_date})</span>`; else if(d.ad_date) adBadge = `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded border border-slate-200 ml-1 whitespace-nowrap">광고중</span>`;
+            const posInfo = d.pos ? `<span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded ml-2">${d.pos} / ${d.dir}</span>` : '';
+            const areaDisplay = `${sumArea.toFixed(1)}평 <span class="text-[10px] text-slate-400 font-normal ml-1 block md:inline">(분양 ${sumAreaS.toFixed(1)}평)</span>`;
+
+            const contactHTML = state.isPrivacyMode ? `<div class="bg-slate-100 border border-slate-200 rounded-lg p-6 text-center text-slate-400"><i class="ph-fill ph-lock-key text-2xl mb-2"></i><div class="text-sm font-bold">🔒 관리자 전용 정보</div></div>` : `<div class="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm space-y-3"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임대인</div><div class="font-bold text-slate-800">${owners || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 select-all text-right">${ownerTels || '-'}</div></div></div><div class="w-full h-px bg-yellow-200/50"></div><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임차인</div><div class="font-bold text-slate-800">${tenants || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 select-all text-right">${tenantTels || '-'}</div></div></div></div>`;
+            const memoHTML = state.isPrivacyMode ? `<div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-center gap-2 text-slate-400 text-sm font-bold"><i class="ph-fill ph-lock-key"></i> 메모 잠금 (고객 상담용)</div>` : `<div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm text-slate-700 min-h-[80px] whitespace-pre-wrap leading-relaxed font-medium">${combinedMemo || '-'}</div>`;
+
+            let groupListHTML = '';
+            if (!state.isPrivacyMode && isGroup) {
+                groupListHTML = `<div class="mt-3 pt-3 border-t border-slate-200"><h5 class="text-xs font-bold text-slate-500 mb-2">구성 호실별 상세 (관리자용)</h5><div class="space-y-1">`;
+                targets.forEach(t => {
+                    groupListHTML += `<div class="flex flex-col md:flex-row justify-between text-[11px] md:text-xs text-slate-700 bg-slate-50 p-2 rounded gap-1"><span class="font-bold">${t.unit}호</span><span class="text-slate-500">매 ${fmtNum(t.price_sell)} / 보 ${fmtNum(t.deposit)} / 월 ${fmtNum(t.rent)}</span></div>`;
+                });
+                groupListHTML += `</div></div>`;
+            }
+
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : ''}${groupBadge} ${adBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div><div class="text-xs text-slate-400 font-bold">전용면적</div><div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+        }
+        
+        function closeDetail() { 
+            document.getElementById('detailPanel').classList.remove('show'); 
+            document.getElementById('detailBackdrop').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
