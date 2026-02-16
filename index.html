@@ -158,31 +158,45 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
+        /* 캡쳐 공유 모드 시 UI 고정 */
         .capture-mode {
             width: 900px !important; max-width: none !important; overflow: visible !important;
-            padding: 40px !important; background: white !important;
+            padding: 30px !important; background: white !important; height: auto !important; max-height: none !important;
         }
         .capture-mode .no-print { display: none !important; }
         .capture-mode .hidden.print-only { display: block !important; }
         .capture-mode #compareTableContainer { overflow: visible !important; }
 
+        /* [v6.1.4 Fix] 1페이지 인쇄를 위한 다이어트 CSS */
         @media print {
-            @page { margin: 0; size: auto; }
+            @page { margin: 10mm; size: A4 portrait; }
             body * { visibility: hidden; }
             #compareModal, #compareModal * { visibility: visible; }
-            #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; z-index: 9999; overflow: visible !important; padding: 1.5cm; }
+            #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto !important; background: white !important; z-index: 9999; overflow: visible !important; padding: 0 !important; }
+            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; }
             
             .no-print { display: none !important; }
             #compareModal .no-print { display: none !important; }
-            
             #compareModal .print-only { display: block !important; }
+            
             .modal-backdrop { background: none !important; }
-            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; }
+            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; }
+            
+            /* 표 간격 축소 */
             table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th, td { border: 1px solid #333 !important; padding: 6px !important; color: black !important; }
-            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
-            .print-bg-green { background-color: #065f46 !important; -webkit-print-color-adjust: exact; color: #fde047 !important; }
-            .print-text-orange { color: #fb923c !important; -webkit-print-color-adjust: exact; }
+            th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
+            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* 여백 최소화 */
+            #printTitle { font-size: 1.25rem !important; }
+            .mt-6 { margin-top: 0.75rem !important; }
+            .mb-6 { margin-bottom: 0.75rem !important; }
+            .mt-8 { margin-top: 0.75rem !important; }
+            .pt-4 { padding-top: 0.5rem !important; }
+            .p-8 { padding: 0.5rem !important; }
+            
+            /* 전문가 의견 메모장 높이 축소 */
+            textarea { height: 60px !important; border-color: #cbd5e1 !important; color: #000 !important; }
         }
     </style>
 </head>
@@ -213,7 +227,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.3 Final</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.4 Final</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -221,7 +235,7 @@
                     <i class="ph-bold ph-upload-simple"></i>
                     <span id="fileNameDisplay" class="max-w-[70px] md:max-w-none truncate">엑셀 열기</span>
                 </label>
-                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden">
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onclick="this.value=null;">
                 
                 <button onclick="toggleMobileMenu()" class="md:hidden text-yellow-300 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition relative z-50">
                     <i class="ph-bold ph-list text-xl"></i>
@@ -336,30 +350,32 @@
             </div>
             
             <div id="compareContent" class="flex-1 overflow-y-auto p-4 md:p-8 bg-white relative">
-                <div class="hidden print-only mb-6 border-b-2 border-slate-800 pb-4">
+                <div class="hidden print-only mb-4 border-b-2 border-slate-800 pb-2">
                     <h1 id="printTitle" class="text-2xl font-black text-slate-900">상가 매물 비교 견적서</h1>
                     <p class="text-sm text-slate-500 mt-1" id="printDate"></p>
                 </div>
+                
                 <div id="compareTableContainer" class="overflow-x-auto pb-4"></div>
-                <div class="mt-6">
-                    <h4 class="font-bold text-slate-700 mb-2 text-sm">📝 전문가 의견</h4>
+                
+                <div class="mt-4">
+                    <h4 class="font-bold text-slate-700 mb-2 text-sm no-print">📝 전문가 의견</h4>
                     <textarea id="compareMemo" class="w-full border border-slate-300 rounded-lg p-3 text-sm h-20 md:h-24 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="여기에 브리핑 내용을 입력하세요. (인쇄 시 포함됩니다)"></textarea>
                 </div>
                 
-                <div class="hidden print-only mt-8 pt-4 border-t border-slate-200 print-bg-green rounded-lg p-6">
+                <div class="hidden print-only mt-4 pt-4 border-t border-slate-200 rounded-lg p-5" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                     <div class="flex justify-between items-end">
                         <div>
-                            <p class="font-bold text-lg text-yellow-300">광교마을부동산 공인중개사사무소</p>
-                            <p class="text-sm text-yellow-300 mt-1">대표 공인중개사 양 선 휘</p>
-                            <p class="text-sm text-yellow-300">경기도 용인시 수지구 상현동 1131</p>
-                            <p class="text-sm mt-1 font-bold print-text-orange">상현역 1번출구</p>
-                            <p class="text-xl font-extrabold print-text-orange mt-1">031-255-7373</p>
+                            <p class="font-bold text-lg" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소</p>
+                            <p class="text-sm mt-1" style="color: #fde047 !important;">대표 공인중개사 양 선 휘</p>
+                            <p class="text-xs mt-0.5" style="color: #fde047 !important;">경기도 용인시 수지구 상현동 1131</p>
+                            <p class="text-sm mt-1 font-bold" style="color: #fb923c !important;">상현역 1번출구</p>
+                            <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">031-255-7373</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-lg font-bold text-yellow-300">송 영 재 이사</p>
-                            <p class="text-sm text-yellow-300 mt-1">상가 및 투자 상담</p>
-                            <p class="text-xl font-extrabold print-text-orange mt-1">010-6570-7475</p>
-                            <p class="text-base text-yellow-300 font-sans">vsong.w.zest@gmail.com</p>
+                            <p class="text-lg font-bold" style="color: #fde047 !important;">송 영 재 이사</p>
+                            <p class="text-xs mt-1" style="color: #fde047 !important;">상가 및 투자 상담</p>
+                            <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">010-6570-7475</p>
+                            <p class="text-sm font-sans mt-0.5" style="color: #fde047 !important;">vsong.w.zest@gmail.com</p>
                         </div>
                     </div>
                 </div>
@@ -385,7 +401,8 @@
     </div>
 
     <script>
-        const MASTER_PIN = "74757410";
+        // [v6.1.4 Fix] 비밀번호 변경
+        const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -586,10 +603,7 @@
 
         function handleFileUpload(e) {
             const file = e.target.files[0]; 
-            
-            // [v6.1.3 Fix] 선택한 파일 데이터만 복사하고, 브라우저의 파일 입력창은 즉시 비움 (동일 파일 재선택 가능하게 함)
             e.target.value = ''; 
-            
             if (!file) return; 
             document.getElementById('fileNameDisplay').innerText = file.name;
             const reader = new FileReader();
