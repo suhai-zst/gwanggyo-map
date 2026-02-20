@@ -158,22 +158,18 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* [v6.1.7 Fix] 캡처/인쇄 시 짤림 방지 및 줄바꿈 처리를 위한 스타일 */
+        /* 캡처/인쇄 시 짤림 방지 및 줄바꿈 처리를 위한 스타일 */
         #offscreen-capture-container {
             position: fixed; top: -10000px; left: -10000px;
-            width: max-content; /* 내용물만큼 넓어지게 하여 짤림 방지 */
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
+            width: max-content; 
+            background: white; padding: 20px; border-radius: 12px;
         }
         #offscreen-capture-container .no-print { display: none !important; }
         #offscreen-capture-container .print-only { display: block !important; }
-        /* 캡처 시 textarea 숨기고 줄바꿈 적용된 div 표시 */
         #offscreen-capture-container textarea { display: none !important; }
         #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
         @media print {
-            /* [v6.1.7 Fix] 인쇄 방향 강제 제거 -> 사용자 선택 가능 */
             @page { margin: 10mm; } 
             body * { visibility: hidden; }
             #compareModal, #compareModal * { visibility: visible; }
@@ -198,7 +194,6 @@
             .pt-4 { padding-top: 0.5rem !important; }
             .p-8 { padding: 0.5rem !important; }
             
-            /* [v6.1.7 Fix] 인쇄 시 textarea 숨기고 줄바꿈 적용된 div 표시 */
             textarea { display: none !important; }
             #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
         }
@@ -231,7 +226,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.7 Final</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.8 Hotfix</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -411,22 +406,9 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-            
-            try {
-                if (sessionStorage.getItem('isAuthorized') === 'true') {
-                    sessionAuth = true;
-                }
-            } catch(e) {}
-
-            if (sessionAuth) {
-                document.getElementById('loginOverlay').classList.add('hidden');
-            } else {
-                document.getElementById('pinInput').focus();
-            }
-
-            document.getElementById('pinInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') checkPin();
-            });
+            try { if (sessionStorage.getItem('isAuthorized') === 'true') { sessionAuth = true; } } catch(e) {}
+            if (sessionAuth) { document.getElementById('loginOverlay').classList.add('hidden'); } else { document.getElementById('pinInput').focus(); }
+            document.getElementById('pinInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') checkPin(); });
 
             initRentDropdown(); initSaleDropdown(); initAreaDropdown(); renderChips();
             document.getElementById('searchInput').addEventListener('input', (e) => updateFilter('search', e.target.value));
@@ -901,14 +883,12 @@
             if (state.compareMode === 'rent') { printTitle.innerText = "상가 임대 비교 견적서"; } 
             else { printTitle.innerText = "상가 매매/투자 비교 견적서"; }
 
-            // [v6.1.7 Fix] 인쇄/캡처용 메모 줄바꿈 적용
             document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
 
-            // [v6.1.7 Fix] 현재 비교함에 있는 호실 기준으로 재결합 로직 적용
             const processedList = [];
             const groupedItems = {};
 
-            // 1. 현재 선택된 아이템들을 그룹별로 모음
+            // 현재 비교함에 담긴 아이템들을 그룹별로 모음
             state.comparisonList.forEach(id => {
                 const item = state.allData.find(d => d.id === id);
                 if (item) {
@@ -922,14 +902,15 @@
                 }
             });
 
-            // 2. 그룹 처리 (분리 상태에 따라 개별 표시 또는 선택된 멤버만으로 통합 표시)
+            // 그룹 처리: 분리 상태면 낱개로, 통합 상태면 '남아있는' 호실들만 합쳐서 가상 객체 생성
             Object.keys(groupedItems).forEach(gid => {
                 const groupMembers = groupedItems[gid];
                 if (state.splitGroups.has(gid)) {
-                    // 분리 상태면 개별 호실 그대로 표시
-                    groupMembers.forEach(item => processedList.push(item));
+                    // 분리된 상태임을 표시하기 위해 임시 플래그 추가
+                    groupMembers.forEach(item => {
+                        processedList.push({...item, _isSplitMember: true});
+                    });
                 } else {
-                    // 통합 상태면 '현재 선택된 멤버들로만' 구성된 가상 그룹 생성
                     const sumArea = groupMembers.reduce((acc, cur) => acc + cur.area_p, 0);
                     const sumDep = groupMembers.reduce((acc, cur) => acc + (cur.deposit||0), 0);
                     const sumRent = groupMembers.reduce((acc, cur) => acc + (cur.rent||0), 0);
@@ -945,7 +926,7 @@
                     const ppSell = sumArea > 0 ? (sumPrice/sumArea) : 0;
 
                     const mergedItem = {
-                        ...groupMembers[0], // 첫 번째 멤버를 기준으로 함
+                        ...groupMembers[0], 
                         unit: groupMembers.map(m => m.unit).join(', '),
                         area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
                         yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
@@ -962,20 +943,22 @@
             
             processedList.forEach(d => {
                 let controlBtn = '';
-                // 가상 그룹이거나, 그룹에 속했지만 현재 분리된 상태인 경우
-                if (d.isVirtual || (d.unique_group_id && state.splitGroups.has(d.unique_group_id))) {
-                     if (d.isVirtual) {
-                        controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border rounded px-1 text-slate-500 hover:text-blue-600 no-print">🔗분리</button>`;
-                    } else {
-                        controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
-                    }
+                // [v6.1.8 Fix] 묶여있으면 '🔗분리', 분리된 낱개면 '🔗통합' 버튼 표시
+                if (d.isVirtual) {
+                    controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border border-slate-300 rounded px-1 text-slate-500 hover:text-blue-600 no-print transition" title="개별 호실로 분리">🔗분리</button>`;
+                } else if (d._isSplitMember) {
+                    controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-emerald-50 border border-emerald-200 rounded px-1 text-emerald-600 hover:bg-emerald-100 no-print transition" title="현재 남은 호실만 다시 통합">🔗통합</button><button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
                 } else {
                     controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
                 }
+
                 html += `<th class="p-2 md:p-3 border">
                     <div class="flex flex-col items-center">
                         <span class="text-xs text-slate-500">${d.building}</span>
-                        <span class="text-emerald-700 text-sm">${d.unit}호${controlBtn}</span>
+                        <div class="flex items-center justify-center mt-1">
+                            <span class="text-emerald-700 text-sm font-extrabold">${d.unit}호</span>
+                            <div class="flex items-center gap-1 ml-1">${controlBtn}</div>
+                        </div>
                     </div>
                 </th>`;
             });
@@ -1001,28 +984,26 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
-        // [v6.1.7 Fix] 캡처 시 오프스크린 클론을 사용하여 짤림 방지
         async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
             
-            // 1. 캡처할 대상 요소를 복제합니다.
+            // textarea 값 최신화 후 줄바꿈 적용
+            document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
+            
             const content = document.getElementById('compareContent');
             const clone = content.cloneNode(true);
             
-            // 2. 화면 밖의 컨테이너에 복제본을 넣습니다.
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
             try {
-                // 3. 복제된 요소를 캡처합니다. (전체 내용이 다 찍힙니다)
                 const canvas = await html2canvas(clone, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
                 
-                // 4. 뒷정리 및 버튼 복구
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
@@ -1078,8 +1059,8 @@
                     <div class="p-3 bg-red-50 text-xs text-red-600 font-bold text-center border-b border-red-100">
                         👇 아래 이미지를 <span class="underline text-red-700 text-sm">길게 꾹~ 눌러서</span><br>'이미지 저장' 또는 '공유'를 선택하세요.
                     </div>
-                    <div class="overflow-y-auto p-3 bg-slate-200 flex-1">
-                        <img src="${imgUrl}" class="w-full h-auto shadow-md rounded border border-slate-300" style="-webkit-touch-callout: default;">
+                    <div class="overflow-y-auto p-3 bg-slate-200 flex-1 text-center">
+                        <img src="${imgUrl}" class="w-full h-auto shadow-md rounded border border-slate-300 inline-block" style="-webkit-touch-callout: default;">
                     </div>
                 </div>
             `;
