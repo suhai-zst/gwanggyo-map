@@ -158,28 +158,23 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* [v6.1.5 Fix] 캡처용 컨테이너 (화면 확대를 막기 위해 화면 밖으로 보내버림) */
-        .capture-mode-container {
-            position: fixed !important;
-            top: -9999px !important;
-            left: 0 !important;
-            width: 900px !important;
-            max-width: none !important;
-            z-index: -999 !important;
-            background: white !important;
+        /* [v6.1.7 Fix] 캡처/인쇄 시 짤림 방지 및 줄바꿈 처리를 위한 스타일 */
+        #offscreen-capture-container {
+            position: fixed; top: -10000px; left: -10000px;
+            width: max-content; /* 내용물만큼 넓어지게 하여 짤림 방지 */
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
         }
-        .capture-mode-container #compareContent {
-            width: 900px !important;
-            max-width: none !important;
-            overflow: visible !important;
-            padding: 40px !important;
-        }
-        .capture-mode-container .no-print { display: none !important; }
-        .capture-mode-container .hidden.print-only { display: block !important; }
-        .capture-mode-container #compareTableContainer { overflow: visible !important; }
+        #offscreen-capture-container .no-print { display: none !important; }
+        #offscreen-capture-container .print-only { display: block !important; }
+        /* 캡처 시 textarea 숨기고 줄바꿈 적용된 div 표시 */
+        #offscreen-capture-container textarea { display: none !important; }
+        #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
         @media print {
-            @page { margin: 10mm; size: A4 portrait; }
+            /* [v6.1.7 Fix] 인쇄 방향 강제 제거 -> 사용자 선택 가능 */
+            @page { margin: 10mm; } 
             body * { visibility: hidden; }
             #compareModal, #compareModal * { visibility: visible; }
             #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto !important; background: white !important; z-index: 9999; overflow: visible !important; padding: 0 !important; }
@@ -202,7 +197,10 @@
             .mt-8 { margin-top: 0.75rem !important; }
             .pt-4 { padding-top: 0.5rem !important; }
             .p-8 { padding: 0.5rem !important; }
-            textarea { height: 60px !important; border-color: #cbd5e1 !important; color: #000 !important; }
+            
+            /* [v6.1.7 Fix] 인쇄 시 textarea 숨기고 줄바꿈 적용된 div 표시 */
+            textarea { display: none !important; }
+            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
         }
     </style>
 </head>
@@ -233,7 +231,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.5 Final</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.7 Final</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -366,6 +364,7 @@
                 <div class="mt-4">
                     <h4 class="font-bold text-slate-700 mb-2 text-sm no-print">📝 전문가 의견</h4>
                     <textarea id="compareMemo" class="w-full border border-slate-300 rounded-lg p-3 text-sm h-20 md:h-24 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="여기에 브리핑 내용을 입력하세요. (인쇄 시 포함됩니다)"></textarea>
+                    <div id="compareMemoPrint" class="hidden"></div>
                 </div>
                 
                 <div class="hidden print-only mt-4 pt-4 border-t border-slate-200 rounded-lg p-5" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
@@ -902,42 +901,60 @@
             if (state.compareMode === 'rent') { printTitle.innerText = "상가 임대 비교 견적서"; } 
             else { printTitle.innerText = "상가 매매/투자 비교 견적서"; }
 
-            const rawList = Array.from(state.comparisonList).map(id => state.allData.find(d => d.id === id));
-            if (rawList.length === 0) { closeCompareModal(); return; }
+            // [v6.1.7 Fix] 인쇄/캡처용 메모 줄바꿈 적용
+            document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
 
-            const processedList = []; const processedGroups = new Set();
-            rawList.forEach(item => {
-                if (!item.unique_group_id) { processedList.push(item); } 
-                else {
+            // [v6.1.7 Fix] 현재 비교함에 있는 호실 기준으로 재결합 로직 적용
+            const processedList = [];
+            const groupedItems = {};
+
+            // 1. 현재 선택된 아이템들을 그룹별로 모음
+            state.comparisonList.forEach(id => {
+                const item = state.allData.find(d => d.id === id);
+                if (item) {
                     const gid = item.unique_group_id;
-                    if (state.splitGroups.has(gid)) { processedList.push(item); } 
-                    else {
-                        if (!processedGroups.has(gid)) {
-                            processedGroups.add(gid);
-                            const groupMembers = state.allData.filter(d => d.unique_group_id === gid);
-                            const sumArea = groupMembers.reduce((acc, cur) => acc + cur.area_p, 0);
-                            const sumDep = groupMembers.reduce((acc, cur) => acc + (cur.deposit||0), 0);
-                            const sumRent = groupMembers.reduce((acc, cur) => acc + (cur.rent||0), 0);
-                            const sumPrem = groupMembers.reduce((acc, cur) => acc + (cur.premium||0), 0);
-                            const sumPrice = groupMembers.reduce((acc, cur) => acc + (cur.price_sell||0), 0);
-                            
-                            let yieldRate = 0; 
-                            if(sumPrice > 0 && sumRent > 0) {
-                                const cost = sumPrice - sumDep;
-                                if(cost > 0) yieldRate = ((sumRent*12)/cost*100).toFixed(2);
-                            }
-                            const ppRent = sumArea > 0 ? (sumRent/sumArea) : 0; const ppSell = sumArea > 0 ? (sumPrice/sumArea) : 0;
-
-                            const mergedItem = {
-                                ...item, unit: groupMembers.map(m => m.unit).join(', '),
-                                area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
-                                yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
-                            };
-                            processedList.push(mergedItem);
-                        }
+                    if (gid) {
+                        if (!groupedItems[gid]) groupedItems[gid] = [];
+                        groupedItems[gid].push(item);
+                    } else {
+                        processedList.push(item);
                     }
                 }
             });
+
+            // 2. 그룹 처리 (분리 상태에 따라 개별 표시 또는 선택된 멤버만으로 통합 표시)
+            Object.keys(groupedItems).forEach(gid => {
+                const groupMembers = groupedItems[gid];
+                if (state.splitGroups.has(gid)) {
+                    // 분리 상태면 개별 호실 그대로 표시
+                    groupMembers.forEach(item => processedList.push(item));
+                } else {
+                    // 통합 상태면 '현재 선택된 멤버들로만' 구성된 가상 그룹 생성
+                    const sumArea = groupMembers.reduce((acc, cur) => acc + cur.area_p, 0);
+                    const sumDep = groupMembers.reduce((acc, cur) => acc + (cur.deposit||0), 0);
+                    const sumRent = groupMembers.reduce((acc, cur) => acc + (cur.rent||0), 0);
+                    const sumPrem = groupMembers.reduce((acc, cur) => acc + (cur.premium||0), 0);
+                    const sumPrice = groupMembers.reduce((acc, cur) => acc + (cur.price_sell||0), 0);
+                    
+                    let yieldRate = 0; 
+                    if(sumPrice > 0 && sumRent > 0) {
+                        const cost = sumPrice - sumDep;
+                        if(cost > 0) yieldRate = ((sumRent*12)/cost*100).toFixed(2);
+                    }
+                    const ppRent = sumArea > 0 ? (sumRent/sumArea) : 0; 
+                    const ppSell = sumArea > 0 ? (sumPrice/sumArea) : 0;
+
+                    const mergedItem = {
+                        ...groupMembers[0], // 첫 번째 멤버를 기준으로 함
+                        unit: groupMembers.map(m => m.unit).join(', '),
+                        area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
+                        yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
+                    };
+                    processedList.push(mergedItem);
+                }
+            });
+            
+            if (processedList.length === 0) { closeCompareModal(); return; }
 
             let html = `<table class="w-full text-xs md:text-sm text-center border border-slate-300 whitespace-nowrap">
                 <thead class="bg-slate-100 font-bold text-slate-700">
@@ -945,8 +962,9 @@
             
             processedList.forEach(d => {
                 let controlBtn = '';
-                if (d.unique_group_id) {
-                    if (d.isVirtual) {
+                // 가상 그룹이거나, 그룹에 속했지만 현재 분리된 상태인 경우
+                if (d.isVirtual || (d.unique_group_id && state.splitGroups.has(d.unique_group_id))) {
+                     if (d.isVirtual) {
                         controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border rounded px-1 text-slate-500 hover:text-blue-600 no-print">🔗분리</button>`;
                     } else {
                         controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
@@ -983,30 +1001,29 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
-        // [v6.1.5 Fix] 캡처 시 화면 찌그러짐 방지 및 모바일 대체(Fallback) 팝업 구현
+        // [v6.1.7 Fix] 캡처 시 오프스크린 클론을 사용하여 짤림 방지
         async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
             
-            const modalContainer = document.querySelector('.modal-container');
+            // 1. 캡처할 대상 요소를 복제합니다.
             const content = document.getElementById('compareContent');
+            const clone = content.cloneNode(true);
             
-            // 화면 밖으로 보내서 티 안 나게 캡처 준비 (줌인 현상 방지)
-            modalContainer.classList.add('capture-mode-container');
+            // 2. 화면 밖의 컨테이너에 복제본을 넣습니다.
+            const cloneContainer = document.createElement('div');
+            cloneContainer.id = 'offscreen-capture-container';
+            cloneContainer.appendChild(clone);
+            document.body.appendChild(cloneContainer);
             
             try {
-                // html2canvas 옵션: 윈도우 너비를 강제로 900으로 고정하여 PC뷰처럼 캡처
-                const canvas = await html2canvas(content, { 
-                    scale: 2, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff',
-                    windowWidth: 900
-                });
+                // 3. 복제된 요소를 캡처합니다. (전체 내용이 다 찍힙니다)
+                const canvas = await html2canvas(clone, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
                 
-                // 원상 복구
-                modalContainer.classList.remove('capture-mode-container');
+                // 4. 뒷정리 및 버튼 복구
+                document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 
@@ -1014,29 +1031,24 @@
                     const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
                     let shareSuccess = false;
                     
-                    // 1. 모바일 기본 공유 기능 (Web Share API) 시도
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try { 
                             await navigator.share({ files: [file], title: '광교마을 상가 비교 견적서' }); 
                             shareSuccess = true;
                         } catch (err) { 
-                            // 사용자가 직접 취소한 경우(AbortError)가 아니면 실패로 간주
                             if (err.name !== 'AbortError') shareSuccess = false;
                             else shareSuccess = true; 
                         }
                     }
                     
-                    // 2. 공유 실패(미지원 환경, 카카오톡 인앱 브라우저 등) 시 대안 실행
                     if (!shareSuccess) {
                         const imgUrl = URL.createObjectURL(blob);
                         if (window.innerWidth > 768) {
-                            // PC: 자동 다운로드
                             const link = document.createElement('a');
                             link.download = '상가_비교견적서.jpg';
                             link.href = imgUrl;
                             link.click();
                         } else {
-                            // 모바일: "길게 눌러서 저장" 화면 띄우기
                             showImageFallback(imgUrl);
                         }
                     }
@@ -1044,13 +1056,14 @@
                 
             } catch (e) {
                 console.error(e);
-                modalContainer.classList.remove('capture-mode-container');
+                if (document.getElementById('offscreen-capture-container')) {
+                    document.body.removeChild(document.getElementById('offscreen-capture-container'));
+                }
                 btn.innerHTML = originalText; btn.disabled = false;
                 alert('이미지 캡처 중 오류가 발생했습니다.');
             }
         }
 
-        // [v6.1.5 Fix] 폰에서 직접 저장/공유할 수 있게 해주는 팝업
         function showImageFallback(imgUrl) {
             const overlay = document.createElement('div');
             overlay.className = 'fixed inset-0 bg-black/90 z-[99999] flex flex-col items-center justify-center p-4';
