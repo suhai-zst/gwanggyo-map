@@ -226,7 +226,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.1.8 Hotfix</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.2 Minor</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -424,6 +424,18 @@
             });
         });
 
+        // [v6.2 Fix] 폰번호를 파란색 tel 링크로 변환하는 함수
+        function formatPhones(str) {
+            if(!str || str.trim() === '-' || str.trim() === '') return '-';
+            return str.split('/').map(s => {
+                const num = s.trim();
+                if(!num) return '';
+                const tel = num.replace(/[^0-9]/g, '');
+                if(tel.length >= 8) return `<a href="tel:${tel}" class="text-blue-500 hover:text-blue-700 underline underline-offset-2 break-keep">${num}</a>`;
+                return num; 
+            }).join(' <span class="text-slate-300">/</span> ');
+        }
+
         function checkPin() {
             const input = document.getElementById('pinInput').value;
             if (input === MASTER_PIN) {
@@ -466,7 +478,8 @@
             }
         }, {passive: true});
 
-        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-200', label: '100~200만', min: 100, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
+        // [v6.2 Fix] 임대료 필터 100-150 / 150-200 구간 분리
+        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
         const AREA_RANGES = [ { id: '10under', label: '10평 ↓', min: 0, max: 10 }, { id: '10-20', label: '10~20평', min: 10, max: 20 }, { id: '20-30', label: '20~30평', min: 20, max: 30 }, { id: '30-40', label: '30~40평', min: 30, max: 40 }, { id: '40-50', label: '40~50평', min: 40, max: 50 }, { id: '50-60', label: '50~60평', min: 50, max: 60 }, { id: '60-70', label: '60~70평', min: 60, max: 70 }, { id: '70-80', label: '70~80평', min: 70, max: 80 }, { id: '80-100', label: '80~100평', min: 80, max: 100 }, { id: '100over', label: '100평 ↑', min: 100, max: 9999 } ];
         const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
         const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
@@ -478,7 +491,8 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-        let state = { allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set() };
+        // [v6.2 Fix] isSqm (제곱미터 모드) 상태 변수 추가
+        let state = { allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false };
 
         function initRentDropdown() {
             const dd = document.getElementById('rentDropdown'); dd.innerHTML = '';
@@ -514,6 +528,16 @@
         function toggleAreaDropdown() { document.getElementById('areaDropdown').classList.toggle('show'); document.getElementById('rentDropdown').classList.remove('show'); document.getElementById('saleDropdown').classList.remove('show'); }
 
         function toggleRoadside() { state.isRoadsideMode = !state.isRoadsideMode; setToggleUI('roadsideToggle', state.isRoadsideMode); applySmartSelection(); }
+
+        // [v6.2 Fix] 면적 단위(평/m2) 토글 함수
+        function toggleAreaUnit() {
+            state.isSqm = !state.isSqm;
+            const curId = document.getElementById('detailPanel').dataset.currentId;
+            if (curId && document.getElementById('detailPanel').classList.contains('show')) {
+                const d = state.allData.find(x => x.id == curId);
+                if (d) renderDetail(d);
+            }
+        }
 
         function renderChips() {
             const c1 = document.getElementById('statusChipsContainer'); const c2 = document.getElementById('historyChipsContainer');
@@ -888,7 +912,6 @@
             const processedList = [];
             const groupedItems = {};
 
-            // 현재 비교함에 담긴 아이템들을 그룹별로 모음
             state.comparisonList.forEach(id => {
                 const item = state.allData.find(d => d.id === id);
                 if (item) {
@@ -902,11 +925,9 @@
                 }
             });
 
-            // 그룹 처리: 분리 상태면 낱개로, 통합 상태면 '남아있는' 호실들만 합쳐서 가상 객체 생성
             Object.keys(groupedItems).forEach(gid => {
                 const groupMembers = groupedItems[gid];
                 if (state.splitGroups.has(gid)) {
-                    // 분리된 상태임을 표시하기 위해 임시 플래그 추가
                     groupMembers.forEach(item => {
                         processedList.push({...item, _isSplitMember: true});
                     });
@@ -943,7 +964,6 @@
             
             processedList.forEach(d => {
                 let controlBtn = '';
-                // [v6.1.8 Fix] 묶여있으면 '🔗분리', 분리된 낱개면 '🔗통합' 버튼 표시
                 if (d.isVirtual) {
                     controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border border-slate-300 rounded px-1 text-slate-500 hover:text-blue-600 no-print transition" title="개별 호실로 분리">🔗분리</button>`;
                 } else if (d._isSplitMember) {
@@ -964,7 +984,7 @@
             });
             html += `</tr></thead><tbody>`;
 
-            const commonRows = [ { label: '상호명', val: d => d.store_name || '-' }, { label: '전용면적', val: d => `${d.area_p.toFixed(1)}평` } ];
+            const commonRows = [ { label: '상호명', val: d => d.store_name || '-' }, { label: '전용면적', val: d => state.isSqm ? `${(d.area_p * 3.3058).toFixed(1)}㎡` : `${d.area_p.toFixed(1)}평` } ];
             const rentRows = [ { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `<strong class="text-emerald-700">${fmtNum(d.rent)}</strong>` }, { label: '권리금', val: d => d.premium ? fmtNum(d.premium) : '-' }, { label: '평당 임대가', val: d => d.pp_rent ? fmtRentAvg(d.pp_rent) : '-' } ];
             const saleRows = [ { label: '매매가', val: d => `<span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>` }, { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `${fmtNum(d.rent)}` }, { label: '수익률', val: d => d.yield > 0 ? `<span class="text-red-500 font-bold">${d.yield}%</span>` : '-' }, { label: '평당 매매가', val: d => d.pp_sell ? fmtSellAvg(d.pp_sell) : '-' } ];
             const bottomRows = [ { label: '관리비', val: d => state.buildingInfoMap[d.building]?.['관리비'] || '-' }, { label: '방향/위치', val: d => `${d.dir} / ${d.pos}` } ];
@@ -990,7 +1010,6 @@
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
             
-            // textarea 값 최신화 후 줄바꿈 적용
             document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
             
             const content = document.getElementById('compareContent');
@@ -1099,7 +1118,6 @@
             });
             tableHTML += `</tbody></table>`;
             
-            let infoHTML = ''; 
             const jibunAddr = info['지번 주소 - 상현동'] ? `상현동 ${info['지번 주소 - 상현동']}` : '-';
             const mkRow = (lbl, val) => `<div class="flex flex-col"><span class="text-xs text-slate-400 font-bold">${lbl}</span><span class="font-bold text-slate-800">${val || '-'}</span></div>`;
             
@@ -1107,7 +1125,8 @@
             if (state.isPrivacyMode) {
                 infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('도로명 주소', info['도로명 주소'])}</div>`;
             } else {
-                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('관리실', info['관리실'])} ${mkRow('관리실 전화', info['관리실 전화'])} ${mkRow('건물 담당자', info['건물 담당자'])} ${mkRow('도로명 주소', info['도로명 주소'])} ${mkRow('지번 주소', jibunAddr)}</div><div class="mt-4"><h4 class="font-bold text-sm mb-1 text-slate-600">📝 관리자 메모</h4><p class="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">${info['기타설명'] || '내용 없음'}</p></div>`;
+                // [v6.2 Fix] 건물 상세 관리자 모드에 전화번호 링크 적용
+                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('관리실', info['관리실'])} ${mkRow('관리실 전화', formatPhones(info['관리실 전화']))} ${mkRow('건물 담당자', formatPhones(info['건물 담당자']))} ${mkRow('도로명 주소', info['도로명 주소'])} ${mkRow('지번 주소', jibunAddr)}</div><div class="mt-4"><h4 class="font-bold text-sm mb-1 text-slate-600">📝 관리자 메모</h4><p class="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">${info['기타설명'] || '내용 없음'}</p></div>`;
                 statsHTML = `<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4"><h4 class="font-bold text-sm mb-2 text-slate-600">📊 관리자 통계</h4><div class="grid grid-cols-4 gap-2 text-center text-xs"><div class="bg-slate-100 p-2 rounded"><div class="text-slate-500">총 호실</div><div class="font-bold text-lg">${total}</div></div><div class="bg-blue-50 p-2 rounded"><div class="text-blue-500">임대진행</div><div class="font-bold text-lg text-blue-600">${rentCnt}</div></div><div class="bg-red-50 p-2 rounded"><div class="text-red-500">매매진행</div><div class="font-bold text-lg text-red-600">${saleCnt}</div></div><div class="bg-orange-50 p-2 rounded"><div class="text-orange-500">타부동산</div><div class="font-bold text-lg text-orange-600">${otherCnt}</div></div></div></div>`;
             }
             document.getElementById('modalContent').innerHTML = `${infoHTML}${statsHTML}<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4">${tableHTML}</div>`;
@@ -1147,9 +1166,16 @@
             
             let adBadge = ''; if(d.is_ad_warn) adBadge = `<span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded border border-red-200 ml-1 whitespace-nowrap">🔥 만료 임박 (~${d.ad_date})</span>`; else if(d.ad_date) adBadge = `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded border border-slate-200 ml-1 whitespace-nowrap">광고중</span>`;
             const posInfo = d.pos ? `<span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded ml-2">${d.pos} / ${d.dir}</span>` : '';
-            const areaDisplay = `${sumArea.toFixed(1)}평 <span class="text-[10px] text-slate-400 font-normal ml-1 block md:inline">(분양 ${sumAreaS.toFixed(1)}평)</span>`;
+            
+            // [v6.2 Fix] 단위 변환 로직 (평/m2)
+            const areaP = state.isSqm ? (sumArea * 3.3058).toFixed(1) : sumArea.toFixed(1);
+            const areaS = state.isSqm ? (sumAreaS * 3.3058).toFixed(1) : sumAreaS.toFixed(1);
+            const unitLabel = state.isSqm ? '㎡' : '평';
+            const areaLabelBtn = `<div class="text-xs text-slate-400 font-bold flex items-center gap-1.5 mb-0.5">전용면적 <button onclick="toggleAreaUnit()" class="px-1.5 py-0.5 rounded text-[9px] font-bold border border-slate-300 bg-white text-slate-500 hover:bg-slate-100 shadow-sm transition outline-none">${state.isSqm ? '평으로' : '㎡로'}</button></div>`;
+            const areaDisplay = `${areaP}${unitLabel} <span class="text-[10px] text-slate-400 font-normal ml-1 block md:inline">(분양 ${areaS}${unitLabel})</span>`;
 
-            const contactHTML = state.isPrivacyMode ? `<div class="bg-slate-100 border border-slate-200 rounded-lg p-6 text-center text-slate-400"><i class="ph-fill ph-lock-key text-2xl mb-2"></i><div class="text-sm font-bold">🔒 관리자 전용 정보</div></div>` : `<div class="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm space-y-3"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임대인</div><div class="font-bold text-slate-800">${owners || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 select-all text-right">${ownerTels || '-'}</div></div></div><div class="w-full h-px bg-yellow-200/50"></div><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임차인</div><div class="font-bold text-slate-800">${tenants || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 select-all text-right">${tenantTels || '-'}</div></div></div></div>`;
+            // [v6.2 Fix] 호실 상세 관리자 모드에 전화번호 링크 적용
+            const contactHTML = state.isPrivacyMode ? `<div class="bg-slate-100 border border-slate-200 rounded-lg p-6 text-center text-slate-400"><i class="ph-fill ph-lock-key text-2xl mb-2"></i><div class="text-sm font-bold">🔒 관리자 전용 정보</div></div>` : `<div class="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm space-y-3"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임대인</div><div class="font-bold text-slate-800">${owners || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 text-right">${formatPhones(ownerTels)}</div></div></div><div class="w-full h-px bg-yellow-200/50"></div><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임차인</div><div class="font-bold text-slate-800">${tenants || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 text-right">${formatPhones(tenantTels)}</div></div></div></div>`;
             const memoHTML = state.isPrivacyMode ? `<div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-center gap-2 text-slate-400 text-sm font-bold"><i class="ph-fill ph-lock-key"></i> 메모 잠금 (고객 상담용)</div>` : `<div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm text-slate-700 min-h-[80px] whitespace-pre-wrap leading-relaxed font-medium">${combinedMemo || '-'}</div>`;
 
             let groupListHTML = '';
@@ -1161,7 +1187,7 @@
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : ''}${groupBadge} ${adBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div><div class="text-xs text-slate-400 font-bold">전용면적</div><div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : ''}${groupBadge} ${adBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
