@@ -460,16 +460,16 @@
                 return num; 
             }).join(' <span class="text-slate-300">/</span> ');
         }
-
-        // [v6.3] CSV 주소록 내보내기 핵심 로직
+        
+// [v6.3] CSV 주소록 내보내기 핵심 로직 (수정본)
         function exportContactsCSV() {
             let csvRows = ['First Name,Name Suffix,Phone 1 - Label,Phone 1 - Value,Organization Name,Notes,Labels'];
             
             // 이름과 번호를 분리하는 정규식 (콤마, 슬래시, 줄바꿈, 2칸이상 공백)
             const splitRegex = /[,/\n]|\s{2,}/;
             
-            // 이름과 번호가 따로 있는 컬럼용 
-            const formatContactFromCols = (nameCol, phoneCol, suffixBase, org, notes) => {
+            // 이름과 번호가 따로 있는 컬럼용 (라벨 인자 추가)
+            const formatContactFromCols = (nameCol, phoneCol, suffixBase, org, notes, label = '광교마을') => {
                 let names = nameCol ? String(nameCol).split(splitRegex).map(s=>s.trim()).filter(Boolean) : [];
                 let phones = phoneCol ? String(phoneCol).split(splitRegex).map(s=>s.trim()).filter(Boolean) : [];
                 
@@ -482,12 +482,12 @@
                     if(p.length < 7) continue; 
                     
                     const esc = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
-                    csvRows.push([esc(n), esc(suffixBase), 'Mobile', esc(p), esc(org), esc(notes), '광교마을'].join(','));
+                    csvRows.push([esc(n), esc(suffixBase), 'Mobile', esc(p), esc(org), esc(notes), esc(label)].join(','));
                 }
             };
 
-            // "홍길동 010-1234-5678" 처럼 섞여있는 텍스트용
-            const formatContactFromCombined = (combinedCol, suffixBase, org, notes) => {
+            // "홍길동 010-1234-5678" 처럼 섞여있는 텍스트용 (라벨 인자 추가)
+            const formatContactFromCombined = (combinedCol, suffixBase, org, notes, label = '광교마을') => {
                 if(!combinedCol) return;
                 const parts = String(combinedCol).split(splitRegex).map(s=>s.trim()).filter(Boolean);
                 parts.forEach(part => {
@@ -497,7 +497,7 @@
                     if(!n) n = '.';
                     if(p) {
                         const esc = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
-                        csvRows.push([esc(n), esc(suffixBase), 'Mobile', esc(p), esc(org), esc(notes), '광교마을'].join(','));
+                        csvRows.push([esc(n), esc(suffixBase), 'Mobile', esc(p), esc(org), esc(notes), esc(label)].join(','));
                     }
                 });
             };
@@ -507,30 +507,53 @@
                 const bNamePure = d.building.replace(/^\d+\./, '').trim(); // 숫자 제거
                 const baseKey = `${bNamePure}${d.unit}`; // e.g. 스타지102
                 
-                if(d.owner_tel) formatContactFromCols(d.owner, d.owner_tel, `${baseKey}.임대인.${d.store_name||''}`, d.store_name, d.memo);
-                if(d.tenant_tel) formatContactFromCols(d.tenant, d.tenant_tel, `${baseKey}.임차인.${d.store_name||''}`, d.store_name, d.memo);
+                // 구글 주소록 라벨: '광교마을'과 '상가' 두 그룹에 동시 등록
+                if(d.owner_tel) formatContactFromCols(d.owner, d.owner_tel, `${baseKey}.임대인.${d.store_name||''}`, d.store_name, d.memo, '광교마을, 상가');
+                if(d.tenant_tel) formatContactFromCols(d.tenant, d.tenant_tel, `${baseKey}.임차인.${d.store_name||''}`, d.store_name, d.memo, '광교마을, 상가');
             });
 
             // 2. 부동산 시트
             if(state.realEstateData) {
                 state.realEstateData.forEach(r => {
-                    const bName = r['부동산 명칭'] || r['부동산명칭'];
+                    const keys = Object.keys(r);
+                    const getVal = (keywords) => {
+                        const key = keys.find(k => keywords.some(kw => k.includes(kw)));
+                        return key ? r[key] : '';
+                    };
+                    
+                    // 엑셀 헤더가 명칭/상호/부동산명 등 무엇이든 유연하게 매칭
+                    const bName = getVal(['부동산 명칭', '부동산명', '상호명', '중개업소명']);
                     if(!bName) return;
-                    const office = r['사무실']; const ceo = r['대표']; const manager = r['실장']; const notes = r['비고'];
-                    if(office) formatContactFromCombined(`${bName}사무실 ${office}`, `부동산.${bName}`, bName, notes);
-                    if(ceo) formatContactFromCombined(ceo, `부동산.${bName}.대표`, bName, notes);
-                    if(manager) formatContactFromCombined(manager, `부동산.${bName}.실장`, bName, notes);
+                    
+                    const office = getVal(['사무실', '일반전화', '전화번호']); 
+                    const ceo = getVal(['대표', '이름', '성명']); 
+                    const manager = getVal(['실장', '소속공인', '담당자']); 
+                    const notes = getVal(['비고', '메모']);
+                    
+                    if(office) formatContactFromCombined(`${bName}사무실 ${office}`, `부동산.${bName}`, bName, notes, '광교마을, 부동산');
+                    if(ceo) formatContactFromCombined(ceo, `부동산.${bName}.대표`, bName, notes, '광교마을, 부동산');
+                    if(manager) formatContactFromCombined(manager, `부동산.${bName}.실장`, bName, notes, '광교마을, 부동산');
                 });
             }
 
             // 3. 관리사무실 시트
             if(state.managementData) {
                 state.managementData.forEach(r => {
-                    const bName = r['건물명'];
+                    const keys = Object.keys(r);
+                    const getVal = (keywords) => {
+                        const key = keys.find(k => keywords.some(kw => k.includes(kw)));
+                        return key ? r[key] : '';
+                    };
+                    
+                    const bName = getVal(['건물명', '상가명', '단지명']);
                     if(!bName) return;
-                    const office = r['사무실']; const manager = r['소장']; const notes = r['비고'];
-                    if(office) formatContactFromCombined(`${bName}관리실 ${office}`, `${bName}.관리사무실`, `${bName} 관리실`, notes);
-                    if(manager) formatContactFromCombined(manager, `${bName}.관리소장`, `${bName} 관리실`, notes);
+                    
+                    const office = getVal(['사무실', '관리소', '관리실', '전화번호']); 
+                    const manager = getVal(['소장', '담당자', '연락처']); 
+                    const notes = getVal(['비고', '메모']);
+                    
+                    if(office) formatContactFromCombined(`${bName}관리실 ${office}`, `${bName}.관리사무실`, `${bName} 관리실`, notes, '광교마을, 관리실');
+                    if(manager) formatContactFromCombined(manager, `${bName}.관리소장`, `${bName} 관리실`, notes, '광교마을, 관리실');
                 });
             }
 
@@ -538,14 +561,14 @@
             if(state.otherContactsData) {
                 state.otherContactsData.forEach(r => {
                     const keys = Object.keys(r);
-                    const nameK = keys.find(k => k.includes('성') && k.includes('명'));
-                    const phoneK = keys.find(k => k.includes('연') && k.includes('락'));
-                    const noteK = keys.find(k => k.includes('비') && k.includes('고'));
+                    const nameK = keys.find(k => k.includes('성명') || k.includes('이름') || k.includes('담당자'));
+                    const phoneK = keys.find(k => k.includes('연락처') || k.includes('전화') || k.includes('휴대폰') || k.includes('번호'));
+                    const noteK = keys.find(k => k.includes('비고') || k.includes('메모'));
                     
                     const name = nameK ? r[nameK] : '';
                     const phone = phoneK ? r[phoneK] : '';
                     const notes = noteK ? r[noteK] : '';
-                    if(phone) formatContactFromCols(name, phone, `기타연락처.${name||''}`, '', notes);
+                    if(phone) formatContactFromCols(name, phone, `기타연락처.${name||''}`, '', notes, '광교마을, 기타주소록');
                 });
             }
 
@@ -564,7 +587,6 @@
                 document.body.removeChild(link);
             }
         }
-
         // [v6.3] 중문 비번 매칭 함수
         function getBuildingPassword(bName) {
             if(!state.passwordMap) return '';
