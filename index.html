@@ -409,6 +409,18 @@
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
+        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
+        const AREA_RANGES = [ { id: '10under', label: '10평 ↓', min: 0, max: 10 }, { id: '10-20', label: '10~20평', min: 10, max: 20 }, { id: '20-30', label: '20~30평', min: 20, max: 30 }, { id: '30-40', label: '30~40평', min: 30, max: 40 }, { id: '40-50', label: '40~50평', min: 40, max: 50 }, { id: '50-60', label: '50~60평', min: 50, max: 60 }, { id: '60-70', label: '60~70평', min: 60, max: 70 }, { id: '70-80', label: '70~80평', min: 70, max: 80 }, { id: '80-100', label: '80~100평', min: 80, max: 100 }, { id: '100over', label: '100평 ↑', min: 100, max: 9999 } ];
+        const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
+        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
+
+        const STATUS_ACTIVE = ['매매', '임대', '매매/임대', '작업필요', '타부동산', '미정'];
+        const STATUS_HISTORY = ['매매완료', '임대완료', '전광교마을', '작업불가'];
+        const COLOR_MAP = { '매매': '#fca5a5', '임대': '#6ee7b7', '매매/임대': '#93c5fd', '타부동산': '#fdba74', '매매완료': '#e2e8f0', '임대완료': '#e2e8f0', '전광교마을': '#d8b4fe', '작업필요': '#fcd34d', '작업불가': '#e5e7eb', '미정': '#ffffff' };
+        const TEXT_COLOR_MAP = { '매매': '#7f1d1d', '임대': '#064e3b', '매매/임대': '#1e3a8a', '타부동산': '#c2410c', '매매완료': '#64748b', '임대완료': '#64748b', '전광교마을': '#581c87', '작업필요': '#000000', '작업불가': '#4b5563', '미정': '#64748b' };
+        const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
+        const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
+
         // [v6.3] CRM 데이터 보관 상태 변수 추가
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
@@ -615,19 +627,7 @@
                 if (content.scrollTop <= 0 || e.target.closest('.h-14')) { closeDetail(); }
             }
         }, {passive: true});
-
-        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
-        const AREA_RANGES = [ { id: '10under', label: '10평 ↓', min: 0, max: 10 }, { id: '10-20', label: '10~20평', min: 10, max: 20 }, { id: '20-30', label: '20~30평', min: 20, max: 30 }, { id: '30-40', label: '30~40평', min: 30, max: 40 }, { id: '40-50', label: '40~50평', min: 40, max: 50 }, { id: '50-60', label: '50~60평', min: 50, max: 60 }, { id: '60-70', label: '60~70평', min: 60, max: 70 }, { id: '70-80', label: '70~80평', min: 70, max: 80 }, { id: '80-100', label: '80~100평', min: 80, max: 100 }, { id: '100over', label: '100평 ↑', min: 100, max: 9999 } ];
-        const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
-        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
-
-        const STATUS_ACTIVE = ['매매', '임대', '매매/임대', '작업필요', '타부동산', '미정'];
-        const STATUS_HISTORY = ['매매완료', '임대완료', '전광교마을', '작업불가'];
-        const COLOR_MAP = { '매매': '#fca5a5', '임대': '#6ee7b7', '매매/임대': '#93c5fd', '타부동산': '#fdba74', '매매완료': '#e2e8f0', '임대완료': '#e2e8f0', '전광교마을': '#d8b4fe', '작업필요': '#fcd34d', '작업불가': '#e5e7eb', '미정': '#ffffff' };
-        const TEXT_COLOR_MAP = { '매매': '#7f1d1d', '임대': '#064e3b', '매매/임대': '#1e3a8a', '타부동산': '#c2410c', '매매완료': '#64748b', '임대완료': '#64748b', '전광교마을': '#581c87', '작업필요': '#000000', '작업불가': '#4b5563', '미정': '#64748b' };
-        const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
-        const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
-
+    
         function initRentDropdown() {
             const dd = document.getElementById('rentDropdown'); dd.innerHTML = '';
             RENT_RANGES.forEach(r => {
