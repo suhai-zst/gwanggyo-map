@@ -197,10 +197,12 @@
             textarea { display: none !important; }
             #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
 
-            /* [v7.0] 3.3 Page 2 인쇄 분할 설정 */
+            /* [v7.0] 3.3 Page 2 인쇄 분할 및 레이아웃 강제 설정 */
             .page-break { page-break-before: always !important; }
             #page2Container.active { display: block !important; }
-            .editable-image-box { border-style: solid !important; border-color: transparent !important; }
+            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; }
+            .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; }
+            .url-input::placeholder { color: transparent !important; }
         }
     </style>
 </head>
@@ -348,7 +350,7 @@
     </div>
 
     <div id="compareModal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm modal-backdrop p-4" onclick="if(event.target === this) closeCompareModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[900px] max-h-[90vh] flex flex-col overflow-hidden modal-container relative">
+        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[1000px] max-h-[90vh] flex flex-col overflow-hidden modal-container relative">
             <div class="h-auto md:h-16 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center px-4 md:px-6 py-3 md:py-0 bg-slate-50 gap-3 md:gap-0 no-print">
                 <h3 class="text-base md:text-lg font-extrabold text-slate-800 flex items-center gap-2"><i class="ph-fill ph-file-text text-emerald-600"></i> 비교 견적서</h3>
                 <div class="mode-toggle w-full md:w-auto">
@@ -398,33 +400,18 @@
                         <i class="ph-fill ph-info text-blue-500 text-xl"></i>
                         <p class="text-xs text-blue-700 font-bold">아래 네모 박스를 클릭하고 <span class="text-red-500 underline">네이버 지도 캡처 이미지를 붙여넣기(Ctrl+V)</span> 하세요. 인쇄 시 두 번째 페이지로 출력됩니다.</p>
                     </div>
-                    <div class="mb-4 flex flex-col md:flex-row gap-4">
-                        <div class="flex-1 flex flex-col gap-2">
-                            <span class="text-sm font-bold text-slate-700">📍 지도 위치</span>
-                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 min-h-[300px] w-full flex flex-col items-center justify-center p-2 focus:bg-white outline-none rounded-lg cursor-pointer overflow-hidden relative" contenteditable="true" data-placeholder="여기를 클릭하고 지도 캡처 붙여넣기">
-                                여기를 클릭하고 지도 이미지를 붙여넣으세요
-                            </div>
-                        </div>
-                        <div class="flex-1 flex flex-col gap-2">
-                            <span class="text-sm font-bold text-slate-700">🛣️ 현장 로드뷰</span>
-                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 min-h-[300px] w-full flex flex-col items-center justify-center p-2 focus:bg-white outline-none rounded-lg cursor-pointer overflow-hidden relative" contenteditable="true" data-placeholder="여기를 클릭하고 로드뷰 캡처 붙여넣기">
-                                여기를 클릭하고 로드뷰 이미지를 붙여넣으세요
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <input type="text" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="[선택] 네이버 지도 단축 URL을 입력하세요">
-                    </div>
+                    
+                    <div id="page2DynamicContent"></div>
                 </div>
             </div>
             
             <div class="p-3 md:p-4 border-t border-slate-100 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-3 no-print">
-                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700 hover:text-emerald-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg shadow-sm">
+                <label id="page2ToggleContainer" class="hidden md:flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700 hover:text-emerald-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg shadow-sm">
                     <input type="checkbox" id="togglePage2Btn" class="rounded text-emerald-600 w-4 h-4 focus:ring-emerald-500" onchange="togglePage2()">
                     <i class="ph-bold ph-map-trifold"></i> 위치/로드뷰 첨부 (Page 2)
                 </label>
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 w-full md:w-auto justify-end">
                     <button id="shareBtn" onclick="shareCompare()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-share-network"></i> 공유</button>
                     <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
                     <button onclick="closeCompareModal()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
@@ -486,8 +473,17 @@
                     document.getElementById('areaDropdown').classList.remove('show');
                 }
             });
+        });
 
-            // [v7.0] 이미지 붙여넣기(Paste) 핸들러 등록
+        // [v7.0] 3.3 Page 2 (PC 전용 동적 3단 레이아웃 및 붙여넣기 이벤트 바인딩)
+        function togglePage2() {
+            const container = document.getElementById('page2Container');
+            const isChecked = document.getElementById('togglePage2Btn').checked;
+            if (isChecked) container.classList.remove('hidden');
+            else container.classList.add('hidden');
+        }
+
+        function bindPasteEvents() {
             document.querySelectorAll('.editable-image-box').forEach(box => {
                 box.addEventListener('paste', function(e) {
                     e.preventDefault();
@@ -497,7 +493,7 @@
                                 const file = e.clipboardData.items[i].getAsFile();
                                 const reader = new FileReader();
                                 reader.onload = function(event) {
-                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-contain rounded">`;
+                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover rounded">`;
                                     box.classList.remove('border-dashed');
                                     box.classList.add('border-solid', 'border-emerald-500');
                                 };
@@ -511,17 +507,9 @@
                 });
 
                 box.addEventListener('focus', function() {
-                    if(box.innerText.includes('붙여넣으세요')) box.innerText = '';
+                    if(box.innerText.includes('캡처')) box.innerText = '';
                 });
             });
-        });
-
-        // [v7.0] 3.3 Page 2 토글 함수
-        function togglePage2() {
-            const container = document.getElementById('page2Container');
-            const isChecked = document.getElementById('togglePage2Btn').checked;
-            if (isChecked) container.classList.remove('hidden');
-            else container.classList.add('hidden');
         }
 
         function formatPhones(str) {
@@ -1095,7 +1083,6 @@
                             const isSelected = state.comparisonList.has(u.id);
                             const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" onclick="toggleCompare(event, ${u.id})"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'}"></i></div>`;
 
-                            // 무권리 뱃지를 호수(unit) 바로 옆에 안전하게 배치
                             el.innerHTML = `${star} ${question} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
                             el.onclick = () => renderDetail(u); grid.appendChild(el);
                         });
@@ -1243,6 +1230,48 @@
 
             html += `</tbody></table>`;
             container.innerHTML = html;
+
+            // [v7.0] Page 2 동적 렌더링 (최대 3단 구성)
+            const page2Container = document.getElementById('page2DynamicContent');
+            page2Container.innerHTML = '';
+            
+            // 장바구니 리스트가 너무 많아도 지도/로드뷰는 최대 3개까지만 제한
+            let targetList = processedList.slice(0, 3);
+            let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
+            
+            let p2Html = `<div class="grid ${colsClass} gap-4">`;
+            targetList.forEach((d) => {
+                p2Html += `
+                    <div class="flex flex-col gap-3 border border-slate-200 p-3 rounded-lg bg-white shadow-sm">
+                        <h4 class="font-extrabold text-emerald-700 text-center border-b pb-2">${d.building} <span class="text-slate-800">${d.unit}호</span></h4>
+                        <input type="text" class="url-input w-full border border-slate-300 rounded p-1.5 text-xs text-center focus:ring-1 focus:ring-emerald-500 text-blue-600" placeholder="네이버 부동산 단축 URL 입력">
+                        <div class="flex-1 flex flex-col gap-1">
+                            <span class="text-[10px] font-bold text-slate-500">🛣️ 현장 로드뷰</span>
+                            <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
+                                <i class="ph-bold ph-image text-xl mb-1 text-slate-300"></i>
+                                클릭 후 붙여넣기(Ctrl+V)
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col gap-1">
+                            <span class="text-[10px] font-bold text-slate-500">📍 지도 위치</span>
+                            <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
+                                <i class="ph-bold ph-map-pin text-xl mb-1 text-slate-300"></i>
+                                클릭 후 붙여넣기(Ctrl+V)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            p2Html += `</div>`;
+            page2Container.innerHTML = p2Html;
+
+            // 동적으로 생성된 박스들에 붙여넣기 이벤트 재등록
+            bindPasteEvents();
+
+            // 모달 열 때 기본적으로 Page 2 숨김 상태로 리셋
+            document.getElementById('togglePage2Btn').checked = false;
+            document.getElementById('page2Container').classList.add('hidden');
+
             modal.classList.remove('hidden');
         }
 
