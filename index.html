@@ -196,6 +196,11 @@
             
             textarea { display: none !important; }
             #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
+
+            /* [v7.0] 3.3 Page 2 인쇄 분할 설정 */
+            .page-break { page-break-before: always !important; }
+            #page2Container.active { display: block !important; }
+            .editable-image-box { border-style: solid !important; border-color: transparent !important; }
         }
     </style>
 </head>
@@ -226,7 +231,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v6.3 CRM</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.0 (Beta)</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -384,12 +389,46 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="page2Container" class="hidden mt-8 pt-8 border-t border-slate-200 page-break">
+                    <div class="print-only mb-4 border-b-2 border-slate-800 pb-2">
+                        <h1 class="text-2xl font-black text-slate-900">현장 위치 및 로드뷰</h1>
+                    </div>
+                    <div class="mb-4 no-print flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <i class="ph-fill ph-info text-blue-500 text-xl"></i>
+                        <p class="text-xs text-blue-700 font-bold">아래 네모 박스를 클릭하고 <span class="text-red-500 underline">네이버 지도 캡처 이미지를 붙여넣기(Ctrl+V)</span> 하세요. 인쇄 시 두 번째 페이지로 출력됩니다.</p>
+                    </div>
+                    <div class="mb-4 flex flex-col md:flex-row gap-4">
+                        <div class="flex-1 flex flex-col gap-2">
+                            <span class="text-sm font-bold text-slate-700">📍 지도 위치</span>
+                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 min-h-[300px] w-full flex flex-col items-center justify-center p-2 focus:bg-white outline-none rounded-lg cursor-pointer overflow-hidden relative" contenteditable="true" data-placeholder="여기를 클릭하고 지도 캡처 붙여넣기">
+                                여기를 클릭하고 지도 이미지를 붙여넣으세요
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col gap-2">
+                            <span class="text-sm font-bold text-slate-700">🛣️ 현장 로드뷰</span>
+                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 min-h-[300px] w-full flex flex-col items-center justify-center p-2 focus:bg-white outline-none rounded-lg cursor-pointer overflow-hidden relative" contenteditable="true" data-placeholder="여기를 클릭하고 로드뷰 캡처 붙여넣기">
+                                여기를 클릭하고 로드뷰 이미지를 붙여넣으세요
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <input type="text" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="[선택] 네이버 지도 단축 URL을 입력하세요">
+                    </div>
+                </div>
             </div>
             
-            <div class="p-3 md:p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2 no-print">
-                <button id="shareBtn" onclick="shareCompare()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-share-network"></i> 공유</button>
-                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
-                <button onclick="closeCompareModal()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
+            <div class="p-3 md:p-4 border-t border-slate-100 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-3 no-print">
+                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700 hover:text-emerald-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg shadow-sm">
+                    <input type="checkbox" id="togglePage2Btn" class="rounded text-emerald-600 w-4 h-4 focus:ring-emerald-500" onchange="togglePage2()">
+                    <i class="ph-bold ph-map-trifold"></i> 위치/로드뷰 첨부 (Page 2)
+                </label>
+
+                <div class="flex gap-2">
+                    <button id="shareBtn" onclick="shareCompare()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-share-network"></i> 공유</button>
+                    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
+                    <button onclick="closeCompareModal()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
+                </div>
             </div>
         </div>
     </div>
@@ -421,7 +460,6 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-        // [v6.3] CRM 데이터 보관 상태 변수 추가
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
@@ -448,7 +486,43 @@
                     document.getElementById('areaDropdown').classList.remove('show');
                 }
             });
+
+            // [v7.0] 이미지 붙여넣기(Paste) 핸들러 등록
+            document.querySelectorAll('.editable-image-box').forEach(box => {
+                box.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    if (e.clipboardData && e.clipboardData.items) {
+                        for (let i = 0; i < e.clipboardData.items.length; i++) {
+                            if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
+                                const file = e.clipboardData.items[i].getAsFile();
+                                const reader = new FileReader();
+                                reader.onload = function(event) {
+                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-contain rounded">`;
+                                    box.classList.remove('border-dashed');
+                                    box.classList.add('border-solid', 'border-emerald-500');
+                                };
+                                reader.readAsDataURL(file);
+                                return;
+                            }
+                        }
+                    }
+                    const text = e.clipboardData.getData('text/plain');
+                    box.innerText = text;
+                });
+
+                box.addEventListener('focus', function() {
+                    if(box.innerText.includes('붙여넣으세요')) box.innerText = '';
+                });
+            });
         });
+
+        // [v7.0] 3.3 Page 2 토글 함수
+        function togglePage2() {
+            const container = document.getElementById('page2Container');
+            const isChecked = document.getElementById('togglePage2Btn').checked;
+            if (isChecked) container.classList.remove('hidden');
+            else container.classList.add('hidden');
+        }
 
         function formatPhones(str) {
             if(!str || str.trim() === '-' || str.trim() === '') return '-';
@@ -461,18 +535,13 @@
             }).join(' <span class="text-slate-300">/</span> ');
         }
         
-// [v6.3] CSV 주소록 내보내기 핵심 로직 (수정본)
         function exportContactsCSV() {
             let csvRows = ['First Name,Name Suffix,Phone 1 - Label,Phone 1 - Value,Organization Name,Notes,Labels'];
-            
-            // 이름과 번호를 분리하는 정규식 (콤마, 슬래시, 줄바꿈, 2칸이상 공백)
             const splitRegex = /[,/\n]|\s{2,}/;
             
-            // 이름과 번호가 따로 있는 컬럼용 (라벨 인자 추가)
             const formatContactFromCols = (nameCol, phoneCol, suffixBase, org, notes, label = '광교마을') => {
                 let names = nameCol ? String(nameCol).split(splitRegex).map(s=>s.trim()).filter(Boolean) : [];
                 let phones = phoneCol ? String(phoneCol).split(splitRegex).map(s=>s.trim()).filter(Boolean) : [];
-                
                 const len = Math.max(names.length, phones.length);
                 for(let i=0; i<len; i++) {
                     let n = names[i] || names[0] || '.';
@@ -480,13 +549,11 @@
                     if(!p) continue;
                     p = p.replace(/[^\d-]/g, '');
                     if(p.length < 7) continue; 
-                    
                     const esc = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
                     csvRows.push([esc(n), esc(suffixBase), 'Mobile', esc(p), esc(org), esc(notes), esc(label)].join(','));
                 }
             };
 
-            // "홍길동 010-1234-5678" 처럼 섞여있는 텍스트용 (라벨 인자 추가)
             const formatContactFromCombined = (combinedCol, suffixBase, org, notes, label = '광교마을') => {
                 if(!combinedCol) return;
                 const parts = String(combinedCol).split(splitRegex).map(s=>s.trim()).filter(Boolean);
@@ -502,69 +569,49 @@
                 });
             };
 
-            // 1. 메인 데이터 (임대인, 임차인)
             state.allData.forEach(d => {
-                const bNamePure = d.building.replace(/^\d+\./, '').trim(); // 숫자 제거
-                const baseKey = `${bNamePure}${d.unit}`; // e.g. 스타지102
-                
-                // 구글 주소록 라벨: '광교마을'과 '상가' 두 그룹에 동시 등록
+                const bNamePure = d.building.replace(/^\d+\./, '').trim(); 
+                const baseKey = `${bNamePure}${d.unit}`; 
                 if(d.owner_tel) formatContactFromCols(d.owner, d.owner_tel, `${baseKey}.임대인.${d.store_name||''}`, d.store_name, d.memo, '광교마을, 상가');
                 if(d.tenant_tel) formatContactFromCols(d.tenant, d.tenant_tel, `${baseKey}.임차인.${d.store_name||''}`, d.store_name, d.memo, '광교마을, 상가');
             });
 
-            // 2. 부동산 시트
             if(state.realEstateData) {
                 state.realEstateData.forEach(r => {
                     const keys = Object.keys(r);
-                    const getVal = (keywords) => {
-                        const key = keys.find(k => keywords.some(kw => k.includes(kw)));
-                        return key ? r[key] : '';
-                    };
-                    
-                    // 엑셀 헤더가 명칭/상호/부동산명 등 무엇이든 유연하게 매칭
+                    const getVal = (keywords) => { const key = keys.find(k => keywords.some(kw => k.includes(kw))); return key ? r[key] : ''; };
                     const bName = getVal(['부동산 명칭', '부동산명', '상호명', '중개업소명']);
                     if(!bName) return;
-                    
                     const office = getVal(['사무실', '일반전화', '전화번호']); 
                     const ceo = getVal(['대표', '이름', '성명']); 
                     const manager = getVal(['실장', '소속공인', '담당자']); 
                     const notes = getVal(['비고', '메모']);
-                    
                     if(office) formatContactFromCombined(`${bName}사무실 ${office}`, `부동산.${bName}`, bName, notes, '광교마을, 부동산');
                     if(ceo) formatContactFromCombined(ceo, `부동산.${bName}.대표`, bName, notes, '광교마을, 부동산');
                     if(manager) formatContactFromCombined(manager, `부동산.${bName}.실장`, bName, notes, '광교마을, 부동산');
                 });
             }
 
-            // 3. 관리사무실 시트
             if(state.managementData) {
                 state.managementData.forEach(r => {
                     const keys = Object.keys(r);
-                    const getVal = (keywords) => {
-                        const key = keys.find(k => keywords.some(kw => k.includes(kw)));
-                        return key ? r[key] : '';
-                    };
-                    
+                    const getVal = (keywords) => { const key = keys.find(k => keywords.some(kw => k.includes(kw))); return key ? r[key] : ''; };
                     const bName = getVal(['건물명', '상가명', '단지명']);
                     if(!bName) return;
-                    
                     const office = getVal(['사무실', '관리소', '관리실', '전화번호']); 
                     const manager = getVal(['소장', '담당자', '연락처']); 
                     const notes = getVal(['비고', '메모']);
-                    
                     if(office) formatContactFromCombined(`${bName}관리실 ${office}`, `${bName}.관리사무실`, `${bName} 관리실`, notes, '광교마을, 관리실');
                     if(manager) formatContactFromCombined(manager, `${bName}.관리소장`, `${bName} 관리실`, notes, '광교마을, 관리실');
                 });
             }
 
-            // 4. 기타 연락처 시트
             if(state.otherContactsData) {
                 state.otherContactsData.forEach(r => {
                     const keys = Object.keys(r);
                     const nameK = keys.find(k => k.includes('성명') || k.includes('이름') || k.includes('담당자'));
                     const phoneK = keys.find(k => k.includes('연락처') || k.includes('전화') || k.includes('휴대폰') || k.includes('번호'));
                     const noteK = keys.find(k => k.includes('비고') || k.includes('메모'));
-                    
                     const name = nameK ? r[nameK] : '';
                     const phone = phoneK ? r[phoneK] : '';
                     const notes = noteK ? r[noteK] : '';
@@ -572,9 +619,8 @@
                 });
             }
 
-            // 중복 제거 후 다운로드
             const uniqueRows = [...new Set(csvRows)];
-            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // 한글 깨짐 방지 BOM
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); 
             const blob = new Blob([bom, uniqueRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             if (link.download !== undefined) {
@@ -587,12 +633,11 @@
                 document.body.removeChild(link);
             }
         }
-        // [v6.3] 중문 비번 매칭 함수
+        
         function getBuildingPassword(bName) {
             if(!state.passwordMap) return '';
             const norm = (s) => s.replace(/[\s\d.]/g, '').toUpperCase().replace('OP','').replace('시티','').replace('동','').replace('단지','').replace('W','더블유');
             const target = norm(bName);
-            
             for(const [key, val] of Object.entries(state.passwordMap)) {
                 const normK = norm(key);
                 if (target.includes(normK) || normK.includes(target)) {
@@ -776,7 +821,6 @@
                 try {
                     const data = new Uint8Array(evt.target.result); const wb = XLSX.read(data, { type: 'array' });
                     
-                    // [v6.3 Fix] 부가 연락처 시트 동시 파싱
                     const findSheet = (keywords) => wb.SheetNames.find(n => keywords.some(k => n.replace(/\s/g,'').includes(k)));
                     
                     const shRealEstate = findSheet(['부동산']);
@@ -801,7 +845,6 @@
                         });
                     }
 
-                    // CSV 추출 버튼 활성화
                     document.getElementById('btnExportCSV').classList.replace('hidden', 'flex');
 
                     const wsUnit = wb.Sheets[wb.SheetNames[0]]; 
@@ -827,18 +870,22 @@
                 const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
                 const f = String(r['층'] || '').replace('층','').trim(); 
                 const u = String(r['호수'] || r['호'] || '').trim(); 
+                const storeName = String(r['업체명'] || r['상호'] || '').trim();
+
+                // [v7.0] 3.1 "End" 데이터 파싱 오류 수정 (데이터 클렌징)
+                if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
                 
                 const rawSt = (r['상태'] || '').trim(); const rawHist = (r['거래내역'] || '').trim();
                 let finalSt = '미정'; let displaySt = rawSt || rawHist || '미정';
                 if (rawSt) finalSt = normalizeStatus(rawSt); else if (rawHist) finalSt = normalizeStatus(rawHist);
                 
-                const rent = parseNum(r['월세']); const price = parseNum(r['매매가']); const deposit = parseNum(r['보증금']); const premium = parseNum(r['권리금']);
+                const rent = parseNum(r['월세']); const price = parseNum(r['매매가']); const deposit = parseNum(r['보증금']); 
+                const premium = parseNum(r['권리금']);
                 let areaP = 0; if (r['전용평수']) areaP = parseNum(r['전용평수']); else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
                 let areaS = 0; if (r['분양평수']) areaS = parseNum(r['분양평수']); else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
                 let ppSell = parseNum(r['매매평단가']); let ppRent = parseNum(r['임대평단가']);
                 let yieldRate = 0; if (price > 0 && rent > 0) { const cost = price - deposit; if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); }
                 
-                // [v6.3 Fix] '??' 레전드 인식 추가
                 let rawImp = ''; Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
                 let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
                 let isQuestion = (rawImp||'').toString().trim() === '??';
@@ -847,7 +894,6 @@
                 if (adDateStr && adDateStr.match(/\d/)) { let d = new Date(adDateStr); if(!isNaN(d.getTime())) { const expiry = new Date(d); expiry.setDate(d.getDate() + 30); const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; } }
                 
                 const gId = (r['통합'] || '').trim();
-                const storeName = String(r['업체명'] || r['상호'] || '').trim();
                 const tenantReal = String(r['임차인'] || '').trim(); 
                 const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
                 const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
@@ -1026,14 +1072,19 @@
                             const borderColor = BORDER_COLOR_MAP[u.status] || '#94a3b8';
                             const yieldStr = u.yield > 0 ? `<span class="text-red-600 bg-white/60 px-0.5 rounded ml-1 text-[9px]">${u.yield}%</span>` : '';
                             
-                            // [v6.3 Fix] '??' 레전드 시각화
                             const star = u.is_imp ? `<i class="ph-fill ph-star text-yellow-500 absolute top-1 right-1 text-xs z-10 imp-star drop-shadow-sm"></i>` : '';
                             const question = u.is_question ? `<i class="ph-bold ph-question text-red-500 absolute top-1 right-1 text-sm z-10 animate-pulse drop-shadow-md font-black"></i>` : '';
-
                             const adWarn = u.is_ad_warn ? `<div class="ad-warn-dot"></div>` : '';
                             const linkIcon = u.group_id ? `<i class="ph-bold ph-link text-blue-500 ml-1 text-[10px]"></i>` : ''; 
                             const groupClass = u.group_id ? 'is-grouped' : '';
                             let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
+                            
+                            // [v7.0] 3.2 무권리 UI 강조 (권리금 0원 + 임대진행건)
+                            let noPremiumBadge = '';
+                            if (['임대', '매매/임대'].includes(u.status) && (u.deposit > 0 || u.rent > 0) && u.premium === 0) {
+                                noPremiumBadge = `<span class="bg-blue-600 text-white text-[9px] px-1 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
+                            }
+
                             const el = document.createElement('div'); el.className = `unit-box relative rounded-lg p-2 md:p-2.5 cursor-pointer border hover:scale-[1.02] hover:shadow-md ${cls} ${borderClass} ${groupClass} ${!isM ? 'dimmed' : ''}`;
                             el.style.width = `${w}px`; el.style.height = "76px";
                             el.style.setProperty('--st-border', borderColor);
@@ -1044,7 +1095,8 @@
                             const isSelected = state.comparisonList.has(u.id);
                             const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" onclick="toggleCompare(event, ${u.id})"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'}"></i></div>`;
 
-                            el.innerHTML = `${star} ${question} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><span class="font-extrabold text-xs md:text-sm truncate w-10/12 text-slate-800 flex items-center">${u.unit}${linkIcon}</span></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
+                            // 무권리 뱃지를 호수(unit) 바로 옆에 안전하게 배치
+                            el.innerHTML = `${star} ${question} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
                             el.onclick = () => renderDetail(u); grid.appendChild(el);
                         });
                         row.appendChild(grid); fCont.appendChild(row);
@@ -1313,7 +1365,6 @@
             const jibunAddr = info['지번 주소 - 상현동'] ? `상현동 ${info['지번 주소 - 상현동']}` : '-';
             const mkRow = (lbl, val) => `<div class="flex flex-col"><span class="text-xs text-slate-400 font-bold">${lbl}</span><span class="font-bold text-slate-800">${val || '-'}</span></div>`;
             
-            // [v6.3 Fix] 부가 시트에서 관리실 정보 병합
             let extraMgmt = null;
             if(state.managementData) { extraMgmt = state.managementData.find(m => bName.includes(String(m['건물명']).trim())); }
             const mngOffice = info['관리실'] || (extraMgmt ? extraMgmt['사무실'] : '');
@@ -1322,7 +1373,6 @@
             let mngNote = info['기타설명'] || '';
             if(extraMgmt && extraMgmt['비고']) mngNote += `\n[관리실 비고]\n${extraMgmt['비고']}`;
 
-            // [v6.3 Fix] 중문 비번 표시
             const pw = getBuildingPassword(bName);
             let pwHtml = '';
             if (pw) pwHtml = mkRow('오피스텔 중문 비번', `<span class="text-red-500 font-extrabold tracking-wider bg-red-50 px-2 py-0.5 rounded border border-red-200">${pw}</span>`);
@@ -1378,7 +1428,6 @@
             const areaLabelBtn = `<div class="text-xs text-slate-400 font-bold flex items-center gap-1.5 mb-0.5">전용면적 <button onclick="toggleAreaUnit()" class="px-1.5 py-0.5 rounded text-[9px] font-bold border border-slate-300 bg-white text-slate-500 hover:bg-slate-100 shadow-sm transition outline-none">${state.isSqm ? '평으로' : '㎡로'}</button></div>`;
             const areaDisplay = `${areaP}${unitLabel} <span class="text-[10px] text-slate-400 font-normal ml-1 block md:inline">(분양 ${areaS}${unitLabel})</span>`;
 
-            // [v6.3 Fix] '??' 레전드 뱃지
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
