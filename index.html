@@ -197,9 +197,10 @@
             textarea { display: none !important; }
             #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
 
-            /* [v7.0] 3.3 Page 2 인쇄 분할 및 레이아웃 강제 설정 */
+            /* [v7.0] 3.3 Page 2 인쇄 분할 및 레이아웃 깨짐 방지 강제 설정 */
             .page-break { page-break-before: always !important; }
             #page2Container.active { display: block !important; }
+            #page2DynamicContent > div > div { page-break-inside: avoid !important; break-inside: avoid !important; }
             .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; }
             .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; }
             .url-input::placeholder { color: transparent !important; }
@@ -233,7 +234,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.0 (Beta)</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.0</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -475,7 +476,6 @@
             });
         });
 
-        // [v7.0] 3.3 Page 2 (PC 전용 동적 3단 레이아웃 및 붙여넣기 이벤트 바인딩)
         function togglePage2() {
             const container = document.getElementById('page2Container');
             const isChecked = document.getElementById('togglePage2Btn').checked;
@@ -860,7 +860,6 @@
                 const u = String(r['호수'] || r['호'] || '').trim(); 
                 const storeName = String(r['업체명'] || r['상호'] || '').trim();
 
-                // [v7.0] 3.1 "End" 데이터 파싱 오류 수정 (데이터 클렌징)
                 if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
                 
                 const rawSt = (r['상태'] || '').trim(); const rawHist = (r['거래내역'] || '').trim();
@@ -1067,7 +1066,6 @@
                             const groupClass = u.group_id ? 'is-grouped' : '';
                             let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
                             
-                            // [v7.0] 3.2 무권리 UI 강조 (권리금 0원 + 임대진행건)
                             let noPremiumBadge = '';
                             if (['임대', '매매/임대'].includes(u.status) && (u.deposit > 0 || u.rent > 0) && u.premium === 0) {
                                 noPremiumBadge = `<span class="bg-blue-600 text-white text-[9px] px-1 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
@@ -1231,11 +1229,9 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
 
-            // [v7.0] Page 2 동적 렌더링 (최대 3단 구성)
             const page2Container = document.getElementById('page2DynamicContent');
             page2Container.innerHTML = '';
             
-            // 장바구니 리스트가 너무 많아도 지도/로드뷰는 최대 3개까지만 제한
             let targetList = processedList.slice(0, 3);
             let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
             
@@ -1265,10 +1261,8 @@
             p2Html += `</div>`;
             page2Container.innerHTML = p2Html;
 
-            // 동적으로 생성된 박스들에 붙여넣기 이벤트 재등록
             bindPasteEvents();
 
-            // 모달 열 때 기본적으로 Page 2 숨김 상태로 리셋
             document.getElementById('togglePage2Btn').checked = false;
             document.getElementById('page2Container').classList.add('hidden');
 
@@ -1284,6 +1278,20 @@
             btn.disabled = true;
             
             document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
+            
+            // [v7.0] URL 링크 추출
+            let shareText = '📍 광교마을 상가 비교 견적서\n';
+            const urlInputs = document.querySelectorAll('#page2DynamicContent .url-input');
+            const buildingHeaders = document.querySelectorAll('#page2DynamicContent h4');
+            let hasLinks = false;
+            
+            urlInputs.forEach((input, index) => {
+                if(input.value.trim() !== '') {
+                    hasLinks = true;
+                    const title = buildingHeaders[index] ? buildingHeaders[index].innerText.replace('\n', ' ') : `매물 ${index+1}`;
+                    shareText += `\n🔗 ${title} : ${input.value.trim()}`;
+                }
+            });
             
             const content = document.getElementById('compareContent');
             const clone = content.cloneNode(true);
@@ -1306,7 +1314,12 @@
                     
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try { 
-                            await navigator.share({ files: [file], title: '광교마을 상가 비교 견적서' }); 
+                            // [v7.0] 텍스트가 있으면 이미지와 함께 텍스트 전달
+                            await navigator.share({ 
+                                files: [file], 
+                                title: '광교마을 상가 비교 견적서',
+                                text: hasLinks ? shareText : ''
+                            }); 
                             shareSuccess = true;
                         } catch (err) { 
                             if (err.name !== 'AbortError') shareSuccess = false;
@@ -1321,8 +1334,14 @@
                             link.download = '상가_비교견적서.jpg';
                             link.href = imgUrl;
                             link.click();
+                            
+                            // PC에서는 링크 복사 알림
+                            if(hasLinks) {
+                                navigator.clipboard.writeText(shareText);
+                                alert('이미지가 다운로드 되었습니다.\n네이버 링크는 클립보드에 복사되었으니 붙여넣기(Ctrl+V) 하세요.');
+                            }
                         } else {
-                            showImageFallback(imgUrl);
+                            showImageFallback(imgUrl, hasLinks ? shareText : '');
                         }
                     }
                 }, 'image/jpeg', 0.9);
@@ -1337,9 +1356,19 @@
             }
         }
 
-        function showImageFallback(imgUrl) {
+        function showImageFallback(imgUrl, shareText) {
             const overlay = document.createElement('div');
             overlay.className = 'fixed inset-0 bg-black/90 z-[99999] flex flex-col items-center justify-center p-4';
+            
+            let textHtml = '';
+            if(shareText) {
+                textHtml = `
+                <div class="bg-white p-3 border-b border-slate-200 text-xs">
+                    <p class="font-bold text-blue-600 mb-1">🔗 첨부된 링크 (꾹 눌러서 복사하세요)</p>
+                    <textarea class="w-full h-16 p-2 border rounded text-[10px]" readonly>${shareText}</textarea>
+                </div>`;
+            }
+
             overlay.innerHTML = `
                 <div class="w-full max-w-lg bg-white rounded-xl overflow-hidden flex flex-col" style="max-height: 90vh;">
                     <div class="p-4 bg-slate-50 flex justify-between items-center border-b border-slate-200">
@@ -1348,6 +1377,7 @@
                         </span>
                         <button onclick="this.closest('.fixed').remove()" class="p-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 font-bold text-xs transition shadow-sm">닫기 ✕</button>
                     </div>
+                    ${textHtml}
                     <div class="p-3 bg-red-50 text-xs text-red-600 font-bold text-center border-b border-red-100">
                         👇 아래 이미지를 <span class="underline text-red-700 text-sm">길게 꾹~ 눌러서</span><br>'이미지 저장' 또는 '공유'를 선택하세요.
                     </div>
@@ -1460,6 +1490,12 @@
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
+            // [v7.0] 상세 패널 '무권리' 뱃지 동시 렌더링
+            let noPremiumDetailBadge = '';
+            if (['임대', '매매/임대'].includes(d.status) && (sumDep > 0 || sumRent > 0) && sumPrem === 0) {
+                noPremiumDetailBadge = `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
+            }
+
             const contactHTML = state.isPrivacyMode ? `<div class="bg-slate-100 border border-slate-200 rounded-lg p-6 text-center text-slate-400"><i class="ph-fill ph-lock-key text-2xl mb-2"></i><div class="text-sm font-bold">🔒 관리자 전용 정보</div></div>` : `<div class="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm space-y-3"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임대인</div><div class="font-bold text-slate-800">${owners || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 text-right">${formatPhones(ownerTels)}</div></div></div><div class="w-full h-px bg-yellow-200/50"></div><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 font-bold">임차인</div><div class="font-bold text-slate-800">${tenants || '-'}</div></div><div class="text-right"><div class="text-xs text-slate-400 font-bold">연락처</div><div class="font-mono font-bold text-slate-600 text-right">${formatPhones(tenantTels)}</div></div></div></div>`;
             const memoHTML = state.isPrivacyMode ? `<div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-center gap-2 text-slate-400 text-sm font-bold"><i class="ph-fill ph-lock-key"></i> 메모 잠금 (고객 상담용)</div>` : `<div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm text-slate-700 min-h-[80px] whitespace-pre-wrap leading-relaxed font-medium">${combinedMemo || '-'}</div>`;
 
@@ -1472,7 +1508,8 @@
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            // 상단 뱃지 묶음에 noPremiumDetailBadge 추가, 권리금 라벨 옆에 noPremiumDetailBadge 추가
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
