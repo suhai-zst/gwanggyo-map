@@ -173,17 +173,19 @@
             @page { margin: 10mm; } 
             body * { visibility: hidden; }
             #compareModal, #compareModal * { visibility: visible; }
-            #compareModal { position: absolute; left: 0; top: 0; width: 100%; height: auto !important; background: white !important; z-index: 9999; overflow: visible !important; padding: 0 !important; }
-            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; }
+            
+            /* [버그 픽스] 인쇄 시 모달 속성을 강제로 일반 페이지처럼 풀어버려 잘림(Overflow) 현상 방지 */
+            #compareModal { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; background: white !important; z-index: 9999; overflow: visible !important; padding: 0 !important; display: block !important; }
+            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; }
+            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; }
             
             .no-print { display: none !important; }
             #compareModal .no-print { display: none !important; }
             #compareModal .print-only { display: block !important; }
             
-            .modal-backdrop { background: none !important; }
-            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; }
+            .modal-backdrop { background: none !important; align-items: start !important; }
             
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; }
             th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
             th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
@@ -195,13 +197,16 @@
             .p-8 { padding: 0.5rem !important; }
             
             textarea { display: none !important; }
-            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; }
+            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; page-break-inside: avoid; }
 
-            /* [v7.0] 3.3 Page 2 인쇄 분할 및 레이아웃 깨짐 방지 강제 설정 */
             .page-break { page-break-before: always !important; }
             #page2Container.active { display: block !important; }
-            #page2DynamicContent > div > div { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; }
+            
+            /* 그리드 내부 요소들이 인쇄 페이지 중간에 걸쳐서 반으로 잘리지 않도록 보호 */
+            #page2DynamicContent { display: grid !important; page-break-inside: avoid !important; }
+            #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; display: block !important; height: auto !important; }
+            
+            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; page-break-inside: avoid !important; }
             .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; }
             .url-input::placeholder { color: transparent !important; }
         }
@@ -1279,7 +1284,7 @@
             
             document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
             
-            // [v7.0] URL 링크 추출
+            // 링크 추출
             let shareText = '📍 광교마을 상가 비교 견적서\n';
             const urlInputs = document.querySelectorAll('#page2DynamicContent .url-input');
             const buildingHeaders = document.querySelectorAll('#page2DynamicContent h4');
@@ -1310,11 +1315,31 @@
                 
                 canvas.toBlob(async (blob) => {
                     const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
-                    let shareSuccess = false;
                     
+                    // 기기 감지: 터치 가능한 모바일 환경인지 확인 (간단한 판별)
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    // [해결] PC 환경일 경우: 윈도우 공유창을 띄우지 않고 바로 다운로드 + 클립보드 복사 안내
+                    if (!isMobile) {
+                        const imgUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.download = '상가_비교견적서.jpg';
+                        link.href = imgUrl;
+                        link.click();
+                        
+                        if(hasLinks) {
+                            navigator.clipboard.writeText(shareText);
+                            alert('1. 갤러리 이미지가 다운로드 되었습니다.\n2. 네이버 지도 링크는 클립보드에 자동 복사되었습니다.\n\n[카카오톡 PC버전에 다운받은 이미지를 넣고, Ctrl+V를 눌러 링크를 함께 전송하세요]');
+                        } else {
+                            alert('갤러리 이미지가 다운로드 되었습니다.\n[카카오톡 PC버전에 이미지를 끌어다 놓으세요]');
+                        }
+                        return; // PC는 여기서 즉시 종료
+                    }
+
+                    // 모바일 환경일 경우: 정상적으로 Share API 호출 시도
+                    let shareSuccess = false;
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try { 
-                            // [v7.0] 텍스트가 있으면 이미지와 함께 텍스트 전달
                             await navigator.share({ 
                                 files: [file], 
                                 title: '광교마을 상가 비교 견적서',
@@ -1327,22 +1352,10 @@
                         }
                     }
                     
+                    // 모바일인데 Share API가 실패했을 경우의 폴백
                     if (!shareSuccess) {
                         const imgUrl = URL.createObjectURL(blob);
-                        if (window.innerWidth > 768) {
-                            const link = document.createElement('a');
-                            link.download = '상가_비교견적서.jpg';
-                            link.href = imgUrl;
-                            link.click();
-                            
-                            // PC에서는 링크 복사 알림
-                            if(hasLinks) {
-                                navigator.clipboard.writeText(shareText);
-                                alert('이미지가 다운로드 되었습니다.\n네이버 링크는 클립보드에 복사되었으니 붙여넣기(Ctrl+V) 하세요.');
-                            }
-                        } else {
-                            showImageFallback(imgUrl, hasLinks ? shareText : '');
-                        }
+                        showImageFallback(imgUrl, hasLinks ? shareText : '');
                     }
                 }, 'image/jpeg', 0.9);
                 
