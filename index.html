@@ -158,11 +158,12 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* 캡처/인쇄 시 짤림 방지 및 줄바꿈 처리를 위한 스타일 */
+        /* 캡처 시 공백 생기는 버그 방지용 임시 컨테이너 */
         #offscreen-capture-container {
-            position: fixed; top: -10000px; left: -10000px;
+            position: absolute; top: -9999px; left: -9999px;
             width: max-content; 
             background: white; padding: 20px; border-radius: 12px;
+            margin: 0;
         }
         #offscreen-capture-container .no-print { display: none !important; }
         #offscreen-capture-container .print-only { display: block !important; }
@@ -171,21 +172,23 @@
 
         @media print {
             @page { margin: 10mm; } 
-            body * { visibility: hidden; }
-            #compareModal, #compareModal * { visibility: visible; }
             
-            /* [버그 픽스] 인쇄 시 모달 속성을 강제로 일반 페이지처럼 풀어버려 잘림(Overflow) 현상 방지 */
-            #compareModal { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; background: white !important; z-index: 9999; overflow: visible !important; padding: 0 !important; display: block !important; }
-            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; }
+            /* [버그 픽스] 인쇄 시 모달 외의 배경이나 다른 요소들은 아예 렌더링되지 않도록 강제 숨김 */
+            body * { visibility: hidden !important; }
+            #compareModal, #compareModal * { visibility: visible !important; }
+            
+            /* [버그 픽스] 모달을 화면에 둥둥 뜬 팝업이 아닌 일반 페이지처럼 문서 최상단에 고정하고 길게 풀리게 만듦 (백지 현상 해결) */
+            #compareModal { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; min-height: 100% !important; background: white !important; z-index: 9999 !important; overflow: visible !important; padding: 0 !important; display: block !important; }
+            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; }
             .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; }
             
             .no-print { display: none !important; }
             #compareModal .no-print { display: none !important; }
             #compareModal .print-only { display: block !important; }
             
-            .modal-backdrop { background: none !important; align-items: start !important; }
+            .modal-backdrop { background: none !important; align-items: flex-start !important; justify-content: flex-start !important; }
             
-            table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; margin-bottom: 20px; }
             th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
             th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
@@ -197,16 +200,16 @@
             .p-8 { padding: 0.5rem !important; }
             
             textarea { display: none !important; }
-            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; page-break-inside: avoid; }
+            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; page-break-inside: avoid; margin-bottom: 20px; }
 
-            .page-break { page-break-before: always !important; }
+            .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             #page2Container.active { display: block !important; }
             
-            /* 그리드 내부 요소들이 인쇄 페이지 중간에 걸쳐서 반으로 잘리지 않도록 보호 */
-            #page2DynamicContent { display: grid !important; page-break-inside: avoid !important; }
+            #page2DynamicContent { display: grid !important; page-break-inside: avoid !important; align-items: start !important; }
             #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; display: block !important; height: auto !important; }
             
-            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; page-break-inside: avoid !important; }
+            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; page-break-inside: avoid !important; max-height: 250px !important; }
+            .editable-image-box img { max-height: 250px !important; object-fit: contain !important; }
             .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; }
             .url-input::placeholder { color: transparent !important; }
         }
@@ -498,7 +501,7 @@
                                 const file = e.clipboardData.items[i].getAsFile();
                                 const reader = new FileReader();
                                 reader.onload = function(event) {
-                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover rounded">`;
+                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-contain rounded">`;
                                     box.classList.remove('border-dashed');
                                     box.classList.add('border-solid', 'border-emerald-500');
                                 };
@@ -1240,20 +1243,20 @@
             let targetList = processedList.slice(0, 3);
             let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
             
-            let p2Html = `<div class="grid ${colsClass} gap-4">`;
+            let p2Html = `<div class="grid ${colsClass} gap-4 w-full">`;
             targetList.forEach((d) => {
                 p2Html += `
-                    <div class="flex flex-col gap-3 border border-slate-200 p-3 rounded-lg bg-white shadow-sm">
+                    <div class="flex flex-col gap-3 border border-slate-200 p-3 rounded-lg bg-white shadow-sm h-full">
                         <h4 class="font-extrabold text-emerald-700 text-center border-b pb-2">${d.building} <span class="text-slate-800">${d.unit}호</span></h4>
                         <input type="text" class="url-input w-full border border-slate-300 rounded p-1.5 text-xs text-center focus:ring-1 focus:ring-emerald-500 text-blue-600" placeholder="네이버 부동산 단축 URL 입력">
-                        <div class="flex-1 flex flex-col gap-1">
+                        <div class="flex flex-col gap-1 mb-2">
                             <span class="text-[10px] font-bold text-slate-500">🛣️ 현장 로드뷰</span>
                             <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
                                 <i class="ph-bold ph-image text-xl mb-1 text-slate-300"></i>
                                 클릭 후 붙여넣기(Ctrl+V)
                             </div>
                         </div>
-                        <div class="flex-1 flex flex-col gap-1">
+                        <div class="flex flex-col gap-1">
                             <span class="text-[10px] font-bold text-slate-500">📍 지도 위치</span>
                             <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
                                 <i class="ph-bold ph-map-pin text-xl mb-1 text-slate-300"></i>
@@ -1284,7 +1287,6 @@
             
             document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
             
-            // 링크 추출
             let shareText = '📍 광교마을 상가 비교 견적서\n';
             const urlInputs = document.querySelectorAll('#page2DynamicContent .url-input');
             const buildingHeaders = document.querySelectorAll('#page2DynamicContent h4');
@@ -1303,11 +1305,30 @@
             
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
+            
+            // 캡처 전용 스타일로 강제 고정하여 URL 박스 상단 짤림 현상 등 방지
+            cloneContainer.style.position = 'absolute';
+            cloneContainer.style.top = '-9999px';
+            cloneContainer.style.left = '-9999px';
+            cloneContainer.style.width = content.scrollWidth + 'px';
+            cloneContainer.style.height = 'auto';
+            cloneContainer.style.backgroundColor = 'white';
+            cloneContainer.style.padding = '20px';
+            cloneContainer.style.boxSizing = 'border-box';
+            
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
             try {
-                const canvas = await html2canvas(clone, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                // y:0 옵션을 줘서 스크롤 위치와 무관하게 무조건 꼭대기부터 캡처하도록 강제
+                const canvas = await html2canvas(cloneContainer, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff',
+                    y: 0,
+                    scrollY: 0,
+                    windowY: 0
+                });
                 
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText;
@@ -1316,10 +1337,8 @@
                 canvas.toBlob(async (blob) => {
                     const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
                     
-                    // 기기 감지: 터치 가능한 모바일 환경인지 확인 (간단한 판별)
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                     
-                    // [해결] PC 환경일 경우: 윈도우 공유창을 띄우지 않고 바로 다운로드 + 클립보드 복사 안내
                     if (!isMobile) {
                         const imgUrl = URL.createObjectURL(blob);
                         const link = document.createElement('a');
@@ -1333,10 +1352,9 @@
                         } else {
                             alert('갤러리 이미지가 다운로드 되었습니다.\n[카카오톡 PC버전에 이미지를 끌어다 놓으세요]');
                         }
-                        return; // PC는 여기서 즉시 종료
+                        return; 
                     }
 
-                    // 모바일 환경일 경우: 정상적으로 Share API 호출 시도
                     let shareSuccess = false;
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try { 
@@ -1352,7 +1370,6 @@
                         }
                     }
                     
-                    // 모바일인데 Share API가 실패했을 경우의 폴백
                     if (!shareSuccess) {
                         const imgUrl = URL.createObjectURL(blob);
                         showImageFallback(imgUrl, hasLinks ? shareText : '');
@@ -1503,7 +1520,6 @@
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
-            // [v7.0] 상세 패널 '무권리' 뱃지 동시 렌더링
             let noPremiumDetailBadge = '';
             if (['임대', '매매/임대'].includes(d.status) && (sumDep > 0 || sumRent > 0) && sumPrem === 0) {
                 noPremiumDetailBadge = `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
@@ -1521,7 +1537,6 @@
                 groupListHTML += `</div></div>`;
             }
 
-            // 상단 뱃지 묶음에 noPremiumDetailBadge 추가, 권리금 라벨 옆에 noPremiumDetailBadge 추가
             document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${d.building} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
