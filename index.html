@@ -158,29 +158,29 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* [캡처 버그 픽스] 화면 밖이 아닌 맨 뒤 배경에 깔아서 스크롤 오작동 방지 */
+        /* 캡처 시 공백 생기는 버그 방지용 임시 컨테이너 */
         #offscreen-capture-container {
-            position: fixed; top: 0; left: 0;
-            width: 1000px; /* PC 해상도 고정 */
-            background: white; padding: 20px; border-radius: 0;
-            margin: 0; z-index: -9999; opacity: 1;
+            position: absolute; top: -9999px; left: -9999px;
+            width: 1000px; 
+            background: white; padding: 20px; border-radius: 12px;
+            margin: 0; z-index: -9999;
         }
         #offscreen-capture-container .no-print { display: none !important; }
         #offscreen-capture-container .print-only { display: block !important; }
         #offscreen-capture-container textarea { display: none !important; }
         #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
-        /* [인쇄 버그 완벽 픽스] Grid 레이아웃 해제 및 Float 강제 적용 */
+        /* [인쇄 버그 완벽 픽스] Grid 레이아웃의 폭(Width) 강제 보장 */
         @media print {
             @page { margin: 10mm; } 
             
             body > *:not(#compareModal) { display: none !important; }
-            body { height: auto !important; background: white !important; overflow: visible !important; }
+            body { height: auto !important; background: white !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
             
             #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; overflow: visible !important; padding: 0 !important; }
-            .modal-backdrop { background: none !important; }
-            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; }
-            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; }
+            .modal-backdrop { background: none !important; align-items: start !important; }
+            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
+            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; width: 100% !important; }
             
             .no-print { display: none !important; }
             #compareModal .print-only { display: block !important; }
@@ -202,24 +202,18 @@
             .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             #page2Container.active { display: block !important; }
             
-            /* 핵심: Grid를 끄고 float으로 3단 분할하여 브라우저 인쇄 버그 회피 */
-            #page2DynamicContent { display: block !important; width: 100% !important; }
-            #page2DynamicContent > div { 
-                float: left !important; 
-                width: 32% !important; 
-                margin-right: 1.33% !important; 
-                page-break-inside: avoid !important; 
-                break-inside: avoid !important; 
-                height: auto !important; 
-                margin-bottom: 15px !important; 
-            }
-            #page2DynamicContent > div:last-child { margin-right: 0 !important; }
-            #page2DynamicContent::after { content: ""; clear: both; display: table; }
+            /* [버그 픽스] 인쇄 시 납작해지는 현상 방지를 위해 Grid 명시적 재정의 */
+            #page2DynamicContent { display: grid !important; gap: 15px !important; width: 100% !important; align-items: start !important; }
+            #page2DynamicContent.cols-1 { grid-template-columns: 1fr !important; }
+            #page2DynamicContent.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            #page2DynamicContent.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
             
-            /* 이미지 박스 크기 강제 고정 */
-            .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; page-break-inside: avoid !important; height: 180px !important; overflow: hidden !important; }
-            .editable-image-box img { max-height: 180px !important; width: 100% !important; object-fit: contain !important; }
-            .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; }
+            #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+            
+            .editable-image-box { border: 1px solid #cbd5e1 !important; border-color: #cbd5e1 !important; background: white !important; page-break-inside: avoid !important; height: 180px !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; padding: 2px !important; }
+            .editable-image-box img { max-height: 180px !important; max-width: 100% !important; object-fit: contain !important; display: block !important; }
+            
+            .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; text-align: center !important; width: 100% !important; padding: 4px !important; }
             .url-input::placeholder { color: transparent !important; }
         }
     </style>
@@ -915,7 +909,6 @@
                 };
             }).filter(x => x);
 
-            // [버그 픽스] 통합매물(그룹)에 대한 전체 보증금, 월세, 권리금을 사전에 계산 (무권리 로직 오류 방지)
             const groupAreaMap = {}; const groupPriceMap = {};
             const groupDepMap = {}; const groupRentMap = {}; const groupPremMap = {};
             
@@ -971,7 +964,6 @@
             if (state.search) { 
                 const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
                 
-                // [버그 픽스] 무권리 검색 로직: 타부동산 상태여도 보증금/월세가 있으면 임대건으로 인식
                 let extraTags = "";
                 const isRentListing = (d.total_deposit > 0 || d.total_rent > 0) && !d.status.includes('완료') && d.status !== '작업불가';
                 if (isRentListing && d.total_premium === 0) {
@@ -1106,7 +1098,6 @@
                             const groupClass = u.group_id ? 'is-grouped' : '';
                             let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
                             
-                            // [버그 픽스] 통합 그룹의 권리금, 보증금 합계를 기준으로 무권리 판단
                             let noPremiumBadge = '';
                             const isRentListing = (u.total_deposit > 0 || u.total_rent > 0) && !u.status.includes('완료') && u.status !== '작업불가';
                             if (isRentListing && u.total_premium === 0) {
@@ -1271,13 +1262,15 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
 
+            // [인쇄 버그 픽스] Grid 클래스 명시적 지정
             const page2Container = document.getElementById('page2DynamicContent');
             page2Container.innerHTML = '';
             
             let targetList = processedList.slice(0, 3);
-            let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
+            let colsClass = targetList.length === 1 ? 'cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'cols-2' : 'cols-3');
+            page2Container.className = `grid ${colsClass} gap-4 w-full`;
             
-            let p2Html = `<div class="grid ${colsClass} gap-4 w-full">`;
+            let p2Html = '';
             targetList.forEach((d) => {
                 p2Html += `
                     <div class="flex flex-col gap-3 border border-slate-200 p-3 rounded-lg bg-white shadow-sm h-full">
@@ -1285,14 +1278,14 @@
                         <input type="text" class="url-input w-full border border-slate-300 rounded p-1.5 text-xs text-center focus:ring-1 focus:ring-emerald-500 text-blue-600" placeholder="네이버 부동산 단축 URL 입력">
                         <div class="flex flex-col gap-1 mb-2">
                             <span class="text-[10px] font-bold text-slate-500">🛣️ 현장 로드뷰</span>
-                            <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
+                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
                                 <i class="ph-bold ph-image text-xl mb-1 text-slate-300"></i>
                                 클릭 후 붙여넣기(Ctrl+V)
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
                             <span class="text-[10px] font-bold text-slate-500">📍 지도 위치</span>
-                            <div class="editable-image-box h-40 border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
+                            <div class="editable-image-box border-2 border-dashed border-slate-300 bg-slate-50 w-full flex flex-col items-center justify-center p-1 text-[10px] text-slate-400 outline-none rounded cursor-pointer overflow-hidden relative transition-colors hover:bg-slate-100" contenteditable="true">
                                 <i class="ph-bold ph-map-pin text-xl mb-1 text-slate-300"></i>
                                 클릭 후 붙여넣기(Ctrl+V)
                             </div>
@@ -1300,7 +1293,6 @@
                     </div>
                 `;
             });
-            p2Html += `</div>`;
             page2Container.innerHTML = p2Html;
 
             bindPasteEvents();
@@ -1335,41 +1327,33 @@
             });
             
             const content = document.getElementById('compareContent');
-            const modalContainer = document.querySelector('.modal-container');
+            const clone = content.cloneNode(true);
             
-            // [버그 픽스] html2canvas 상단 짤림 방지: 화면 뒤쪽(fixed)에 실제 DOM을 렌더링 후 캡처
-            const origModalHeight = modalContainer.style.height;
-            const origModalMaxHeight = modalContainer.style.maxHeight;
-            const origContentOverflow = content.style.overflow;
-            const origContentMaxHeight = content.style.maxHeight;
-            const origContentPosition = content.style.position;
+            // [캡처 버그 픽스] URL input 태그를 div로 변환하여 상단 짤림 방지
+            const clonedInputs = clone.querySelectorAll('.url-input');
+            clonedInputs.forEach(input => {
+                const textDiv = document.createElement('div');
+                textDiv.className = 'w-full p-1.5 text-xs text-center text-blue-600 font-bold bg-slate-50 border border-slate-200 rounded';
+                textDiv.innerText = input.value || '';
+                input.parentNode.replaceChild(textDiv, input);
+            });
             
-            // 높이 강제 해제
-            modalContainer.style.height = 'auto';
-            modalContainer.style.maxHeight = 'none';
-            content.style.overflow = 'visible';
-            content.style.maxHeight = 'none';
+            const cloneContainer = document.createElement('div');
+            cloneContainer.id = 'offscreen-capture-container';
+            cloneContainer.appendChild(clone);
+            document.body.appendChild(cloneContainer);
             
-            // 잠시 화면 갱신 대기
+            // 렌더링 안정화 대기
             await new Promise(r => setTimeout(r, 100));
             
             try {
-                const canvas = await html2canvas(content, { 
+                const canvas = await html2canvas(cloneContainer, { 
                     scale: 2, 
                     useCORS: true, 
-                    backgroundColor: '#ffffff',
-                    windowWidth: content.scrollWidth,
-                    windowHeight: content.scrollHeight,
-                    // 모달의 실제 Y축 최상단 좌표부터 캡처하도록 강제 지정
-                    y: content.getBoundingClientRect().top + window.scrollY 
+                    backgroundColor: '#ffffff'
                 });
                 
-                // 캡처 즉시 스타일 원복
-                modalContainer.style.height = origModalHeight;
-                modalContainer.style.maxHeight = origModalMaxHeight;
-                content.style.overflow = origContentOverflow;
-                content.style.maxHeight = origContentMaxHeight;
-                
+                document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 
@@ -1417,10 +1401,9 @@
                 
             } catch (e) {
                 console.error(e);
-                modalContainer.style.height = origModalHeight;
-                modalContainer.style.maxHeight = origModalMaxHeight;
-                content.style.overflow = origContentOverflow;
-                content.style.maxHeight = origContentMaxHeight;
+                if (document.getElementById('offscreen-capture-container')) {
+                    document.body.removeChild(document.getElementById('offscreen-capture-container'));
+                }
                 btn.innerHTML = originalText; btn.disabled = false;
                 alert('이미지 캡처 중 오류가 발생했습니다.');
             }
@@ -1560,7 +1543,6 @@
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
-            // [버그 픽스] 상세 패널 무권리 뱃지 동시 렌더링
             let noPremiumDetailBadge = '';
             const isRentListingDet = (sumDep > 0 || sumRent > 0) && !d.status.includes('완료') && d.status !== '작업불가';
             if (isRentListingDet && sumPrem === 0) {
