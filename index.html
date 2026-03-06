@@ -170,7 +170,6 @@
         #offscreen-capture-container textarea { display: none !important; }
         #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
-        /* [인쇄 버그 완벽 픽스] Grid 레이아웃의 폭(Width) 강제 보장 */
         @media print {
             @page { margin: 10mm; } 
             
@@ -202,11 +201,11 @@
             .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             #page2Container.active { display: block !important; }
             
-            /* [버그 픽스] 인쇄 시 납작해지는 현상 방지를 위해 Grid 명시적 재정의 */
+            /* 인쇄/화면 일치를 위해 Tailwind 클래스(grid-cols-x)를 강제 맵핑 */
             #page2DynamicContent { display: grid !important; gap: 15px !important; width: 100% !important; align-items: start !important; }
-            #page2DynamicContent.cols-1 { grid-template-columns: 1fr !important; }
-            #page2DynamicContent.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-            #page2DynamicContent.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            #page2DynamicContent.grid-cols-1 { grid-template-columns: 1fr !important; }
+            #page2DynamicContent.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            #page2DynamicContent.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
             
             #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
             
@@ -504,7 +503,7 @@
                                 const file = e.clipboardData.items[i].getAsFile();
                                 const reader = new FileReader();
                                 reader.onload = function(event) {
-                                    box.innerHTML = `<img src="${event.target.result}">`;
+                                    box.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-contain rounded">`;
                                     box.classList.remove('border-dashed');
                                     box.classList.add('border-solid', 'border-emerald-500');
                                 };
@@ -964,8 +963,10 @@
             if (state.search) { 
                 const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
                 
+                // [버그 픽스] 무권리 필터 명확화 (임대관련 상태만 적용)
                 let extraTags = "";
-                const isRentListing = (d.total_deposit > 0 || d.total_rent > 0) && !d.status.includes('완료') && d.status !== '작업불가';
+                const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
+                const isRentListing = allowedRentStatuses.includes(d.status) && (d.total_deposit > 0 || d.total_rent > 0);
                 if (isRentListing && d.total_premium === 0) {
                     extraTags += " 무권리";
                 }
@@ -1098,8 +1099,10 @@
                             const groupClass = u.group_id ? 'is-grouped' : '';
                             let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
                             
+                            // [버그 픽스] 무권리 조건 한정 (임대/매매임대/타부동산 중 보증금/월세가 있는 건만)
                             let noPremiumBadge = '';
-                            const isRentListing = (u.total_deposit > 0 || u.total_rent > 0) && !u.status.includes('완료') && u.status !== '작업불가';
+                            const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
+                            const isRentListing = allowedRentStatuses.includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
                             if (isRentListing && u.total_premium === 0) {
                                 noPremiumBadge = `<span class="bg-blue-600 text-white text-[9px] px-1 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
                             }
@@ -1262,12 +1265,13 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
 
-            // [인쇄 버그 픽스] Grid 클래스 명시적 지정
             const page2Container = document.getElementById('page2DynamicContent');
             page2Container.innerHTML = '';
             
             let targetList = processedList.slice(0, 3);
-            let colsClass = targetList.length === 1 ? 'cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'cols-2' : 'cols-3');
+            
+            // [버그 픽스] 화면과 인쇄 공유 시 완벽한 3단 렌더링을 위해 Tailwind 클래스로 명시 지정
+            let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
             page2Container.className = `grid ${colsClass} gap-4 w-full`;
             
             let p2Html = '';
@@ -1329,7 +1333,6 @@
             const content = document.getElementById('compareContent');
             const clone = content.cloneNode(true);
             
-            // [캡처 버그 픽스] URL input 태그를 div로 변환하여 상단 짤림 방지
             const clonedInputs = clone.querySelectorAll('.url-input');
             clonedInputs.forEach(input => {
                 const textDiv = document.createElement('div');
@@ -1343,7 +1346,6 @@
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
-            // 렌더링 안정화 대기
             await new Promise(r => setTimeout(r, 100));
             
             try {
@@ -1543,8 +1545,10 @@
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
+            // [버그 픽스] 무권리 상세 패널 표시 로직
             let noPremiumDetailBadge = '';
-            const isRentListingDet = (sumDep > 0 || sumRent > 0) && !d.status.includes('완료') && d.status !== '작업불가';
+            const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
+            const isRentListingDet = allowedRentStatuses.includes(d.status) && (sumDep > 0 || sumRent > 0);
             if (isRentListingDet && sumPrem === 0) {
                 noPremiumDetailBadge = `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap ml-1">무권리</span>`;
             }
