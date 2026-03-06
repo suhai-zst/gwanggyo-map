@@ -170,23 +170,55 @@
         #offscreen-capture-container textarea { display: none !important; }
         #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
+        /* [핵심 수정] 인쇄 최적화 (백지 현상 완전 제거) */
         @media print {
             @page { margin: 10mm; } 
             
-            /* [버그 픽스] 인쇄 시 모달 외의 배경이나 다른 요소들은 아예 렌더링되지 않도록 강제 숨김 */
-            body * { visibility: hidden !important; }
-            #compareModal, #compareModal * { visibility: visible !important; }
+            /* 모든 백그라운드 요소를 레이아웃에서 완전히 제거 (공백/백지 방지) */
+            body > *:not(#compareModal) { display: none !important; }
             
-            /* [버그 픽스] 모달을 화면에 둥둥 뜬 팝업이 아닌 일반 페이지처럼 문서 최상단에 고정하고 길게 풀리게 만듦 (백지 현상 해결) */
-            #compareModal { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; min-height: 100% !important; background: white !important; z-index: 9999 !important; overflow: visible !important; padding: 0 !important; display: block !important; }
-            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; }
-            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; }
+            body { 
+                height: auto !important; 
+                background: white !important; 
+                overflow: visible !important; 
+            }
+            
+            /* 팝업 속성을 해제하고 일반 문서처럼 렌더링 */
+            #compareModal { 
+                position: static !important; 
+                display: block !important; 
+                width: 100% !important; 
+                height: auto !important; 
+                background: white !important; 
+                z-index: auto !important; 
+                overflow: visible !important; 
+                padding: 0 !important; 
+            }
+            
+            .modal-backdrop { background: none !important; align-items: start !important; }
+            
+            .modal-container { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important; 
+                max-width: none !important; 
+                height: auto !important; 
+                max-height: none !important; 
+                overflow: visible !important; 
+                display: block !important; 
+                position: static !important; 
+            }
+            
+            #compareContent { 
+                padding: 0 !important; 
+                overflow: visible !important; 
+                height: auto !important; 
+                display: block !important; 
+                position: static !important; 
+            }
             
             .no-print { display: none !important; }
-            #compareModal .no-print { display: none !important; }
             #compareModal .print-only { display: block !important; }
-            
-            .modal-backdrop { background: none !important; align-items: flex-start !important; justify-content: flex-start !important; }
             
             table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; margin-bottom: 20px; }
             th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
@@ -205,8 +237,8 @@
             .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             #page2Container.active { display: block !important; }
             
-            #page2DynamicContent { display: grid !important; page-break-inside: avoid !important; align-items: start !important; }
-            #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; display: block !important; height: auto !important; }
+            #page2DynamicContent { display: grid !important; page-break-inside: auto !important; align-items: start !important; gap: 20px !important; }
+            #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; display: block !important; height: auto !important; margin-bottom: 15px !important; }
             
             .editable-image-box { border-style: solid !important; border-color: transparent !important; background: white !important; page-break-inside: avoid !important; max-height: 250px !important; }
             .editable-image-box img { max-height: 250px !important; object-fit: contain !important; }
@@ -266,7 +298,7 @@
         <div id="mainFilters" class="hidden md:flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2 mt-3 w-full relative z-50">
             <div class="relative flex-1 md:flex-none">
                 <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-yellow-300/70"></i>
-                <input type="text" id="searchInput" placeholder="상호, 호수, 건물명..." class="brand-search">
+                <input type="text" id="searchInput" placeholder="상호, 호수, 건물, 무권리..." class="brand-search">
             </div>
             <button onclick="resetFilters()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition border border-slate-300 shadow-sm flex items-center justify-center gap-1 flex-1 md:flex-none">
                 <i class="ph-bold ph-arrow-counter-clockwise"></i> 초기화
@@ -946,7 +978,14 @@
         function checkMatch(d) {
             if (state.search) { 
                 const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
-                const txt = `${d.building} ${d.unit} ${d.store_name} ${d.tenant} ${d.memo} ${d.rawStatus} ${d.owner} ${d.owner_tel} ${d.tenant_tel} ${d.floor}층`.toLowerCase();
+                
+                // [버그 픽스] "무권리" 검색을 위한 가상 태그 추가
+                let extraTags = "";
+                if (['임대', '매매/임대'].includes(d.status) && (d.deposit > 0 || d.rent > 0) && d.premium === 0) {
+                    extraTags += " 무권리";
+                }
+                
+                const txt = `${d.building} ${d.unit} ${d.store_name} ${d.tenant} ${d.memo} ${d.rawStatus} ${d.owner} ${d.owner_tel} ${d.tenant_tel} ${d.floor}층${extraTags}`.toLowerCase();
                 const isMatch = terms.every(term => txt.includes(term));
                 if (!isMatch) return false;
             }
@@ -1306,7 +1345,6 @@
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
             
-            // 캡처 전용 스타일로 강제 고정하여 URL 박스 상단 짤림 현상 등 방지
             cloneContainer.style.position = 'absolute';
             cloneContainer.style.top = '-9999px';
             cloneContainer.style.left = '-9999px';
@@ -1320,7 +1358,6 @@
             document.body.appendChild(cloneContainer);
             
             try {
-                // y:0 옵션을 줘서 스크롤 위치와 무관하게 무조건 꼭대기부터 캡처하도록 강제
                 const canvas = await html2canvas(cloneContainer, { 
                     scale: 2, 
                     useCORS: true, 
