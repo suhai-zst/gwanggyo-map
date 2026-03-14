@@ -194,7 +194,7 @@
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
         }
 
-        /* 2. 대시보드(건물 3개 병렬 비교표) 전용 인쇄 모드 */
+        /* 2. 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
         @media print {
             @page { size: landscape; margin: 10mm; }
             
@@ -209,16 +209,14 @@
             body.is-dashboard-mode:not(.is-sim-print-mode) .no-print-dash { display: none !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only { display: block !important; }
             
-            /* 핵심: Grid 대신 Float을 사용하여 A4 1장에 3개 카드가 가로로 무조건 인쇄되도록 강제 */
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid { display: block !important; width: 100% !important; clear: both; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .dash-card { 
-                float: left !important; 
-                width: 32% !important; 
-                margin-right: 1.5% !important; 
-                page-break-inside: avoid !important; 
-                margin-bottom: 20px !important;
-            }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .dash-card:last-child { margin-right: 0 !important; }
+            
+            /* [버그 픽스] 건물 개수에 따른 동적 너비 분배 */
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 80% !important; margin: 0 auto 20px auto !important; page-break-inside: avoid !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; page-break-inside: avoid !important; margin-bottom: 20px !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card:nth-child(2n) { margin-right: 0 !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; page-break-inside: avoid !important; margin-bottom: 20px !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card:nth-child(3n) { margin-right: 0 !important; }
             
             body.is-dashboard-mode:not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
             body.is-dashboard-mode:not(.is-sim-print-mode) th, body.is-dashboard-mode:not(.is-sim-print-mode) td { border: 1px solid #e2e8f0 !important; padding: 4px 2px !important; color: black !important; }
@@ -243,7 +241,7 @@
 </head>
 <body class="text-slate-900">
     
-    <div id="loginOverlay" class="fixed inset-0 bg-slate-900 z-[999999] flex flex-col items-center justify-center p-4">
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-900 z-[9999999] flex flex-col items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
             <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="ph-fill ph-lock-key text-3xl text-emerald-600"></i>
@@ -412,7 +410,7 @@
                 <p class="text-sm text-slate-500 mt-1" id="dashPrintDate"></p>
             </div>
             
-            <div id="dashMacroGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full">
+            <div id="dashMacroGrid" class="grid gap-4 md:gap-6 w-full">
                 </div>
             
             <div id="dashPrintFooter" class="hidden print-dash-only pt-6 border-t border-slate-200 rounded-lg p-5 mt-8" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
@@ -458,22 +456,22 @@
                     <div class="flex flex-col gap-4">
                         <div>
                             <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span><span class="text-[10px] text-red-600 font-black" id="lblSimPriceKo"></span></div>
-                            <input type="text" id="simInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this); syncSliderFromInput('price'); calcSimulator();">
-                            <input type="range" id="simSliderPrice" min="0" max="1000000" step="1000" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('price'); calcSimulator();">
+                            <input type="text" id="simInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimPriceKo'); syncSliderFromInput('price'); calcSimulator();">
+                            <input type="range" id="simSliderPrice" min="0" max="1000000" step="1000" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('price', 'lblSimPriceKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printValPrice"></div>
                         </div>
                         
                         <div>
                             <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black" id="lblSimDepKo"></span></div>
-                            <input type="text" id="simInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this); syncSliderFromInput('dep'); calcSimulator();">
-                            <input type="range" id="simSliderDep" min="0" max="100000" step="500" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('dep'); calcSimulator();">
+                            <input type="text" id="simInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this, 'lblSimDepKo'); syncSliderFromInput('dep'); calcSimulator();">
+                            <input type="range" id="simSliderDep" min="0" max="100000" step="500" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('dep', 'lblSimDepKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-bold text-slate-700 text-right pb-1 border-b border-slate-200" id="printValDep"></div>
                         </div>
                         
                         <div>
                             <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 월세 (만원)</span><span class="text-[10px] text-emerald-600 font-black" id="lblSimRentKo"></span></div>
-                            <input type="text" id="simInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this); syncSliderFromInput('rent'); calcSimulator();">
-                            <input type="range" id="simSliderRent" min="0" max="10000" step="50" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('rent'); calcSimulator();">
+                            <input type="text" id="simInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimRentKo'); syncSliderFromInput('rent'); calcSimulator();">
+                            <input type="range" id="simSliderRent" min="0" max="10000" step="50" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('rent', 'lblSimRentKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-black text-emerald-600 text-right pb-1 border-b border-slate-200" id="printValRent"></div>
                         </div>
                     </div>
@@ -634,6 +632,17 @@
         </div>
     </div>
 
+    <div id="buildingModal" class="fixed inset-0 bg-black/60 z-[99999] hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) closeBuildingModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 bg-slate-50 relative z-10">
+                <div class="flex items-center gap-2"><h3 id="modalTitle" class="text-base md:text-lg font-extrabold text-slate-800">건물 정보</h3>
+                <button onclick="togglePrivacy()" class="p-1 rounded-full hover:bg-slate-200 transition" title="보안 모드 전환"><i id="modalLockIcon" class="ph-bold ph-lock-key text-slate-400"></i></button></div>
+                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1.5 md:p-2 hover:bg-slate-200 rounded-lg cursor-pointer"><i class="ph-bold ph-x pointer-events-none"></i></button>
+            </div>
+            <div id="modalContent" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"></div>
+        </div>
+    </div>
+
     <script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
@@ -726,6 +735,7 @@
             }).join(' <span class="text-slate-300">/</span> ');
         }
         
+        // [버그 픽스] 주소록 CSV 내보내기 포맷팅 수정 (이름 공란 처리 및 점 분리)
         function exportContactsCSV() {
             let csvRows = ['First Name,Name Suffix,Phone 1 - Label,Phone 1 - Value,Organization Name,Notes,Labels'];
             const splitRegex = /[,/\n]|\s{2,}/;
@@ -1601,7 +1611,7 @@
 
         function showImageFallback(imgUrl, shareText) {
             const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 bg-black/90 z-[999999] flex flex-col items-center justify-center p-4';
+            overlay.className = 'fixed inset-0 bg-black/90 z-[9999999] flex flex-col items-center justify-center p-4';
             
             let textHtml = '';
             if(shareText) {
@@ -1908,10 +1918,12 @@
             
             if(bNames.length === 0) {
                 grid.innerHTML = `<div class="col-span-full text-center py-20 text-slate-400 font-bold text-lg"><i class="ph-duotone ph-buildings text-4xl block mb-2"></i> 상단에서 비교할 건물을 선택해주세요.</div>`;
+                grid.className = "w-full";
                 return;
             }
 
-            grid.className = `grid gap-4 md:gap-6 w-full grid-cols-1 md:grid-cols-${Math.min(bNames.length, 2)} lg:grid-cols-${bNames.length}`;
+            // 동적 Grid 및 인쇄 클래스 맵핑
+            grid.className = `grid gap-4 md:gap-6 w-full grid-cols-1 md:grid-cols-${Math.min(bNames.length, 2)} lg:grid-cols-${bNames.length} print-cols-${bNames.length}`;
 
             const getF = f => {
                 if(!f) return 0;
@@ -2015,22 +2027,16 @@
                 sumPrice = calcBuildingAVM(units) / 10000; 
             }
 
-            state.simOrigPrice = sumPrice;
-            state.simOrigDep = sumDep;
-            state.simOrigRent = sumRent;
-
             document.getElementById('simBuildingName').innerText = bName;
             document.getElementById('simBuildingNamePrint').innerText = bName;
             
-            // 만원 단위 세팅
             document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
             document.getElementById('simInputDep').value = sumDep.toLocaleString();
             document.getElementById('simInputRent').value = sumRent.toLocaleString();
             
-            // 슬라이더 초기값 세팅 (max는 원본의 2배, 보증금/월세가 0이면 임의의 max 부여)
-            setupSlider('Price', sumPrice, sumPrice * 2 || 1000000);
-            setupSlider('Dep', sumDep, sumDep * 2 || 100000);
-            setupSlider('Rent', sumRent, sumRent * 2 || 10000);
+            setupSlider('Price', sumPrice, sumPrice * 1.5 || 1000000);
+            setupSlider('Dep', sumDep, sumDep * 1.5 || 100000);
+            setupSlider('Rent', sumRent, sumRent * 1.5 || 10000);
 
             document.getElementById('simulatorModal').classList.remove('hidden');
             calcSimulator();
@@ -2052,11 +2058,11 @@
             setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500);
         }
 
-        // 입력창 -> 슬라이더 동기화
-        function formatSimInput(input) {
+        function formatSimInput(input, labelId) {
             let val = input.value.replace(/,/g, '').replace(/[^0-9]/g, '');
             if(!val) val = '0';
             input.value = parseInt(val).toLocaleString();
+            document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val)); 
         }
 
         function syncSliderFromInput(type) {
@@ -2067,16 +2073,15 @@
             slider.value = val;
         }
 
-        // 슬라이더 -> 입력창 동기화
-        function syncInputFromSlider(type) {
+        function syncInputFromSlider(type, labelId) {
             const capType = type.charAt(0).toUpperCase() + type.slice(1);
             const val = document.getElementById('simSlider' + capType).value;
             const input = document.getElementById('simInput' + capType);
             input.value = parseInt(val).toLocaleString();
+            document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
         }
 
         function calcSimulator() {
-            // 만원 단위로 입력된 값
             const price = parseInt(document.getElementById('simInputPrice').value.replace(/,/g,'')) || 0;
             const dep = parseInt(document.getElementById('simInputDep').value.replace(/,/g,'')) || 0;
             const rent = parseInt(document.getElementById('simInputRent').value.replace(/,/g,'')) || 0;
@@ -2085,7 +2090,6 @@
             document.getElementById('lblSimDepKo').innerText = fmtKoreanMoney(dep);
             document.getElementById('lblSimRentKo').innerText = fmtKoreanMoney(rent);
 
-            // 인쇄용 텍스트 필드 업데이트
             document.getElementById('printValPrice').innerText = document.getElementById('lblSimPriceKo').innerText;
             document.getElementById('printValDep').innerText = document.getElementById('lblSimDepKo').innerText;
             document.getElementById('printValRent').innerText = document.getElementById('lblSimRentKo').innerText;
