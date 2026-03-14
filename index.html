@@ -196,7 +196,7 @@
 
         /* 2. 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
         @media print {
-            @page { size: landscape; margin: 10mm; }
+            @page { size: landscape; margin: 8mm; } /* 여백 최소화 */
             
             body.is-dashboard-mode:not(.is-sim-print-mode) { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 !important; padding: 0 !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) > *:not(#dashboardContainer) { display: none !important; }
@@ -205,17 +205,30 @@
                 display: block !important; position: static !important; 
                 width: 100% !important; height: auto !important; 
                 overflow: visible !important; background: white !important; 
+                padding: 0 !important;
             }
             body.is-dashboard-mode:not(.is-sim-print-mode) .no-print-dash { display: none !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only { display: block !important; }
             
-            body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid { display: block !important; width: 100% !important; clear: both; }
+            /* 핵심: Grid 대신 Float을 사용하여 A4 가로 1장에 나란히 인쇄 강제 */
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid { display: block !important; width: 100% !important; }
             
-            /* [버그 픽스] 건물 개수에 따른 동적 너비 분배 */
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 80% !important; margin: 0 auto 20px auto !important; page-break-inside: avoid !important; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; page-break-inside: avoid !important; margin-bottom: 20px !important; }
+            /* Float 버그 방지를 위한 클리어픽스(Clearfix) */
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid::after { content: ""; display: table !important; clear: both !important; }
+            
+            /* 푸터(명함)가 카드를 침범하지 않도록 강제 방어선 구축 */
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter { 
+                clear: both !important; 
+                display: block !important; 
+                margin-top: 15px !important; 
+                page-break-inside: avoid !important;
+            }
+            
+            /* 건물 개수에 따른 동적 너비 분배 (세로 여백 최소화하여 1장에 강제 안착) */
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 70% !important; margin: 0 auto 10px auto !important; page-break-inside: avoid !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; margin-bottom: 10px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card:nth-child(2n) { margin-right: 0 !important; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; page-break-inside: avoid !important; margin-bottom: 20px !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; margin-bottom: 10px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card:nth-child(3n) { margin-right: 0 !important; }
             
             body.is-dashboard-mode:not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
@@ -451,6 +464,7 @@
                 <div class="mb-5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                     <div class="flex justify-between items-end mb-3 no-print-sim">
                         <span class="text-xs font-black text-slate-500 uppercase">기본 자산 조건 (단위: 만원)</span>
+                        <button onclick="applyAvmToSimulator()" class="text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1.5 rounded border border-blue-200 transition shadow-sm flex items-center gap-1"><i class="ph-bold ph-magic-wand"></i> AVM 연동 (비율적용)</button>
                     </div>
                     
                     <div class="flex flex-col gap-4">
@@ -632,17 +646,6 @@
         </div>
     </div>
 
-    <div id="buildingModal" class="fixed inset-0 bg-black/60 z-[99999] hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) closeBuildingModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 bg-slate-50 relative z-10">
-                <div class="flex items-center gap-2"><h3 id="modalTitle" class="text-base md:text-lg font-extrabold text-slate-800">건물 정보</h3>
-                <button onclick="togglePrivacy()" class="p-1 rounded-full hover:bg-slate-200 transition" title="보안 모드 전환"><i id="modalLockIcon" class="ph-bold ph-lock-key text-slate-400"></i></button></div>
-                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1.5 md:p-2 hover:bg-slate-200 rounded-lg cursor-pointer"><i class="ph-bold ph-x pointer-events-none"></i></button>
-            </div>
-            <div id="modalContent" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"></div>
-        </div>
-    </div>
-
     <script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
@@ -665,7 +668,7 @@
             activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', 
             isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
             realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
-            isDashboardMode: false, simTarget: null
+            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -735,7 +738,6 @@
             }).join(' <span class="text-slate-300">/</span> ');
         }
         
-        // [버그 픽스] 주소록 CSV 내보내기 포맷팅 수정 (이름 공란 처리 및 점 분리)
         function exportContactsCSV() {
             let csvRows = ['First Name,Name Suffix,Phone 1 - Label,Phone 1 - Value,Organization Name,Notes,Labels'];
             const splitRegex = /[,/\n]|\s{2,}/;
@@ -2024,8 +2026,12 @@
             });
 
             if (sumPrice === 0) {
-                sumPrice = calcBuildingAVM(units) / 10000; 
+                sumPrice = calcBuildingAVM(units); 
             }
+
+            state.simOrigPrice = sumPrice;
+            state.simOrigDep = sumDep;
+            state.simOrigRent = sumRent;
 
             document.getElementById('simBuildingName').innerText = bName;
             document.getElementById('simBuildingNamePrint').innerText = bName;
@@ -2040,12 +2046,6 @@
 
             document.getElementById('simulatorModal').classList.remove('hidden');
             calcSimulator();
-        }
-
-        function setupSlider(type, val, max) {
-            const slider = document.getElementById('simSlider' + type);
-            slider.max = max;
-            slider.value = val;
         }
 
         function closeSimulator() {
@@ -2079,6 +2079,39 @@
             const input = document.getElementById('simInput' + capType);
             input.value = parseInt(val).toLocaleString();
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
+        }
+
+        // [버그 픽스] AVM 연동 (비율 기반) 적용 함수
+        function applyAvmToSimulator() {
+            if(!state.simTarget) return;
+            const units = state.allData.filter(d => d.building === state.simTarget);
+            const avmPrice = Math.round(calcBuildingAVM(units)); 
+            if(avmPrice <= 0) {
+                alert("AVM 가치를 산출할 수 있는 데이터가 부족합니다.");
+                return;
+            }
+
+            let ratio = 1;
+            if(state.simOrigPrice > 0) {
+                ratio = avmPrice / state.simOrigPrice;
+            }
+
+            const newDep = Math.round(state.simOrigDep * ratio);
+            const newRent = Math.round(state.simOrigRent * ratio);
+
+            document.getElementById('simInputPrice').value = avmPrice.toLocaleString();
+            document.getElementById('simInputDep').value = newDep.toLocaleString();
+            document.getElementById('simInputRent').value = newRent.toLocaleString();
+            
+            syncSliderFromInput('price');
+            syncSliderFromInput('dep');
+            syncSliderFromInput('rent');
+            
+            formatSimInput(document.getElementById('simInputPrice'), 'lblSimPriceKo');
+            formatSimInput(document.getElementById('simInputDep'), 'lblSimDepKo');
+            formatSimInput(document.getElementById('simInputRent'), 'lblSimRentKo');
+
+            calcSimulator();
         }
 
         function calcSimulator() {
