@@ -158,63 +158,90 @@
             .detail-panel-base.show { transform: translateX(0); }
         }
 
-        /* 캡처 시 공백 생기는 버그 방지용 임시 컨테이너 */
+        /* 캡처 임시 컨테이너 */
         #offscreen-capture-container {
-            position: absolute; top: -9999px; left: -9999px;
-            width: 1000px; 
-            background: white; padding: 20px; border-radius: 12px;
-            margin: 0; z-index: -9999;
+            position: absolute; top: -9999px; left: -9999px; width: 1000px; 
+            background: white; padding: 20px; border-radius: 12px; margin: 0; z-index: -9999;
         }
         #offscreen-capture-container .no-print { display: none !important; }
         #offscreen-capture-container .print-only { display: block !important; }
         #offscreen-capture-container textarea { display: none !important; }
         #offscreen-capture-container #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; }
 
-        @media print {
-            @page { margin: 10mm; } 
-            
-            body > *:not(#compareModal) { display: none !important; }
-            body { height: auto !important; background: white !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
-            
-            #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; overflow: visible !important; padding: 0 !important; }
-            .modal-backdrop { background: none !important; align-items: start !important; }
-            .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
-            #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; width: 100% !important; }
-            
-            .no-print { display: none !important; }
-            #compareModal .print-only { display: block !important; }
-            
-            table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; margin-bottom: 20px; }
-            th, td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
-            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            
-            #printTitle { font-size: 1.25rem !important; }
-            .mt-6 { margin-top: 0.75rem !important; }
-            .mb-6 { margin-bottom: 0.75rem !important; }
-            .mt-8 { margin-top: 0.75rem !important; }
-            .pt-4 { padding-top: 0.5rem !important; }
-            .p-8 { padding: 0.5rem !important; }
-            
-            textarea { display: none !important; }
-            #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; page-break-inside: avoid; margin-bottom: 20px; }
+        /* [Step 4 대시보드 조작부 스타일] */
+        .dash-input { @apply w-full text-right border border-slate-300 rounded-lg p-2 font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner; }
+        .dash-input-group { @apply flex items-center gap-2 mb-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm; }
+        .slider-range { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; outline: none; }
+        .slider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #059669; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
-            .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
-            #page2Container.active { display: block !important; }
+        /* ---------------------------------------------------- */
+        /* 🖨️ 인쇄 모드 격리 (비교견적서 vs 대시보드)          */
+        /* ---------------------------------------------------- */
+
+        /* 1. 일반 맵/비교견적서 인쇄 모드 */
+        @media print {
+            body:not(.is-dashboard-mode) { height: auto !important; background: white !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+            body:not(.is-dashboard-mode) > *:not(#compareModal) { display: none !important; }
             
-            /* 인쇄/화면 일치를 위해 Tailwind 클래스(grid-cols-x)를 강제 맵핑 */
-            #page2DynamicContent { display: grid !important; gap: 15px !important; width: 100% !important; align-items: start !important; }
-            #page2DynamicContent.grid-cols-1 { grid-template-columns: 1fr !important; }
-            #page2DynamicContent.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-            #page2DynamicContent.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            body:not(.is-dashboard-mode) #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; overflow: visible !important; padding: 0 !important; }
+            body:not(.is-dashboard-mode) .modal-backdrop { background: none !important; align-items: start !important; }
+            body:not(.is-dashboard-mode) .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
+            body:not(.is-dashboard-mode) #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; width: 100% !important; }
             
-            #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+            body:not(.is-dashboard-mode) .no-print { display: none !important; }
+            body:not(.is-dashboard-mode) #compareModal .print-only { display: block !important; }
             
-            .editable-image-box { border: 1px solid #cbd5e1 !important; border-color: #cbd5e1 !important; background: white !important; page-break-inside: avoid !important; height: 180px !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; padding: 2px !important; }
-            .editable-image-box img { max-height: 180px !important; max-width: 100% !important; object-fit: contain !important; display: block !important; }
+            body:not(.is-dashboard-mode) table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; margin-bottom: 20px; }
+            body:not(.is-dashboard-mode) th, body:not(.is-dashboard-mode) td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
+            body:not(.is-dashboard-mode) th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; text-align: center !important; width: 100% !important; padding: 4px !important; }
-            .url-input::placeholder { color: transparent !important; }
+            body:not(.is-dashboard-mode) #printTitle { font-size: 1.25rem !important; }
+            body:not(.is-dashboard-mode) textarea { display: none !important; }
+            body:not(.is-dashboard-mode) #compareMemoPrint { display: block !important; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; white-space: pre-wrap; border-color: #94a3b8 !important; page-break-inside: avoid; margin-bottom: 20px; }
+
+            body:not(.is-dashboard-mode) .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
+            body:not(.is-dashboard-mode) #page2Container.active { display: block !important; }
+            
+            body:not(.is-dashboard-mode) #page2DynamicContent { display: grid !important; gap: 15px !important; width: 100% !important; align-items: start !important; }
+            body:not(.is-dashboard-mode) #page2DynamicContent.grid-cols-1 { grid-template-columns: 1fr !important; }
+            body:not(.is-dashboard-mode) #page2DynamicContent.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            body:not(.is-dashboard-mode) #page2DynamicContent.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            
+            body:not(.is-dashboard-mode) #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+            body:not(.is-dashboard-mode) .editable-image-box { border: 1px solid #cbd5e1 !important; border-color: #cbd5e1 !important; background: white !important; page-break-inside: avoid !important; height: 180px !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; padding: 2px !important; }
+            body:not(.is-dashboard-mode) .editable-image-box img { max-height: 180px !important; max-width: 100% !important; object-fit: contain !important; display: block !important; }
+            body:not(.is-dashboard-mode) .url-input { border: none !important; font-weight: bold !important; text-decoration: underline !important; color: #2563eb !important; background: transparent !important; text-align: center !important; width: 100% !important; padding: 4px !important; }
+            body:not(.is-dashboard-mode) .url-input::placeholder { color: transparent !important; }
         }
+
+        /* 2. 대시보드 전용 인쇄 모드 (Step 4) */
+        @media print {
+            body.is-dashboard-mode { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body.is-dashboard-mode > *:not(#dashboardContainer) { display: none !important; }
+            
+            body.is-dashboard-mode #dashboardContainer { 
+                display: block !important; position: static !important; 
+                width: 100% !important; height: auto !important; 
+                overflow: visible !important; background: white !important; 
+                padding: 10mm !important; /* A4 여백 */
+            }
+
+            /* 조작부(슬라이더 등) 및 불필요 버튼 강제 숨김 */
+            body.is-dashboard-mode .no-print-dash { display: none !important; }
+            body.is-dashboard-mode .print-dash-only { display: block !important; }
+            
+            /* 그리드 레이아웃 유지 */
+            body.is-dashboard-mode .lg\:grid-cols-3 { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 20px !important; }
+            body.is-dashboard-mode .lg\:col-span-2 { grid-column: span 2 / span 2 !important; }
+            
+            /* 명함 Footer 표시 */
+            body.is-dashboard-mode #dashPrintFooter { display: block !important; margin-top: 30px !important; }
+            
+            /* 스크롤영역 강제 해제 */
+            body.is-dashboard-mode .overflow-x-auto { overflow: visible !important; }
+            body.is-dashboard-mode .shadow-lg { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+        }
+
     </style>
 </head>
 <body class="text-slate-900">
@@ -236,7 +263,7 @@
         </div>
     </div>
 
-    <header class="brand-header flex flex-col z-50 shadow-lg flex-shrink-0 no-print py-2 px-4 w-full relative">
+    <header id="mainHeader" class="brand-header flex flex-col z-50 shadow-lg flex-shrink-0 no-print py-2 px-4 w-full relative">
         <div class="flex items-center justify-between w-full">
             <div class="flex items-center gap-2">
                 <h1 class="text-lg md:text-xl font-extrabold flex items-center gap-2 text-yellow-300">
@@ -244,10 +271,15 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.0</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.5</span>
             </div>
             
             <div class="flex items-center gap-2">
+                <button id="btnDashboard" onclick="toggleDashboard()" class="items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-emerald-900 rounded-lg text-xs md:text-sm cursor-pointer font-extrabold shadow-sm transition flex">
+                    <i class="ph-bold ph-chart-line-up"></i>
+                    <span class="hidden md:inline">투자 분석</span>
+                </button>
+
                 <button id="btnExportCSV" onclick="exportContactsCSV()" class="hidden items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs md:text-sm cursor-pointer font-bold shadow-sm transition">
                     <i class="ph-bold ph-address-book"></i>
                     <span class="hidden md:inline">주소록 추출</span>
@@ -319,7 +351,7 @@
         <div id="historyChipsContainer" class="flex gap-2 p-1 bg-slate-50 rounded-lg px-2 flex-nowrap flex-shrink-0"></div>
     </div>
 
-    <main class="flex-1 flex relative w-full overflow-hidden">
+    <main id="mainContentArea" class="flex-1 flex relative w-full overflow-hidden">
         <aside class="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] no-print">
             <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center"><label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none hover:text-emerald-700 transition"><input type="checkbox" id="checkAllBuildings" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" checked><span>건물 목록</span></label><span id="buildingCountBadge" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">0/0</span></div>
             <div id="buildingList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
@@ -352,6 +384,194 @@
             <div id="detailContent" class="flex-1 overflow-y-auto p-4 md:p-6 pb-12"><div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60"><i class="ph-duotone ph-hand-tap text-4xl mb-2"></i><p class="text-sm font-bold">호실을 선택해주세요</p></div></div>
         </aside>
     </main>
+
+    <div id="dashboardContainer" class="hidden absolute inset-0 z-[100] bg-slate-100 flex-col overflow-y-auto pb-20">
+        
+        <div class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm no-print-dash">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleDashboard()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition"><i class="ph-bold ph-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-black text-slate-800 flex items-center gap-2"><i class="ph-fill ph-chart-line-up text-emerald-600"></i> 전문 투자 분석 보고서</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="printDashboard()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition"><i class="ph-bold ph-printer"></i> 1장 요약 인쇄</button>
+            </div>
+        </div>
+
+        <div id="dashPrintContent" class="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1">
+            
+            <div class="hidden print-dash-only mb-6 border-b-2 border-slate-800 pb-2">
+                <h1 class="text-2xl font-black text-slate-900">상업용 부동산 투자 가치 평가 (Valuation)</h1>
+                <p class="text-sm text-slate-500 mt-1" id="dashPrintDate"></p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-4 md:p-6 mb-6 no-print-dash relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                <h3 class="text-sm font-extrabold text-slate-700 mb-3 flex items-center gap-1"><i class="ph-fill ph-buildings text-emerald-600"></i> 1. 분석 대상 건물 선택 (단일 타겟)</h3>
+                <select id="dashBuildingSelect" class="w-full md:w-1/3 border border-slate-300 rounded-lg p-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none shadow-sm" onchange="runDashboardAnalysis()">
+                    <option value="">건물을 선택하세요 (데이터 로드 필요)</option>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-2">* 엑셀 원장에 입력된 층별 데이터를 기반으로 평균 매매/임대 단가와 수익률을 재계산합니다.</p>
+            </div>
+
+            <div id="dashResultArea" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+                
+                <div class="lg:col-span-2 space-y-6 w-full flex flex-col">
+                    <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex-1">
+                        <div class="bg-slate-800 px-5 py-3 flex justify-between items-center">
+                            <h3 class="text-white font-bold text-sm flex items-center gap-2"><i class="ph-bold ph-list-numbers text-emerald-400"></i> <span id="dashTargetName" class="text-emerald-400 font-black"></span> Tier별 펀더멘털 분석</h3>
+                        </div>
+                        <div class="overflow-x-auto p-4">
+                            <table class="w-full text-xs md:text-sm text-center border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-600 border-b-2 border-slate-300">
+                                        <th class="py-3 px-2 font-black">분류 (Tier)</th>
+                                        <th class="py-3 px-2 font-bold">표본(호실)</th>
+                                        <th class="py-3 px-2 font-bold">임대 평단가</th>
+                                        <th class="py-3 px-2 font-bold">매매 평단가</th>
+                                        <th class="py-3 px-2 font-bold">평균 수익률</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashTierTableBody" class="divide-y divide-slate-100">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 rounded-xl border border-yellow-200 p-4">
+                        <h4 class="text-xs font-black text-yellow-800 mb-2 flex items-center gap-1"><i class="ph-fill ph-chat-teardrop-text"></i> 전문가 종합 의견</h4>
+                        <textarea id="dashCommentInput" class="w-full bg-white border border-yellow-300 rounded p-3 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 no-print-dash" placeholder="컨설팅 의견을 작성하세요 (인쇄 시 출력됩니다)"></textarea>
+                        <div id="dashCommentPrint" class="hidden print-dash-only text-sm whitespace-pre-wrap font-medium text-slate-800 leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full w-full">
+                    <div class="bg-emerald-700 px-5 py-3 border-b border-emerald-800">
+                        <h3 class="text-white font-bold text-sm flex items-center gap-2"><i class="ph-bold ph-sliders text-yellow-300"></i> 가치평가 & 실투자 시뮬레이터</h3>
+                    </div>
+                    
+                    <div class="p-5 flex-1 flex flex-col">
+                        <div class="mb-5">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Asset Valuation</span>
+                                <button onclick="resetDashInputs()" class="text-[9px] text-blue-500 hover:underline no-print-dash">원장 데이터로 리셋</button>
+                            </div>
+                            
+                            <div class="dash-input-group no-print-dash">
+                                <span class="text-xs font-bold text-slate-600 w-16">매매가</span>
+                                <input type="text" id="simInputPrice" class="dash-input flex-1 text-red-600" onkeyup="formatDashNumber(this); calcSimulator();">
+                                <span class="text-xs font-bold text-slate-400">원</span>
+                            </div>
+                            <div class="dash-input-group no-print-dash">
+                                <span class="text-xs font-bold text-slate-600 w-16">총 보증금</span>
+                                <input type="text" id="simInputDep" class="dash-input flex-1" onkeyup="formatDashNumber(this); calcSimulator();">
+                                <span class="text-xs font-bold text-slate-400">원</span>
+                            </div>
+                            <div class="dash-input-group no-print-dash">
+                                <span class="text-xs font-bold text-slate-600 w-16">총 월세</span>
+                                <input type="text" id="simInputRent" class="dash-input flex-1 text-emerald-600" onkeyup="formatDashNumber(this); calcSimulator();">
+                                <span class="text-xs font-bold text-slate-400">원</span>
+                            </div>
+
+                            <div class="hidden print-dash-only space-y-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <div class="flex justify-between"><span class="text-xs font-bold text-slate-500">목표 매매가</span><span class="text-sm font-black text-red-600" id="printSimPrice"></span></div>
+                                <div class="flex justify-between"><span class="text-xs font-bold text-slate-500">예상 보증금</span><span class="text-sm font-bold text-slate-700" id="printSimDep"></span></div>
+                                <div class="flex justify-between"><span class="text-xs font-bold text-slate-500">예상 월세</span><span class="text-sm font-black text-emerald-700" id="printSimRent"></span></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6 pt-4 border-t border-slate-100">
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-3">Leverage Settings</span>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="font-bold text-slate-600">대출 비율 (LTV)</span>
+                                    <span class="font-black text-blue-600"><span id="lblLtv">60</span>%</span>
+                                </div>
+                                <input type="range" id="simLtv" min="0" max="90" step="5" value="60" class="slider-range no-print-dash" oninput="document.getElementById('lblLtv').innerText=this.value; calcSimulator();">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="font-bold text-slate-600">예상 대출 금리</span>
+                                    <span class="font-black text-orange-600"><span id="lblRate">4.5</span>%</span>
+                                </div>
+                                <input type="range" id="simRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range no-print-dash" oninput="document.getElementById('lblRate').innerText=parseFloat(this.value).toFixed(1); calcSimulator();">
+                            </div>
+
+                            <div class="mb-2">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="font-bold text-slate-600">취등록세 등 부대비용</span>
+                                    <span class="font-black text-slate-600"><span id="lblTax">4.6</span>%</span>
+                                </div>
+                                <input type="range" id="simTax" min="0" max="6.0" step="0.1" value="4.6" class="slider-range no-print-dash" oninput="document.getElementById('lblTax').innerText=parseFloat(this.value).toFixed(1); calcSimulator();">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800 rounded-xl p-4 text-white mt-auto shadow-inner border border-slate-700">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs text-slate-300 font-bold">명목 수익률 (Cap Rate)</span>
+                                <span class="text-lg font-black text-yellow-400" id="resCapRate">0.00%</span>
+                            </div>
+                            <div class="w-full h-px bg-slate-600 mb-3"></div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금포함)</span>
+                                    <span class="font-bold" id="resTotalCost">0원</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400 font-medium text-xs">대출 금액</span>
+                                    <span class="font-bold text-blue-300" id="resLoan">0원</span>
+                                </div>
+                                <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1">
+                                    <span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span>
+                                    <span class="font-black text-emerald-400" id="resCash">0원</span>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full h-px bg-slate-600 my-3"></div>
+                            
+                            <div class="space-y-2 text-sm mb-4">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400 font-medium text-xs">월 대출 이자</span>
+                                    <span class="font-bold text-orange-300" id="resInterest">0원</span>
+                                </div>
+                                <div class="flex justify-between bg-slate-700 p-2 rounded-lg">
+                                    <span class="text-slate-200 font-bold text-xs">월 순수익 (이자 공제)</span>
+                                    <span class="font-black text-white" id="resNetMonthly">0원</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md">
+                                <span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span>
+                                <span class="text-xl font-black text-white drop-shadow-sm" id="resRoe">0.00%</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashPrintFooter" class="hidden print-dash-only pt-6 border-t border-slate-200 rounded-lg p-5 mt-8" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="font-bold text-lg" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소</p>
+                        <p class="text-sm mt-1" style="color: #fde047 !important;">대표 공인중개사 양 선 휘</p>
+                        <p class="text-xs mt-0.5" style="color: #fde047 !important;">경기도 용인시 수지구 상현동 1131</p>
+                        <p class="text-sm mt-1 font-bold" style="color: #fb923c !important;">상현역 1번출구</p>
+                        <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">031-255-7373</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-bold" style="color: #fde047 !important;">송 영 재 이사</p>
+                        <p class="text-xs mt-1" style="color: #fde047 !important;">상가 및 투자 상담</p>
+                        <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">010-6570-7475</p>
+                        <p class="text-sm font-sans mt-0.5" style="color: #fde047 !important;">vsong.w.zest@gmail.com</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 
     <div id="comparisonBar" class="hidden-bar no-print">
         <div class="flex items-center gap-2 text-sm font-bold"><i class="ph-fill ph-shopping-cart text-yellow-300 text-lg"></i> <span class="hidden md:inline">비교함</span> <span id="compareCount" class="bg-white text-emerald-800 px-2 py-0.5 rounded-full text-xs">0</span></div>
@@ -431,17 +651,6 @@
         </div>
     </div>
 
-    <div id="buildingModal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) closeBuildingModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full md:w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 bg-slate-50 relative z-10">
-                <div class="flex items-center gap-2"><h3 id="modalTitle" class="text-base md:text-lg font-extrabold text-slate-800">건물 정보</h3>
-                <button onclick="togglePrivacy()" class="p-1 rounded-full hover:bg-slate-200 transition" title="보안 모드 전환"><i id="modalLockIcon" class="ph-bold ph-lock-key text-slate-400"></i></button></div>
-                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1.5 md:p-2 hover:bg-slate-200 rounded-lg cursor-pointer"><i class="ph-bold ph-x pointer-events-none"></i></button>
-            </div>
-            <div id="modalContent" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"></div>
-        </div>
-    </div>
-
     <script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
@@ -463,7 +672,10 @@
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
             activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', 
             isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
-            realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null
+            realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
+            // [Step 4] 대시보드 상태 관리
+            isDashboardMode: false, dashTargetBuilding: null,
+            dashOrigPrice: 0, dashOrigDep: 0, dashOrigRent: 0
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -943,7 +1155,11 @@
             });
             
             state.checkedBuildings = new Set(state.buildings);
-            updateExits(); document.getElementById('statusToggleBar').classList.remove('hidden'); document.getElementById('emptyState').classList.add('hidden'); document.getElementById('stackingContainer').classList.remove('hidden'); renderList(); renderStacking();
+            updateExits(); 
+            document.getElementById('statusToggleBar').classList.remove('hidden'); 
+            document.getElementById('emptyState').classList.add('hidden'); 
+            document.getElementById('stackingContainer').classList.remove('hidden'); 
+            renderList(); renderStacking();
         }
 
         function normalizeStatus(st) {
@@ -962,15 +1178,12 @@
         function checkMatch(d) {
             if (state.search) { 
                 const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
-                
-                // [버그 픽스] 무권리 필터 명확화 (임대관련 상태만 적용)
                 let extraTags = "";
                 const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
                 const isRentListing = allowedRentStatuses.includes(d.status) && (d.total_deposit > 0 || d.total_rent > 0);
                 if (isRentListing && d.total_premium === 0) {
                     extraTags += " 무권리";
                 }
-                
                 const txt = `${d.building} ${d.unit} ${d.store_name} ${d.tenant} ${d.memo} ${d.rawStatus} ${d.owner} ${d.owner_tel} ${d.tenant_tel} ${d.floor}층${extraTags}`.toLowerCase();
                 const isMatch = terms.every(term => txt.includes(term));
                 if (!isMatch) return false;
@@ -1099,7 +1312,6 @@
                             const groupClass = u.group_id ? 'is-grouped' : '';
                             let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
                             
-                            // [버그 픽스] 무권리 조건 한정 (임대/매매임대/타부동산 중 보증금/월세가 있는 건만)
                             let noPremiumBadge = '';
                             const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
                             const isRentListing = allowedRentStatuses.includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
@@ -1269,8 +1481,6 @@
             page2Container.innerHTML = '';
             
             let targetList = processedList.slice(0, 3);
-            
-            // [버그 픽스] 화면과 인쇄 공유 시 완벽한 3단 렌더링을 위해 Tailwind 클래스로 명시 지정
             let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
             page2Container.className = `grid ${colsClass} gap-4 w-full`;
             
@@ -1545,7 +1755,6 @@
             const impBadge = d.is_imp ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm flex items-center gap-1"><i class="ph-fill ph-star"></i> 중요</span>' : '';
             const qBadge = d.is_question ? '<span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm flex items-center gap-1 animate-pulse"><i class="ph-bold ph-question"></i> 재확인</span>' : '';
 
-            // [버그 픽스] 무권리 상세 패널 표시 로직
             let noPremiumDetailBadge = '';
             const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
             const isRentListingDet = allowedRentStatuses.includes(d.status) && (sumDep > 0 || sumRent > 0);
@@ -1572,6 +1781,225 @@
             document.getElementById('detailPanel').classList.remove('show'); 
             document.getElementById('detailBackdrop').classList.add('hidden');
         }
+
+        // ==========================================
+        // [Step 4] 전문 투자 분석 대시보드 로직
+        // ==========================================
+
+        function toggleDashboard() {
+            state.isDashboardMode = !state.isDashboardMode;
+            const mainArea = document.getElementById('mainContentArea');
+            const filterArea = document.getElementById('mainFilters');
+            const dashArea = document.getElementById('dashboardContainer');
+            const btn = document.getElementById('btnDashboard');
+
+            if (state.isDashboardMode) {
+                document.body.classList.add('is-dashboard-mode');
+                mainArea.classList.add('hidden');
+                if(!filterArea.classList.contains('hidden')) filterArea.classList.add('md:hidden');
+                dashArea.classList.replace('hidden', 'flex');
+                btn.innerHTML = `<i class="ph-bold ph-map-trifold"></i><span class="hidden md:inline">지도로 돌아가기</span>`;
+                btn.classList.replace('bg-yellow-500', 'bg-white');
+                initDashboard();
+            } else {
+                document.body.classList.remove('is-dashboard-mode');
+                mainArea.classList.remove('hidden');
+                filterArea.classList.remove('md:hidden');
+                dashArea.classList.replace('flex', 'hidden');
+                btn.innerHTML = `<i class="ph-bold ph-chart-line-up"></i><span class="hidden md:inline">투자 분석</span>`;
+                btn.classList.replace('bg-white', 'bg-yellow-500');
+            }
+        }
+
+        function initDashboard() {
+            if(state.buildings.length === 0) {
+                alert("엑셀 데이터를 먼저 불러와 주세요.");
+                toggleDashboard();
+                return;
+            }
+            
+            // 건물 셀렉트박스 채우기
+            const select = document.getElementById('dashBuildingSelect');
+            select.innerHTML = '<option value="">건물을 선택하세요</option>';
+            state.buildings.forEach(b => {
+                select.innerHTML += `<option value="${b}">${b}</option>`;
+            });
+
+            // 체크된 건물이 있으면 첫번째 건물을 기본으로 선택
+            if(state.checkedBuildings.size > 0) {
+                const firstChecked = Array.from(state.checkedBuildings)[0];
+                select.value = firstChecked;
+                runDashboardAnalysis();
+            }
+            
+            document.getElementById('dashPrintDate').innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function runDashboardAnalysis() {
+            const bName = document.getElementById('dashBuildingSelect').value;
+            if(!bName) {
+                document.getElementById('dashResultArea').classList.add('hidden');
+                return;
+            }
+
+            state.dashTargetBuilding = bName;
+            document.getElementById('dashTargetName').innerText = bName;
+            document.getElementById('dashResultArea').classList.remove('hidden');
+
+            const units = state.allData.filter(d => d.building === bName);
+
+            // 1. Tier 렌더링
+            renderTierTable(units);
+
+            // 2. 기본 가치 합산 (통상가 기준 - 모든 호실의 매매가, 보증금, 월세 합산)
+            let sumPrice = 0, sumDep = 0, sumRent = 0;
+            // 중복 합산을 막기 위해 그룹 아이디 처리
+            let processedGroups = new Set();
+            units.forEach(u => {
+                let gid = u.unique_group_id || `single_${u.id}`; 
+                if (processedGroups.has(gid)) return; 
+                processedGroups.add(gid);
+                
+                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                members.forEach(m => {
+                    sumPrice += (m.price_sell || 0);
+                    sumDep += (m.deposit || 0);
+                    sumRent += (m.rent || 0);
+                });
+            });
+
+            // 원본 데이터 백업 및 UI 세팅
+            state.dashOrigPrice = sumPrice;
+            state.dashOrigDep = sumDep;
+            state.dashOrigRent = sumRent;
+
+            document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
+            document.getElementById('simInputDep').value = sumDep.toLocaleString();
+            document.getElementById('simInputRent').value = sumRent.toLocaleString();
+
+            calcSimulator();
+        }
+
+        function renderTierTable(units) {
+            const getFloorNum = f => {
+                if(!f) return 0;
+                if(f.includes('B')) return -parseInt(f.replace('B',''));
+                return parseInt(f.replace(/\D/g,'')) || 0;
+            };
+
+            const tiers = [
+                { id: '1f_front', label: '1층 (전면/대로변)', filter: u => getFloorNum(u.floor)===1 && ['전면','코너','대로변'].some(p => u.pos.includes(p)) },
+                { id: '1f_back', label: '1층 (후면/내측)', filter: u => getFloorNum(u.floor)===1 && ['후면','내측','측면'].some(p => u.pos.includes(p)) },
+                { id: '1f_total', label: '1층 전체 평균', filter: u => getFloorNum(u.floor)===1, isTotal: true },
+                { id: '2f', label: '2층', filter: u => getFloorNum(u.floor)===2 },
+                { id: '3f_up', label: '3층 이상 (상층부)', filter: u => getFloorNum(u.floor)>=3 }
+            ];
+
+            let html = '';
+            tiers.forEach(t => {
+                const tUnits = units.filter(t.filter);
+                if(tUnits.length === 0) return;
+
+                let processedGroups = new Set();
+                let gPrice = 0, gRent = 0, gArea = 0, gDep = 0;
+                
+                tUnits.forEach(u => {
+                    let gid = u.unique_group_id || `single_${u.id}`; 
+                    if (processedGroups.has(gid)) return; 
+                    processedGroups.add(gid);
+                    
+                    let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                    members.forEach(m => {
+                        gPrice += (m.price_sell || 0);
+                        gRent += (m.rent || 0);
+                        gDep += (m.deposit || 0);
+                        gArea += (m.area_p || 0);
+                    });
+                });
+
+                const avgPrice = gArea > 0 ? (gPrice / gArea) : 0;
+                const avgRent = gArea > 0 ? (gRent / gArea) : 0;
+                let yieldRate = 0;
+                if(gPrice > 0 && gRent > 0) {
+                    const cost = gPrice - gDep;
+                    if(cost > 0) yieldRate = ((gRent * 12) / cost * 100).toFixed(1);
+                }
+
+                const trClass = t.isTotal ? "bg-emerald-50/50 font-bold border-b-2 border-emerald-200" : "";
+                
+                html += `<tr class="${trClass} hover:bg-slate-50 transition">
+                    <td class="py-3 px-2 text-slate-700 font-bold border-r border-slate-100">${t.label}</td>
+                    <td class="py-3 px-2 text-slate-500">${tUnits.length}개</td>
+                    <td class="py-3 px-2 text-emerald-700 font-bold">${fmtRentAvg(avgRent)}</td>
+                    <td class="py-3 px-2 text-red-600 font-bold">${fmtSellAvg(avgPrice)}</td>
+                    <td class="py-3 px-2 text-red-500 font-bold">${yieldRate > 0 ? yieldRate+'%' : '-'}</td>
+                </tr>`;
+            });
+
+            document.getElementById('dashTierTableBody').innerHTML = html;
+        }
+
+        function formatDashNumber(input) {
+            let val = input.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+            if(!val) val = '0';
+            input.value = parseInt(val).toLocaleString();
+        }
+
+        function resetDashInputs() {
+            document.getElementById('simInputPrice').value = state.dashOrigPrice.toLocaleString();
+            document.getElementById('simInputDep').value = state.dashOrigDep.toLocaleString();
+            document.getElementById('simInputRent').value = state.dashOrigRent.toLocaleString();
+            calcSimulator();
+        }
+
+        function calcSimulator() {
+            // 1. 값 읽어오기
+            const price = parseInt(document.getElementById('simInputPrice').value.replace(/,/g,'')) || 0;
+            const dep = parseInt(document.getElementById('simInputDep').value.replace(/,/g,'')) || 0;
+            const rent = parseInt(document.getElementById('simInputRent').value.replace(/,/g,'')) || 0;
+
+            const ltv = parseFloat(document.getElementById('simLtv').value) / 100;
+            const rate = parseFloat(document.getElementById('simRate').value) / 100;
+            const taxRate = parseFloat(document.getElementById('simTax').value) / 100;
+
+            // 2. 인쇄용 텍스트 필드 업데이트
+            document.getElementById('printSimPrice').innerText = price.toLocaleString() + ' 원';
+            document.getElementById('printSimDep').innerText = dep.toLocaleString() + ' 원';
+            document.getElementById('printSimRent').innerText = rent.toLocaleString() + ' 원';
+
+            // 3. 연산
+            // 명목 수익률 = (월세*12) / (매매가-보증금)
+            let capRate = 0;
+            const pureCost = price - dep;
+            if(pureCost > 0 && rent > 0) capRate = ((rent * 12) / pureCost * 100);
+            
+            const tax = price * taxRate;
+            const totalCost = price + tax;
+            const loanAmount = price * ltv;
+            const cashNeeded = totalCost - loanAmount - dep;
+
+            const monthlyInterest = (loanAmount * rate) / 12;
+            const netMonthly = rent - monthlyInterest;
+
+            let roe = 0;
+            if(cashNeeded > 0 && netMonthly > 0) roe = ((netMonthly * 12) / cashNeeded * 100);
+
+            // 4. 화면 출력
+            document.getElementById('resCapRate').innerText = capRate.toFixed(2) + '%';
+            document.getElementById('resTotalCost').innerText = Math.round(totalCost/10000).toLocaleString() + '만원';
+            document.getElementById('resLoan').innerText = Math.round(loanAmount/10000).toLocaleString() + '만원';
+            document.getElementById('resCash').innerText = Math.round(cashNeeded/10000).toLocaleString() + '만원';
+            document.getElementById('resInterest').innerText = Math.round(monthlyInterest/10000).toLocaleString() + '만원';
+            document.getElementById('resNetMonthly').innerText = Math.round(netMonthly/10000).toLocaleString() + '만원';
+            document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
+        }
+
+        function printDashboard() {
+            // 코멘트 인쇄용 전환
+            document.getElementById('dashCommentPrint').innerHTML = document.getElementById('dashCommentInput').value.replace(/\n/g, '<br>');
+            window.print();
+        }
+
     </script>
 </body>
 </html>
