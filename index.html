@@ -196,7 +196,7 @@
 
         /* 2. 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
         @media print {
-            @page { size: landscape; margin: 8mm; } /* 여백 최소화 */
+            @page { size: landscape; margin: 5mm; } /* 여백 극소화 */
             
             body.is-dashboard-mode:not(.is-sim-print-mode) { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 !important; padding: 0 !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) > *:not(#dashboardContainer) { display: none !important; }
@@ -208,7 +208,8 @@
                 padding: 0 !important;
             }
             body.is-dashboard-mode:not(.is-sim-print-mode) .no-print-dash { display: none !important; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only { display: block !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only { display: block !important; margin-bottom: 10px !important; padding-bottom: 0 !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only h1 { font-size: 1.25rem !important; }
             
             /* 핵심: Grid 대신 Float을 사용하여 A4 가로 1장에 나란히 인쇄 강제 */
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid { display: block !important; width: 100% !important; }
@@ -216,19 +217,21 @@
             /* Float 버그 방지를 위한 클리어픽스(Clearfix) */
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid::after { content: ""; display: table !important; clear: both !important; }
             
-            /* 푸터(명함)가 카드를 침범하지 않도록 강제 방어선 구축 */
+            /* 푸터(명함) 슬림화 및 위치 방어선 구축 (위로 침범 불가) */
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter { 
                 clear: both !important; 
                 display: block !important; 
-                margin-top: 15px !important; 
+                margin-top: 10px !important; 
+                padding: 8px 15px !important; /* 패딩 대폭 축소 */
                 page-break-inside: avoid !important;
             }
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter p { margin: 0 !important; line-height: 1.4 !important; }
             
             /* 건물 개수에 따른 동적 너비 분배 (세로 여백 최소화하여 1장에 강제 안착) */
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 70% !important; margin: 0 auto 10px auto !important; page-break-inside: avoid !important; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; margin-bottom: 10px !important; page-break-inside: avoid !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 100% !important; max-width: 800px !important; margin: 0 auto 5px auto !important; page-break-inside: avoid !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; margin-bottom: 5px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card:nth-child(2n) { margin-right: 0 !important; }
-            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; margin-bottom: 10px !important; page-break-inside: avoid !important; }
+            body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; margin-bottom: 5px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card:nth-child(3n) { margin-right: 0 !important; }
             
             body.is-dashboard-mode:not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
@@ -249,6 +252,8 @@
             body.is-sim-print-mode .text-white { color: #0f172a !important; }
             body.is-sim-print-mode .text-yellow-400 { color: #b45309 !important; }
             body.is-sim-print-mode .text-emerald-400 { color: #047857 !important; }
+            
+            body.is-sim-print-mode #simPrintFooter { clear: both !important; display: block !important; margin-top: 20px !important; padding: 10px 15px !important; page-break-inside: avoid !important; }
         }
     </style>
 </head>
@@ -279,7 +284,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.6</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.7</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -426,20 +431,15 @@
             <div id="dashMacroGrid" class="grid gap-4 md:gap-6 w-full">
                 </div>
             
-            <div id="dashPrintFooter" class="hidden print-dash-only pt-6 border-t border-slate-200 rounded-lg p-5 mt-8" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                <div class="flex justify-between items-end">
-                    <div>
-                        <p class="font-bold text-lg" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소</p>
-                        <p class="text-sm mt-1" style="color: #fde047 !important;">대표 공인중개사 양 선 휘</p>
-                        <p class="text-xs mt-0.5" style="color: #fde047 !important;">경기도 용인시 수지구 상현동 1131</p>
-                        <p class="text-sm mt-1 font-bold" style="color: #fb923c !important;">상현역 1번출구</p>
-                        <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">031-255-7373</p>
+            <div id="dashPrintFooter" class="hidden print-dash-only border-t-2 border-emerald-800 rounded-lg" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <div class="flex justify-between items-center w-full">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">상현역 1번출구 031-255-7373</p>
                     </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold" style="color: #fde047 !important;">송 영 재 이사</p>
-                        <p class="text-xs mt-1" style="color: #fde047 !important;">상가 및 투자 상담</p>
-                        <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">010-6570-7475</p>
-                        <p class="text-sm font-sans mt-0.5" style="color: #fde047 !important;">vsong.w.zest@gmail.com</p>
+                    <div class="text-right flex-1">
+                        <p class="text-sm font-bold" style="color: #fde047 !important;">송영재 이사 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">상가 및 투자 상담</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">vsong.w.zest@gmail.com</span></p>
                     </div>
                 </div>
             </div>
@@ -462,14 +462,19 @@
 
             <div class="p-5 flex-1 flex flex-col bg-slate-50">
                 <div class="mb-5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <div class="flex justify-between items-end mb-3 no-print-sim">
+                    <div class="flex justify-between items-end mb-3 no-print-sim border-b border-slate-100 pb-2">
                         <span class="text-xs font-black text-slate-500 uppercase">기본 자산 조건 (단위: 만원)</span>
-                        <button onclick="applyAvmToSimulator()" class="text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1.5 rounded border border-blue-200 transition shadow-sm flex items-center gap-1"><i class="ph-bold ph-magic-wand"></i> AVM 연동 (비율적용)</button>
                     </div>
                     
                     <div class="flex flex-col gap-4">
                         <div>
-                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span><span class="text-[10px] text-red-600 font-black" id="lblSimPriceKo"></span></div>
+                            <div class="flex justify-between items-end mb-1">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span>
+                                    <span class="text-[10px] text-red-600 font-black ml-2" id="lblSimPriceKo"></span>
+                                </div>
+                                <button onclick="applyAvmToSimulator()" class="text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition shadow-sm flex items-center gap-1 no-print-sim"><i class="ph-bold ph-magic-wand"></i> 장부기반 AVM 불러오기 (비율적용)</button>
+                            </div>
                             <input type="text" id="simInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimPriceKo'); syncSliderFromInput('price'); calcSimulator();">
                             <input type="range" id="simSliderPrice" min="0" max="1000000" step="1000" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('price', 'lblSimPriceKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printValPrice"></div>
@@ -563,8 +568,21 @@
                         <span class="text-xl font-black text-white drop-shadow-sm" id="resRoe">0.00%</span>
                     </div>
                 </div>
-
             </div>
+            
+            <div id="simPrintFooter" class="hidden print-sim-only border-t-2 border-emerald-800 rounded-b-xl" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <div class="flex justify-between items-center w-full">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">상현역 1번출구 031-255-7373</p>
+                    </div>
+                    <div class="text-right flex-1">
+                        <p class="text-sm font-bold" style="color: #fde047 !important;">송영재 이사 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">상가 및 투자 상담</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">vsong.w.zest@gmail.com</span></p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -600,20 +618,15 @@
                     <div id="compareMemoPrint" class="hidden"></div>
                 </div>
                 
-                <div class="hidden print-only mt-4 pt-4 border-t border-slate-200 rounded-lg p-5" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <p class="font-bold text-lg" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소</p>
-                            <p class="text-sm mt-1" style="color: #fde047 !important;">대표 공인중개사 양 선 휘</p>
-                            <p class="text-xs mt-0.5" style="color: #fde047 !important;">경기도 용인시 수지구 상현동 1131</p>
-                            <p class="text-sm mt-1 font-bold" style="color: #fb923c !important;">상현역 1번출구</p>
-                            <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">031-255-7373</p>
+                <div class="hidden print-only mt-4 border-t border-slate-200 rounded-lg px-4 py-3" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="flex-1">
+                            <p class="font-bold text-sm" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                            <p class="text-sm font-black mt-1" style="color: #fb923c !important;">상현역 1번출구 031-255-7373</p>
                         </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold" style="color: #fde047 !important;">송 영 재 이사</p>
-                            <p class="text-xs mt-1" style="color: #fde047 !important;">상가 및 투자 상담</p>
-                            <p class="text-xl font-extrabold mt-0.5" style="color: #fb923c !important;">010-6570-7475</p>
-                            <p class="text-sm font-sans mt-0.5" style="color: #fde047 !important;">vsong.w.zest@gmail.com</p>
+                        <div class="text-right flex-1">
+                            <p class="text-sm font-bold" style="color: #fde047 !important;">송영재 이사 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">상가 및 투자 상담</span></p>
+                            <p class="text-sm font-black mt-1" style="color: #fb923c !important;">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">vsong.w.zest@gmail.com</span></p>
                         </div>
                     </div>
                 </div>
@@ -626,7 +639,6 @@
                         <i class="ph-fill ph-info text-blue-500 text-xl"></i>
                         <p class="text-xs text-blue-700 font-bold">아래 네모 박스를 클릭하고 <span class="text-red-500 underline">네이버 지도 캡처 이미지를 붙여넣기(Ctrl+V)</span> 하세요. 인쇄 시 두 번째 페이지로 출력됩니다.</p>
                     </div>
-                    
                     <div id="page2DynamicContent"></div>
                 </div>
             </div>
@@ -2026,7 +2038,7 @@
             });
 
             if (sumPrice === 0) {
-                sumPrice = calcBuildingAVM(units); 
+                sumPrice = calcBuildingAVM(units) / 10000; 
             }
 
             state.simOrigPrice = sumPrice;
@@ -2046,6 +2058,12 @@
 
             document.getElementById('simulatorModal').classList.remove('hidden');
             calcSimulator();
+        }
+
+        function setupSlider(type, val, max) {
+            const slider = document.getElementById('simSlider' + type);
+            slider.max = max;
+            slider.value = val;
         }
 
         function closeSimulator() {
