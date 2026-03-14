@@ -169,22 +169,25 @@
         .slider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #059669; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
         /* ==================================================== */
-        /* 🖨️ 인쇄 모드 격리 라우팅 (비교견적서 / 대시보드 / 시뮬) */
+        /* 🖨️ 스마트 인쇄 엔진 (Javascript로 세로/가로 자동 주입됨) */
         /* ==================================================== */
-
-        /* 1. 일반 맵/비교견적서 인쇄 모드 */
         @media print {
-            body:not(.is-dashboard-mode):not(.is-sim-print-mode) { height: auto !important; background: white !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+            @page { margin: 5mm; } 
+            
+            /* 기본 화면 제어 해제 */
+            body { height: auto !important; overflow: visible !important; display: block !important; margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            /* [모드1] 일반 맵/비교견적서 인쇄 */
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) > *:not(#compareModal) { display: none !important; }
-            body:not(.is-dashboard-mode):not(.is-sim-print-mode) #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; overflow: visible !important; padding: 0 !important; }
+            body:not(.is-dashboard-mode):not(.is-sim-print-mode) #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) .modal-backdrop { background: none !important; align-items: start !important; }
-            body:not(.is-dashboard-mode):not(.is-sim-print-mode) .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
-            body:not(.is-dashboard-mode):not(.is-sim-print-mode) #compareContent { padding: 0 !important; overflow: visible !important; height: auto !important; display: block !important; position: static !important; width: 100% !important; }
+            body:not(.is-dashboard-mode):not(.is-sim-print-mode) .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
+            body:not(.is-dashboard-mode):not(.is-sim-print-mode) #compareContent { padding: 0 !important; display: block !important; width: 100% !important; overflow: visible !important; height: auto !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) .no-print { display: none !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #compareModal .print-only { display: block !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: avoid; margin-bottom: 20px; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) th, body:not(.is-dashboard-mode):not(.is-sim-print-mode) td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
-            body:not(.is-dashboard-mode):not(.is-sim-print-mode) th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body:not(.is-dashboard-mode):not(.is-sim-print-mode) th { background-color: #f3f4f6 !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) .page-break { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2Container.active { display: block !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2DynamicContent { display: grid !important; gap: 15px !important; width: 100% !important; align-items: start !important; }
@@ -192,100 +195,38 @@
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2DynamicContent.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2DynamicContent.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) #page2DynamicContent > div { page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; height: auto !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
-        }
 
-        /* 2. 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
-        @media print {
-            @page { size: landscape; margin: 5mm; } 
-            
-            /* [중요 픽스] height 100vh 해제 및 auto 부여 */
-            body.is-dashboard-mode:not(.is-sim-print-mode) { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; display: block !important; }
+            /* [모드2] 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
             body.is-dashboard-mode:not(.is-sim-print-mode) > *:not(#dashboardContainer) { display: none !important; }
-            
-            body.is-dashboard-mode:not(.is-sim-print-mode) #dashboardContainer { 
-                display: block !important; position: static !important; 
-                width: 100% !important; height: auto !important; 
-                overflow: visible !important; background: white !important; 
-                padding: 0 !important;
-            }
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashboardContainer { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; padding: 0 !important; overflow: visible !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .no-print-dash { display: none !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only { display: block !important; margin-bottom: 10px !important; padding-bottom: 0 !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-dash-only h1 { font-size: 1.25rem !important; }
-            
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid { display: block !important; width: 100% !important; margin-bottom: 70px !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashMacroGrid::after { content: ""; display: table !important; clear: both !important; }
-            
-            /* 명함 바닥 고정 */
-            body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter { 
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                display: block !important; 
-                padding: 8px 15px !important;
-                page-break-inside: avoid !important;
-                z-index: 1000 !important;
-            }
+            body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; display: block !important; padding: 8px 15px !important; z-index: 1000 !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) #dashPrintFooter p { margin: 0 !important; line-height: 1.4 !important; }
             
-            /* 건물 개수에 따른 동적 너비 분배 */
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-1 .dash-card { float: none !important; width: 100% !important; max-width: 800px !important; margin: 0 auto 5px auto !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card { float: left !important; width: 48% !important; margin-right: 4% !important; margin-bottom: 5px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-2 .dash-card:nth-child(2n) { margin-right: 0 !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card { float: left !important; width: 32% !important; margin-right: 2% !important; margin-bottom: 5px !important; page-break-inside: avoid !important; }
             body.is-dashboard-mode:not(.is-sim-print-mode) .print-cols-3 .dash-card:nth-child(3n) { margin-right: 0 !important; }
-            
             body.is-dashboard-mode:not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
             body.is-dashboard-mode:not(.is-sim-print-mode) th, body.is-dashboard-mode:not(.is-sim-print-mode) td { border: 1px solid #e2e8f0 !important; padding: 4px 2px !important; color: black !important; }
-        }
 
-        /* 3. 통매각 시뮬레이터 팝업 단독 인쇄 모드 */
-        @media print {
-            /* [중요 픽스] height 100vh 해제 및 auto 부여 */
-            body.is-sim-print-mode { 
-                background: white !important; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                height: auto !important; 
-                overflow: visible !important; 
-                display: block !important; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-            }
+            /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 */
             body.is-sim-print-mode > *:not(#simulatorModal) { display: none !important; }
-            
-            body.is-sim-print-mode #simulatorModal { 
-                position: static !important; 
-                display: block !important; 
-                width: 100% !important; 
-                height: auto !important; 
-                background: white !important; 
-                z-index: auto !important; 
-                padding: 0 !important; 
-            }
+            body.is-sim-print-mode #simulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; }
             body.is-sim-print-mode .modal-backdrop { background: none !important; align-items: start !important; justify-content: center !important; }
-            
             body.is-sim-print-mode #simulatorModal > div { max-width: 100% !important; box-shadow: none !important; border: none !important; margin-bottom: 80px !important; height: auto !important; }
-            
             body.is-sim-print-mode .no-print-sim { display: none !important; }
             body.is-sim-print-mode .print-sim-only { display: block !important; }
             body.is-sim-print-mode .bg-slate-800 { background-color: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; color: #0f172a !important; }
             body.is-sim-print-mode .text-white { color: #0f172a !important; }
             body.is-sim-print-mode .text-yellow-400 { color: #b45309 !important; }
             body.is-sim-print-mode .text-emerald-400 { color: #047857 !important; }
-            
-            /* 명함 최하단 바닥 고정 */
-            body.is-sim-print-mode #simPrintFooter { 
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                display: block !important; 
-                padding: 10px 15px !important; 
-                page-break-inside: avoid !important; 
-                z-index: 1000 !important;
-                background-color: #065f46 !important;
-            }
+            body.is-sim-print-mode #simPrintFooter { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; display: block !important; padding: 10px 15px !important; z-index: 1000 !important; background-color: #065f46 !important; }
         }
     </style>
 </head>
@@ -316,7 +257,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.8.2</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v7.9</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -450,7 +391,7 @@
                     <select id="dashSel2" class="bg-white border border-slate-200 rounded p-1 text-xs md:text-sm font-bold w-24 md:w-32 outline-none ml-1" onchange="renderMacroDash()"><option value="">선택 2</option></select>
                     <select id="dashSel3" class="bg-white border border-slate-200 rounded p-1 text-xs md:text-sm font-bold w-24 md:w-32 outline-none ml-1" onchange="renderMacroDash()"><option value="">선택 3</option></select>
                 </div>
-                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm transition whitespace-nowrap"><i class="ph-bold ph-printer"></i> 1장 요약 인쇄</button>
+                <button onclick="printDashboard()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm transition whitespace-nowrap"><i class="ph-bold ph-printer"></i> 1장 요약 인쇄</button>
             </div>
         </div>
 
@@ -503,7 +444,7 @@
                             <div class="flex justify-between items-end mb-1">
                                 <div>
                                     <span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span>
-                                    <span class="text-[10px] text-red-600 font-black ml-2" id="lblSimPriceKo"></span>
+                                    <span class="text-[10px] text-red-600 font-black ml-2 no-print-sim" id="lblSimPriceKo"></span>
                                 </div>
                                 <button onclick="applyAvmToSimulator()" class="text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition shadow-sm flex items-center gap-1 no-print-sim"><i class="ph-bold ph-magic-wand"></i> 장부기반 AVM 불러오기 (비율적용)</button>
                             </div>
@@ -513,14 +454,20 @@
                         </div>
                         
                         <div>
-                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black" id="lblSimDepKo"></span></div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-600">총 보증금 (만원)</span>
+                                <span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblSimDepKo"></span>
+                            </div>
                             <input type="text" id="simInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this, 'lblSimDepKo'); syncSliderFromInput('dep'); calcSimulator();">
                             <input type="range" id="simSliderDep" min="0" max="100000" step="500" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('dep', 'lblSimDepKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-bold text-slate-700 text-right pb-1 border-b border-slate-200" id="printValDep"></div>
                         </div>
                         
                         <div>
-                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 월세 (만원)</span><span class="text-[10px] text-emerald-600 font-black" id="lblSimRentKo"></span></div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-600">총 월세 (만원)</span>
+                                <span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblSimRentKo"></span>
+                            </div>
                             <input type="text" id="simInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimRentKo'); syncSliderFromInput('rent'); calcSimulator();">
                             <input type="range" id="simSliderRent" min="0" max="10000" step="50" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('rent', 'lblSimRentKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-black text-emerald-600 text-right pb-1 border-b border-slate-200" id="printValRent"></div>
@@ -676,7 +623,7 @@
 
                 <div class="flex gap-2 w-full md:w-auto justify-end">
                     <button id="shareBtn" onclick="shareCompare()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-share-network"></i> 공유</button>
-                    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
+                    <button onclick="printCompare()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 shadow-sm"><i class="ph-bold ph-printer"></i> 인쇄</button>
                     <button onclick="closeCompareModal()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
                 </div>
             </div>
@@ -738,6 +685,50 @@
                 }
             });
         });
+
+        // [핵심 픽스] 동적 인쇄 방향 제어 로직
+        function setPrintStyle(orientation) {
+            let style = document.getElementById('dynamic-print-style');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamic-print-style';
+                document.head.appendChild(style);
+            }
+            // 세로: portrait, 가로: landscape
+            style.innerHTML = `@media print { @page { size: ${orientation}; margin: 5mm; } }`;
+        }
+
+        // Ctrl+P 등 단축키 인쇄를 대비한 이벤트 리스너
+        window.addEventListener('beforeprint', () => {
+            if (document.body.classList.contains('is-sim-print-mode')) {
+                setPrintStyle('portrait'); // 시뮬레이터는 세로
+            } else if (!document.getElementById('compareModal').classList.contains('hidden')) {
+                setPrintStyle('portrait'); // 비교견적서도 세로
+            } else if (document.body.classList.contains('is-dashboard-mode')) {
+                setPrintStyle('landscape'); // 대시보드만 가로
+            } else {
+                setPrintStyle('portrait');
+            }
+        });
+
+        function printDashboard() {
+            setPrintStyle('landscape');
+            setTimeout(() => window.print(), 50);
+        }
+
+        function printCompare() {
+            setPrintStyle('portrait');
+            setTimeout(() => window.print(), 50);
+        }
+
+        function printSimulator() {
+            document.body.classList.add('is-sim-print-mode');
+            setPrintStyle('portrait');
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500);
+            }, 50);
+        }
 
         function togglePage2() {
             const container = document.getElementById('page2Container');
@@ -2091,7 +2082,6 @@
             });
 
             if (sumPrice === 0) {
-                // [완벽 픽스] 절대 나누기 10000 없음
                 sumPrice = Math.round(calcBuildingAVM(units)); 
             }
 
@@ -2124,12 +2114,6 @@
             document.getElementById('simulatorModal').classList.add('hidden');
         }
 
-        function printSimulator() {
-            document.body.classList.add('is-sim-print-mode');
-            window.print();
-            setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500);
-        }
-
         function formatSimInput(input, labelId) {
             let val = input.value.replace(/,/g, '').replace(/[^0-9]/g, '');
             if(!val) val = '0';
@@ -2156,10 +2140,7 @@
         function applyAvmToSimulator() {
             if(!state.simTarget) return;
             const units = state.allData.filter(d => d.building === state.simTarget);
-            
-            // [완벽 픽스] 절대 나누기 10000 없음
             const avmPrice = Math.round(calcBuildingAVM(units)); 
-            
             if(avmPrice <= 0) {
                 alert("AVM 가치를 산출할 수 있는 데이터가 부족합니다.");
                 return;
