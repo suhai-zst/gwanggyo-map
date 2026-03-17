@@ -163,7 +163,6 @@
             background: white; padding: 20px; border-radius: 12px; margin: 0; z-index: -9999;
         }
 
-        /* 대시보드 시뮬레이터 조작부 스타일 */
         .dash-input { @apply w-full text-right border border-slate-300 rounded-lg p-2 font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner; }
         .slider-range { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; outline: none; }
         .slider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #059669; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
@@ -173,8 +172,6 @@
         /* ==================================================== */
         @media print {
             @page { margin: 5mm; } 
-            
-            /* 기본 화면 제어 해제 */
             body { height: auto !important; overflow: visible !important; display: block !important; margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
             /* [모드1] 일반 맵/비교견적서 인쇄 */
@@ -215,64 +212,42 @@
             body.is-dashboard-mode:not(.is-sim-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
             body.is-dashboard-mode:not(.is-sim-print-mode) th, body.is-dashboard-mode:not(.is-sim-print-mode) td { border: 1px solid #e2e8f0 !important; padding: 4px 2px !important; color: black !important; }
 
-            /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 (가독성 초강화 및 겹침 방지) */
+            /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 */
             body.is-sim-print-mode > *:not(#simulatorModal) { display: none !important; }
             body.is-sim-print-mode #simulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; }
             body.is-sim-print-mode .modal-backdrop { background: none !important; align-items: start !important; justify-content: center !important; }
-            
-            /* [중요] 명함 겹침 물리적 차단을 위한 범퍼(Bumper) 추가 */
             body.is-sim-print-mode #simulatorModal > div { max-width: 100% !important; box-shadow: none !important; border: none !important; height: auto !important; margin: 0 !important; }
             body.is-sim-print-mode #simPrintContentBody { padding-bottom: 160px !important; background-color: white !important; }
-            
             body.is-sim-print-mode .no-print-sim { display: none !important; }
             body.is-sim-print-mode .print-sim-only { display: block !important; }
             
-            /* === 가독성 극대화 (고대비/큰글씨 테마) === */
-            /* 1. 흐린 텍스트 진하게 변경 */
-            body.is-sim-print-mode .text-slate-400,
-            body.is-sim-print-mode .text-slate-500,
-            body.is-sim-print-mode .text-slate-600 { color: #1e293b !important; font-weight: 800 !important; }
-            
-            /* 2. 전체적인 폰트 사이즈 펌핑 */
-            body.is-sim-print-mode #simulatorModal .text-xs, 
-            body.is-sim-print-mode #simulatorModal .text-\\[10px\\] { font-size: 14px !important; }
+            body.is-sim-print-mode .text-slate-400, body.is-sim-print-mode .text-slate-500, body.is-sim-print-mode .text-slate-600 { color: #1e293b !important; font-weight: 800 !important; }
+            body.is-sim-print-mode #simulatorModal .text-xs, body.is-sim-print-mode #simulatorModal .text-\\[10px\\] { font-size: 14px !important; }
             body.is-sim-print-mode #simulatorModal .text-sm { font-size: 16px !important; }
             body.is-sim-print-mode #simulatorModal .text-base { font-size: 20px !important; }
             body.is-sim-print-mode #simulatorModal .text-lg { font-size: 24px !important; }
             body.is-sim-print-mode #simulatorModal .text-xl { font-size: 28px !important; }
             body.is-sim-print-mode #simulatorModal .text-2xl { font-size: 32px !important; margin-bottom: 8px !important; }
 
-            /* 3. 하단 결과창 밝은 고대비 테마로 반전 (잉크 번짐 방지) */
             body.is-sim-print-mode .bg-slate-800 { background-color: #f8fafc !important; border: 2px solid #94a3b8 !important; }
-            body.is-sim-print-mode .bg-slate-800 .text-white,
-            body.is-sim-print-mode .bg-slate-800 .text-slate-200,
-            body.is-sim-print-mode .bg-slate-800 .text-slate-300 { color: #0f172a !important; }
+            body.is-sim-print-mode .bg-slate-800 .text-white, body.is-sim-print-mode .bg-slate-800 .text-slate-200, body.is-sim-print-mode .bg-slate-800 .text-slate-300 { color: #0f172a !important; }
             body.is-sim-print-mode .bg-slate-700 { background-color: #ffffff !important; border: 1px solid #cbd5e1 !important; }
-            body.is-sim-print-mode .bg-slate-600 { background-color: #cbd5e1 !important; } /* 구분선 색상 */
+            body.is-sim-print-mode .bg-slate-600 { background-color: #cbd5e1 !important; } 
             body.is-sim-print-mode .bg-emerald-600 { background-color: #ecfdf5 !important; border: 2px solid #059669 !important; }
             
-            /* 4. 핵심 결과값 컬러 최적화 (가독성 높은 진한 원색) */
-            body.is-sim-print-mode #resCapRate { color: #ea580c !important; font-weight: 900 !important; } /* 진한 주황 */
+            body.is-sim-print-mode #resCapRate { color: #ea580c !important; font-weight: 900 !important; }
             body.is-sim-print-mode #resTotalCost { color: #000000 !important; font-weight: 900 !important; }
-            body.is-sim-print-mode #resLoan { color: #2563eb !important; font-weight: 900 !important; } /* 파랑 */
-            body.is-sim-print-mode #resCash { color: #059669 !important; font-weight: 900 !important; } /* 초록 */
-            body.is-sim-print-mode #resInterest { color: #dc2626 !important; font-weight: 900 !important; } /* 빨강 */
+            body.is-sim-print-mode #resLoan { color: #2563eb !important; font-weight: 900 !important; } 
+            body.is-sim-print-mode #resCash { color: #059669 !important; font-weight: 900 !important; } 
+            body.is-sim-print-mode #resInterest { color: #dc2626 !important; font-weight: 900 !important; } 
             body.is-sim-print-mode #resNetMonthly { color: #000000 !important; font-weight: 900 !important; }
             body.is-sim-print-mode #resRoe { color: #047857 !important; font-weight: 900 !important; }
             body.is-sim-print-mode .text-emerald-100 { color: #047857 !important; font-weight: 900 !important; }
 
-            /* 명함 최하단 바닥 고정 */
             body.is-sim-print-mode #simPrintFooter { 
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                display: block !important; 
-                padding: 16px 24px !important; 
-                page-break-inside: avoid !important; 
-                z-index: 1000 !important;
-                background-color: #065f46 !important;
-                border-top: 4px solid #064e3b !important;
+                position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important;
+                display: block !important; padding: 16px 24px !important; page-break-inside: avoid !important; 
+                z-index: 1000 !important; background-color: #065f46 !important; border-top: 4px solid #064e3b !important;
             }
         }
     </style>
@@ -304,7 +279,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.0</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.0.1</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -611,6 +586,13 @@
         </div>
     </div>
 
+    <div id="comparisonBar" class="hidden-bar no-print">
+        <div class="flex items-center gap-2 text-sm font-bold"><i class="ph-fill ph-shopping-cart text-yellow-300 text-lg"></i> <span class="hidden md:inline">비교함</span> <span id="compareCount" class="bg-white text-emerald-800 px-2 py-0.5 rounded-full text-xs">0</span></div>
+        <div class="h-4 w-px bg-white/30 ml-2 md:ml-0"></div>
+        <button onclick="openCompareModal()" class="hover:text-yellow-300 transition text-sm font-bold flex items-center gap-1 bg-emerald-700 px-3 py-1.5 rounded-lg ml-2 border border-emerald-600 shadow-inner"><i class="ph-bold ph-arrows-left-right"></i> 비교</button>
+        <button onclick="clearCompare()" class="hover:text-red-300 transition text-xs opacity-80 ml-2 underline underline-offset-2">비우기</button>
+    </div>
+
     <div id="compareModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm modal-backdrop p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeCompareModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full md:w-[1000px] max-h-[90vh] flex flex-col overflow-hidden modal-container relative">
             <div class="h-auto md:h-16 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center px-4 md:px-6 py-3 md:py-0 bg-slate-50 gap-3 md:gap-0 no-print">
@@ -730,9 +712,20 @@
                     document.getElementById('areaDropdown').classList.remove('show');
                 }
             });
+
+            // [핫픽스] 이벤트 위임을 통한 클릭 100% 보장 센서
+            document.getElementById('stackingContainer').addEventListener('click', function(e) {
+                const compareBtn = e.target.closest('.btn-compare');
+                if (compareBtn) {
+                    e.stopPropagation();
+                    const id = parseInt(compareBtn.dataset.id, 10);
+                    toggleCompare(id);
+                    return;
+                }
+                if (!e.target.closest('.unit-box')) { closeDetail(); }
+            });
         });
 
-        // 동적 인쇄 방향 제어 로직
         function setPrintStyle(orientation) {
             let style = document.getElementById('dynamic-print-style');
             if (!style) {
@@ -961,21 +954,6 @@
             document.getElementById('mainFilters').classList.replace('flex', 'hidden');
             document.getElementById('mobileMenuBackdrop').classList.add('hidden');
         }
-
-        document.getElementById('stackingContainer').addEventListener('click', function(e) {
-            if (!e.target.closest('.unit-box') && !e.target.closest('.btn-compare')) { closeDetail(); }
-        });
-
-        let touchStartY = 0;
-        const detailPanelElem = document.getElementById('detailPanel');
-        detailPanelElem.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive: true});
-        detailPanelElem.addEventListener('touchend', e => {
-            const touchEndY = e.changedTouches[0].clientY;
-            if (touchEndY - touchStartY > 50) { 
-                const content = document.getElementById('detailContent');
-                if (content.scrollTop <= 0 || e.target.closest('.h-14')) { closeDetail(); }
-            }
-        }, {passive: true});
     
         function initRentDropdown() {
             const dd = document.getElementById('rentDropdown'); dd.innerHTML = '';
@@ -1394,11 +1372,23 @@
                             el.onmouseenter = () => highlightGroup(u.unique_group_id);
                             el.onmouseleave = () => unhighlightGroup(u.unique_group_id);
                             
+                            // [핫픽스] pointer-events-none 적용 및 data-id 로 이벤트 위임
                             const isSelected = state.comparisonList.has(u.id);
-                            const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" onclick="toggleCompare(event, ${u.id})"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'}"></i></div>`;
+                            const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" data-id="${u.id}"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'} pointer-events-none"></i></div>`;
 
                             el.innerHTML = `${star} ${question} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
-                            el.onclick = () => renderDetail(u); grid.appendChild(el);
+                            
+                            // [핫픽스] 비교 버튼 클릭 시 모달창 안뜨게 이벤트 분리 처리
+                            el.onclick = (e) => {
+                                if (e.target.closest('.btn-compare')) {
+                                    e.stopPropagation();
+                                    toggleCompare(u.id);
+                                    return;
+                                }
+                                renderDetail(u);
+                            };
+                            
+                            grid.appendChild(el);
                         });
                         row.appendChild(grid); fCont.appendChild(row);
                     }
@@ -1407,14 +1397,23 @@
             });
         }
 
-        function toggleCompare(e, id) {
-            e.stopPropagation();
+        // [핫픽스] 매개변수 통일 및 스크롤 점프 완전 차단
+        function toggleCompare(id) {
             const target = state.allData.find(d => d.id === id);
             let idsToToggle = [id];
             if(target.unique_group_id) { idsToToggle = state.allData.filter(d => d.unique_group_id === target.unique_group_id).map(d => d.id); }
             const isAdding = !state.comparisonList.has(id);
             idsToToggle.forEach(tid => { if(isAdding) state.comparisonList.add(tid); else state.comparisonList.delete(tid); });
-            updateCompareBar(); renderStacking();
+            updateCompareBar(); 
+            
+            // 현재 스크롤 위치 메모리 저장
+            const container = document.getElementById('stackingContainer');
+            const currentScroll = container.scrollTop;
+            
+            renderStacking();
+            
+            // 화면 렌더링 즉시 스크롤 복구 (점프 방어)
+            container.scrollTop = currentScroll;
         }
 
         function updateCompareBar() {
@@ -1424,7 +1423,15 @@
             if (state.comparisonList.size > 0) bar.classList.remove('hidden-bar'); else bar.classList.add('hidden-bar');
         }
 
-        function clearCompare() { state.comparisonList.clear(); state.splitGroups.clear(); updateCompareBar(); renderStacking(); }
+        function clearCompare() { 
+            state.comparisonList.clear(); state.splitGroups.clear(); updateCompareBar(); 
+            
+            // 초기화 시에도 스크롤 방어 적용
+            const container = document.getElementById('stackingContainer');
+            const currentScroll = container.scrollTop;
+            renderStacking(); 
+            container.scrollTop = currentScroll;
+        }
 
         function setCompareMode(mode) {
             state.compareMode = mode;
@@ -1439,7 +1446,15 @@
         }
 
         function removeFromCompare(id) {
-            if (state.comparisonList.has(id)) { state.comparisonList.delete(id); openCompareModal(); updateCompareBar(); renderStacking(); }
+            if (state.comparisonList.has(id)) { 
+                state.comparisonList.delete(id); 
+                openCompareModal(); updateCompareBar(); 
+                
+                const container = document.getElementById('stackingContainer');
+                const currentScroll = container.scrollTop;
+                renderStacking(); 
+                container.scrollTop = currentScroll;
+            }
         }
 
         function openCompareModal() {
