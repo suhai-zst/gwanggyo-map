@@ -168,7 +168,7 @@
         .slider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #059669; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
         /* ==================================================== */
-        /* 🖨️ 스마트 인쇄 엔진 (Javascript로 세로/가로 자동 주입됨) */
+        /* 🖨️ 스마트 인쇄 엔진 */
         /* ==================================================== */
         @media print {
             @page { margin: 5mm; } 
@@ -186,7 +186,6 @@
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) th, body:not(.is-dashboard-mode):not(.is-sim-print-mode) td { border: 1px solid #333 !important; padding: 4px !important; color: black !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) th { background-color: #f3f4f6 !important; }
             
-            /* [픽스] 2페이지 강제 노출 방어 (숨김 상태면 절대 안보이게 차단) */
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) .page-break:not(.hidden) { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
             body:not(.is-dashboard-mode):not(.is-sim-print-mode) .page-break.hidden { display: none !important; }
             
@@ -282,7 +281,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.0.3</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.1</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -397,20 +396,17 @@
     </main>
 
     <div id="dashboardContainer" class="hidden absolute inset-0 z-[100] bg-slate-100 flex-col overflow-y-auto pb-10">
-        
         <div class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-50 shadow-sm no-print-dash gap-3">
             <div class="flex items-center gap-3">
                 <button onclick="toggleDashboard()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition"><i class="ph-bold ph-arrow-left text-lg"></i></button>
                 <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2"><i class="ph-fill ph-buildings text-emerald-600"></i> 상권/건물 투자 비교</h2>
             </div>
-            
             <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
                 <div class="flex gap-3 text-xs font-bold text-slate-600 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                     <label class="flex items-center gap-1 cursor-pointer hover:text-emerald-600"><input type="checkbox" id="chkShowAvm" class="rounded text-emerald-600 focus:ring-emerald-500" onchange="renderMacroDash()"> AVM 추정가</label>
                     <div class="w-px h-3 bg-slate-300 my-auto"></div>
                     <label class="flex items-center gap-1 cursor-pointer hover:text-emerald-600"><input type="checkbox" id="chkShowRatio" class="rounded text-emerald-600 focus:ring-emerald-500" onchange="renderMacroDash()"> 매물 진행률</label>
                 </div>
-                
                 <div class="flex flex-1 md:flex-none bg-slate-100 p-1 rounded-lg border border-slate-200">
                     <select id="dashSel1" class="bg-white border border-slate-200 rounded p-1 text-xs md:text-sm font-bold w-24 md:w-32 outline-none" onchange="renderMacroDash()"><option value="">선택 1</option></select>
                     <select id="dashSel2" class="bg-white border border-slate-200 rounded p-1 text-xs md:text-sm font-bold w-24 md:w-32 outline-none ml-1" onchange="renderMacroDash()"><option value="">선택 2</option></select>
@@ -425,9 +421,7 @@
                 <h1 class="text-2xl font-black text-slate-900">상업용 부동산 층별/위치별 가치 비교 분석</h1>
                 <p class="text-sm text-slate-500 mt-1" id="dashPrintDate"></p>
             </div>
-            
             <div id="dashMacroGrid" class="grid gap-4 md:gap-6 w-full"></div>
-            
             <div id="dashPrintFooter" class="hidden print-dash-only border-t-2 border-emerald-800" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <div class="flex justify-between items-center w-full">
                     <div class="flex-1">
@@ -466,36 +460,24 @@
                     <div class="flex justify-between items-end mb-3 no-print-sim border-b border-slate-100 pb-2">
                         <span class="text-xs font-black text-slate-500 uppercase">기본 자산 조건 (단위: 만원)</span>
                     </div>
-                    
                     <div class="flex flex-col gap-4">
                         <div>
                             <div class="flex justify-between items-end mb-1">
-                                <div>
-                                    <span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span>
-                                    <span class="text-[10px] text-red-600 font-black ml-2 no-print-sim" id="lblSimPriceKo"></span>
-                                </div>
+                                <div><span class="text-xs font-bold text-slate-600">총 매매가 (만원)</span><span class="text-[10px] text-red-600 font-black ml-2 no-print-sim" id="lblSimPriceKo"></span></div>
                                 <button onclick="applyAvmToSimulator()" class="text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition shadow-sm flex items-center gap-1 no-print-sim"><i class="ph-bold ph-magic-wand"></i> 장부기반 AVM 불러오기 (비율적용)</button>
                             </div>
                             <input type="text" id="simInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimPriceKo'); syncSliderFromInput('price'); calcSimulator();">
                             <input type="range" id="simSliderPrice" min="0" max="1000000" step="1000" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('price', 'lblSimPriceKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printValPrice"></div>
                         </div>
-                        
                         <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-xs font-bold text-slate-600">총 보증금 (만원)</span>
-                                <span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblSimDepKo"></span>
-                            </div>
+                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblSimDepKo"></span></div>
                             <input type="text" id="simInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this, 'lblSimDepKo'); syncSliderFromInput('dep'); calcSimulator();">
                             <input type="range" id="simSliderDep" min="0" max="100000" step="500" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('dep', 'lblSimDepKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-bold text-slate-700 text-right pb-1 border-b border-slate-200" id="printValDep"></div>
                         </div>
-                        
                         <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-xs font-bold text-slate-600">총 월세 (만원)</span>
-                                <span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblSimRentKo"></span>
-                            </div>
+                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">총 월세 (만원)</span><span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblSimRentKo"></span></div>
                             <input type="text" id="simInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this, 'lblSimRentKo'); syncSliderFromInput('rent'); calcSimulator();">
                             <input type="range" id="simSliderRent" min="0" max="10000" step="50" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('rent', 'lblSimRentKo'); calcSimulator();">
                             <div class="hidden print-sim-only text-base font-black text-emerald-600 text-right pb-1 border-b border-slate-200" id="printValRent"></div>
@@ -505,75 +487,28 @@
 
                 <div class="mb-5 no-print-sim">
                     <div class="flex justify-between gap-4">
-                        <div class="flex-1">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-600">대출 (LTV)</span>
-                                <span class="font-black text-blue-600"><span id="lblLtv">60</span>%</span>
-                            </div>
-                            <input type="range" id="simLtv" min="0" max="90" step="5" value="60" class="slider-range" oninput="document.getElementById('lblLtv').innerText=this.value; calcSimulator();">
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-600">대출 금리</span>
-                                <span class="font-black text-orange-600"><span id="lblRate">4.5</span>%</span>
-                            </div>
-                            <input type="range" id="simRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range" oninput="document.getElementById('lblRate').innerText=parseFloat(this.value).toFixed(1); calcSimulator();">
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-600">취득세율</span>
-                            </div>
-                            <div class="flex items-center bg-white border border-slate-300 rounded px-2">
-                                <input type="text" id="simTax" value="4.6" class="w-full text-right text-xs font-bold text-slate-700 outline-none" onkeyup="calcSimulator()">
-                                <span class="text-xs text-slate-400 ml-1">%</span>
-                            </div>
-                        </div>
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 (LTV)</span><span class="font-black text-blue-600"><span id="lblLtv">60</span>%</span></div><input type="range" id="simLtv" min="0" max="90" step="5" value="60" class="slider-range" oninput="document.getElementById('lblLtv').innerText=this.value; calcSimulator();"></div>
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 금리</span><span class="font-black text-orange-600"><span id="lblRate">4.5</span>%</span></div><input type="range" id="simRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range" oninput="document.getElementById('lblRate').innerText=parseFloat(this.value).toFixed(1); calcSimulator();"></div>
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">취득세율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="simTax" value="4.6" class="w-full text-right text-xs font-bold text-slate-700 outline-none" onkeyup="calcSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
                     </div>
                 </div>
                 
-                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">
-                    * 적용 조건: 대출 <span id="printLtv"></span>% / 금리 <span id="printRate"></span>% / 취득세 <span id="printTax"></span>%
-                </div>
+                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">* 적용 조건: 대출 <span id="printLtv"></span>% / 금리 <span id="printRate"></span>% / 취득세 <span id="printTax"></span>%</div>
 
                 <div class="bg-slate-800 rounded-xl p-4 text-white shadow-inner border border-slate-700 mt-auto print-high-contrast">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-xs text-slate-300 font-bold">건물 명목 수익률 (Cap Rate)</span>
-                        <span class="text-lg font-black text-yellow-400" id="resCapRate">0.00%</span>
-                    </div>
+                    <div class="flex justify-between items-center mb-3"><span class="text-xs text-slate-300 font-bold">건물 명목 수익률 (Cap Rate)</span><span class="text-lg font-black text-yellow-400" id="resCapRate">0.00%</span></div>
                     <div class="w-full h-px bg-slate-600 mb-3"></div>
-                    
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금포함)</span>
-                            <span class="font-bold" id="resTotalCost">0원</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-400 font-medium text-xs">대출 금액</span>
-                            <span class="font-bold text-blue-300" id="resLoan">0원</span>
-                        </div>
-                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1 border border-slate-600">
-                            <span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span>
-                            <span class="font-black text-emerald-400" id="resCash">0원</span>
-                        </div>
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금포함)</span><span class="font-bold" id="resTotalCost">0원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">대출 금액</span><span class="font-bold text-blue-300" id="resLoan">0원</span></div>
+                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1 border border-slate-600"><span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span><span class="font-black text-emerald-400" id="resCash">0원</span></div>
                     </div>
-                    
                     <div class="w-full h-px bg-slate-600 my-3"></div>
-                    
                     <div class="space-y-2 text-sm mb-4">
-                        <div class="flex justify-between">
-                            <span class="text-slate-400 font-medium text-xs">월 대출 이자</span>
-                            <span class="font-bold text-orange-300" id="resInterest">0원</span>
-                        </div>
-                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600">
-                            <span class="text-slate-200 font-bold text-xs">월 순수익 (이자 공제)</span>
-                            <span class="font-black text-white" id="resNetMonthly">0원</span>
-                        </div>
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">월 대출 이자</span><span class="font-bold text-orange-300" id="resInterest">0원</span></div>
+                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600"><span class="text-slate-200 font-bold text-xs">월 순수익 (이자 공제)</span><span class="font-black text-white" id="resNetMonthly">0원</span></div>
                     </div>
-                    
-                    <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md">
-                        <span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span>
-                        <span class="text-xl font-black text-white drop-shadow-sm" id="resRoe">0.00%</span>
-                    </div>
+                    <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md"><span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span><span class="text-xl font-black text-white drop-shadow-sm" id="resRoe">0.00%</span></div>
                 </div>
             </div>
             
@@ -589,7 +524,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -680,8 +614,21 @@
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
+        // [픽스] 평수 10-20평 ➡️ 10-15평, 15-20평 분할
         const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
-        const AREA_RANGES = [ { id: '10under', label: '10평 ↓', min: 0, max: 10 }, { id: '10-20', label: '10~20평', min: 10, max: 20 }, { id: '20-30', label: '20~30평', min: 20, max: 30 }, { id: '30-40', label: '30~40평', min: 30, max: 40 }, { id: '40-50', label: '40~50평', min: 40, max: 50 }, { id: '50-60', label: '50~60평', min: 50, max: 60 }, { id: '60-70', label: '60~70평', min: 60, max: 70 }, { id: '70-80', label: '70~80평', min: 70, max: 80 }, { id: '80-100', label: '80~100평', min: 80, max: 100 }, { id: '100over', label: '100평 ↑', min: 100, max: 9999 } ];
+        const AREA_RANGES = [ 
+            { id: '10under', label: '10평 ↓', min: 0, max: 10 }, 
+            { id: '10-15', label: '10~15평', min: 10, max: 15 }, 
+            { id: '15-20', label: '15~20평', min: 15, max: 20 }, 
+            { id: '20-30', label: '20~30평', min: 20, max: 30 }, 
+            { id: '30-40', label: '30~40평', min: 30, max: 40 }, 
+            { id: '40-50', label: '40~50평', min: 40, max: 50 }, 
+            { id: '50-60', label: '50~60평', min: 50, max: 60 }, 
+            { id: '60-70', label: '60~70평', min: 60, max: 70 }, 
+            { id: '70-80', label: '70~80평', min: 70, max: 80 }, 
+            { id: '80-100', label: '80~100평', min: 80, max: 100 }, 
+            { id: '100over', label: '100평 ↑', min: 100, max: 9999 } 
+        ];
         const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
         const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
 
@@ -732,6 +679,18 @@
             });
         });
 
+        // 범위 체크 헬퍼 함수
+        function checkRanges(val, ranges, rangeDefs) {
+            if (ranges.size === 0) return true;
+            let pass = false;
+            ranges.forEach(rid => {
+                const range = rangeDefs.find(x => x.id === rid);
+                if (range.min === 0) { if (val >= 0 && val <= range.max) pass = true; } 
+                else { if (val > range.min && val <= range.max) pass = true; }
+            });
+            return pass;
+        }
+
         function cleanBuildingName(name) {
             return name.replace(/^\d+\.\s*/, '');
         }
@@ -746,55 +705,33 @@
             style.innerHTML = `@media print { @page { size: ${orientation}; margin: 5mm; } }`;
         }
 
-        // [픽스] 스마트 인쇄 방향 스위칭
         window.addEventListener('beforeprint', () => {
             if (document.body.classList.contains('is-sim-print-mode')) { 
                 setPrintStyle('portrait'); 
             } 
             else if (!document.getElementById('compareModal').classList.contains('hidden')) { 
-                // 비교견적서: 1개는 세로, 2개 이상은 가로
-                if(state.comparisonList.size >= 2) {
-                    setPrintStyle('landscape');
-                } else {
-                    setPrintStyle('portrait'); 
-                }
+                if(state.comparisonList.size >= 2) { setPrintStyle('landscape'); } 
+                else { setPrintStyle('portrait'); }
             } 
             else if (document.body.classList.contains('is-dashboard-mode')) { 
                 setPrintStyle('landscape'); 
             } 
-            else { 
-                setPrintStyle('portrait'); 
-            }
+            else { setPrintStyle('portrait'); }
         });
 
-        function printDashboard() {
-            setPrintStyle('landscape');
-            setTimeout(() => window.print(), 100);
-        }
-
+        function printDashboard() { setPrintStyle('landscape'); setTimeout(() => window.print(), 100); }
         function printCompare() {
-            // [픽스] 방향 하드코딩 제거, beforeprint의 갯수 카운팅 엔진에 맡김
-            if (state.comparisonList.size >= 2) {
-                setPrintStyle('landscape');
-            } else {
-                setPrintStyle('portrait');
-            }
+            if (state.comparisonList.size >= 2) { setPrintStyle('landscape'); } else { setPrintStyle('portrait'); }
             setTimeout(() => window.print(), 100);
         }
-
         function printSimulator() {
-            document.body.classList.add('is-sim-print-mode');
-            setPrintStyle('portrait');
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500);
-            }, 100);
+            document.body.classList.add('is-sim-print-mode'); setPrintStyle('portrait');
+            setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500); }, 100);
         }
 
         function togglePage2() {
             const container = document.getElementById('page2Container');
-            const isChecked = document.getElementById('togglePage2Btn').checked;
-            if (isChecked) container.classList.remove('hidden');
+            if (document.getElementById('togglePage2Btn').checked) container.classList.remove('hidden');
             else container.classList.add('hidden');
         }
 
@@ -812,26 +749,20 @@
                                     box.classList.remove('border-dashed');
                                     box.classList.add('border-solid', 'border-emerald-500');
                                 };
-                                reader.readAsDataURL(file);
-                                return;
+                                reader.readAsDataURL(file); return;
                             }
                         }
                     }
-                    const text = e.clipboardData.getData('text/plain');
-                    box.innerText = text;
+                    box.innerText = e.clipboardData.getData('text/plain');
                 });
-
-                box.addEventListener('focus', function() {
-                    if(box.innerText.includes('캡처')) box.innerText = '';
-                });
+                box.addEventListener('focus', function() { if(box.innerText.includes('캡처')) box.innerText = ''; });
             });
         }
 
         function formatPhones(str) {
             if(!str || str.trim() === '-' || str.trim() === '') return '-';
             return str.split(/[,/\n]/).map(s => {
-                const num = s.trim();
-                if(!num) return '';
+                const num = s.trim(); if(!num) return '';
                 const tel = num.replace(/[^0-9]/g, '');
                 if(tel.length >= 7) return `<a href="tel:${tel}" class="text-blue-500 hover:text-blue-700 underline underline-offset-2 break-keep font-mono">${num}</a>`;
                 return num; 
@@ -1195,7 +1126,8 @@
                     owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
                     pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
                     pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
-                    group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0
+                    group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
+                    _match: false, _isPartOfMerge: false, _mergeStartArea: 0 // 가상 확장 속성 초기화
                 };
             }).filter(x => x);
 
@@ -1247,70 +1179,148 @@
             return '미정';
         }
 
-        function updateExits() { const exits = [...new Set(state.allData.map(d => d.exit).filter(Boolean))].sort(); document.getElementById('exitFilter').innerHTML = `<option value="all">출구 전체</option>` + exits.map(e => `<option value="${e}">${e}</option>`).join(''); }
-        function updateFilter(k, v) { if (k === 'search') state.search = v.toLowerCase(); if (k === 'exit') state.filterExit = v; if (k === 'group') state.filterStatusGroup = v; applySmartSelection(); }
-        
-        function checkMatch(d) {
-            if (state.search) { 
-                const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
-                let extraTags = "";
-                const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
-                const isRentListing = allowedRentStatuses.includes(d.status) && (d.total_deposit > 0 || d.total_rent > 0);
-                if (isRentListing && d.total_premium === 0) {
-                    extraTags += " 무권리";
-                }
-                const txt = `${d.building} ${d.unit} ${d.store_name} ${d.tenant} ${d.memo} ${d.rawStatus} ${d.owner} ${d.owner_tel} ${d.tenant_tel} ${d.floor}층${extraTags}`.toLowerCase();
-                const isMatch = terms.every(term => txt.includes(term));
-                if (!isMatch) return false;
-            }
-            if (state.filterExit !== 'all' && d.exit !== state.filterExit) return false;
-            if (state.checkedAreaRanges.size > 0) {
-                const p = d.total_area_p; let pass = false;
-                state.checkedAreaRanges.forEach(rid => {
-                    const range = AREA_RANGES.find(x => x.id === rid);
-                    if (range.min === 0) { if (p >= 0 && p <= range.max) pass = true; } 
-                    else { if (p > range.min && p <= range.max) pass = true; }
-                });
-                if (!pass) return false;
-            }
-            if (state.checkedRentRanges.size > 0) { 
-                const r = d.rent; let pass = false; 
-                state.checkedRentRanges.forEach(rid => { 
-                    const range = RENT_RANGES.find(x => x.id === rid); 
-                    if (range.min === 0) { if (r > 0 && r <= range.max) pass = true; } 
-                    else { if (r > range.min && r <= range.max) pass = true; }
-                }); 
-                if (!pass) return false; 
-            }
-            if (state.checkedSaleRanges.size > 0) { 
-                const s = d.total_price_sell; let pass = false; 
-                state.checkedSaleRanges.forEach(rid => { 
-                    const range = SALE_RANGES.find(x => x.id === rid); 
-                    if (range.min === 0) { if (s > 0 && s <= range.max) pass = true; } 
-                    else { if (s > range.min && s <= range.max) pass = true; }
-                }); 
-                if (!pass) return false; 
-            }
-            if (state.isRoadsideMode) {
-                const bName = d.building.replace(/\s/g, ''); 
-                const isRoadside = ROADSIDE_TARGETS.some(t => bName.includes(t.replace(/\s/g, '')));
-                if (!isRoadside) return false;
-            }
-            if (state.isImportantMode && !(d.is_imp || d.is_question)) return false;
-            const s = d.status;
-            if (state.filterStatusGroup === '매매관련') { if (!['매매', '매매/임대'].includes(s)) return false; }
-            else if (state.filterStatusGroup === '임대관련') { if (!['임대', '매매/임대', '타부동산'].includes(s)) return false; }
-            else if (state.filterStatusGroup === '완료') { if (!s.includes('완료')) return false; }
-            if (STATUS_ACTIVE.includes(d.status) && !state.activeStatus.has(d.status)) return false;
-            if (STATUS_HISTORY.includes(d.status) && !state.historyStatus.has(d.status)) return false;
-            return true;
-        }
-
+        // [핵심 픽스] 스마트 선택 로직 (가상 확장 병합 알고리즘 포함)
         function applySmartSelection() {
             const isFilterActive = state.search || state.filterExit !== 'all' || state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0 || state.isImportantMode || state.isRoadsideMode || state.filterStatusGroup !== 'all' || state.activeStatus.size !== STATUS_ACTIVE.length || state.historyStatus.size !== STATUS_HISTORY.length;
-            if (isFilterActive) { const newChecked = new Set(); state.buildings.forEach(b => { if (state.allData.filter(d => d.building === b).some(checkMatch)) newChecked.add(b); }); state.checkedBuildings = newChecked; } 
-            else { state.checkedBuildings = new Set(state.buildings); }
-            renderList(); renderStacking();
+
+            const newChecked = new Set();
+
+            // 상태 초기화
+            state.allData.forEach(d => {
+                d._match = false;
+                d._isPartOfMerge = false;
+                d._mergeStartArea = 0;
+            });
+
+            state.buildings.forEach(b => {
+                const units = state.allData.filter(d => d.building === b);
+                if (units.length === 0) return;
+
+                const dFirst = units[0];
+                if (state.filterExit !== 'all' && dFirst.exit !== state.filterExit) return;
+                if (state.isRoadsideMode && !ROADSIDE_TARGETS.some(t => b.replace(/\s/g,'').includes(t.replace(/\s/g,'')))) return;
+
+                let bHasMatch = false;
+
+                if (!isFilterActive) {
+                    units.forEach(u => u._match = true);
+                    newChecked.add(b);
+                    return;
+                }
+
+                // 1. 개별 호실 단일 필터 검사
+                units.forEach(u => {
+                    let pass = true;
+
+                    if (state.search) {
+                        const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
+                        let extraTags = "";
+                        const isRentListing = ['임대', '매매/임대', '타부동산'].includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
+                        if (isRentListing && u.total_premium === 0) extraTags += " 무권리";
+                        const txt = `${u.building} ${u.unit} ${u.store_name} ${u.tenant} ${u.memo} ${u.rawStatus} ${u.owner} ${u.owner_tel} ${u.tenant_tel} ${u.floor}층${extraTags}`.toLowerCase();
+                        if (!terms.every(term => txt.includes(term))) pass = false;
+                    }
+                    if (state.isImportantMode && !(u.is_imp || u.is_question)) pass = false;
+
+                    if (pass) {
+                        const s = u.status;
+                        let statusPass = true;
+                        
+                        if (state.filterStatusGroup === '매매관련') {
+                            if (!['매매', '매매/임대'].includes(s)) statusPass = false;
+                        } else if (state.filterStatusGroup === '임대관련') {
+                            // [픽스] 임대관련일 때 ??(is_question) 이면 무조건 통과
+                            if (!['임대', '매매/임대', '타부동산'].includes(s) && !u.is_question) statusPass = false;
+                        } else if (state.filterStatusGroup === '완료') {
+                            if (!s.includes('완료')) statusPass = false;
+                        }
+
+                        if (statusPass) {
+                            let activePass = true;
+                            if (STATUS_ACTIVE.includes(s) && !state.activeStatus.has(s)) {
+                                if (state.filterStatusGroup === '임대관련' && u.is_question) { /* 생존 */ }
+                                else activePass = false;
+                            }
+                            if (STATUS_HISTORY.includes(s) && !state.historyStatus.has(s)) activePass = false;
+
+                            if (activePass) {
+                                if (checkRanges(u.total_area_p, state.checkedAreaRanges, AREA_RANGES) &&
+                                    checkRanges(u.rent, state.checkedRentRanges, RENT_RANGES) &&
+                                    checkRanges(u.total_price_sell, state.checkedSaleRanges, SALE_RANGES)) {
+                                    u._match = true;
+                                    bHasMatch = true;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 2. 가상 확장 결합(Sliding Window Merge) 검사
+                if (state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0) {
+                    const floors = [...new Set(units.map(u => u.floor))];
+                    floors.forEach(f => {
+                        const fUnits = units.filter(u => u.floor === f).sort((x,y) => x.unit.localeCompare(y.unit, undefined, {numeric: true}));
+
+                        for (let i = 0; i < fUnits.length; i++) {
+                            let sumArea = 0, sumRent = 0, sumPrice = 0;
+                            let group = [];
+
+                            for (let j = i; j < fUnits.length; j++) {
+                                const u = fUnits[j];
+
+                                // 기초 텍스트 검색 필터 등은 통과해야 묶일 자격이 됨
+                                let basePass = true;
+                                if (state.search) {
+                                    const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
+                                    let extraTags = "";
+                                    const isRentListing = ['임대', '매매/임대', '타부동산'].includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
+                                    if (isRentListing && u.total_premium === 0) extraTags += " 무권리";
+                                    const txt = `${u.building} ${u.unit} ${u.store_name} ${u.tenant} ${u.memo} ${u.rawStatus} ${u.owner} ${u.owner_tel} ${u.tenant_tel} ${u.floor}층${extraTags}`.toLowerCase();
+                                    if (!terms.every(term => txt.includes(term))) basePass = false;
+                                }
+                                if (state.isImportantMode && !(u.is_imp || u.is_question)) basePass = false;
+                                if (!basePass) break; // 중간에 이빨이 빠지면 연속된 블록이 끊어짐
+
+                                // 묶을 수 있는 상태인지 확인 (임대, 매/임, 타부, ??)
+                                const isMergeable = ['임대', '매매/임대', '타부동산'].includes(u.status) || u.is_question;
+                                if (!isMergeable) break;
+
+                                sumArea += u.area_p;
+                                sumRent += (u.rent || 0);
+                                sumPrice += (u.price_sell || 0); 
+                                group.push(u);
+
+                                // 2개 이상 묶였을 때 합산값이 필터 범위에 들어오는지 확인
+                                if (group.length > 1) {
+                                    if (checkRanges(sumArea, state.checkedAreaRanges, AREA_RANGES) &&
+                                        checkRanges(sumRent, state.checkedRentRanges, RENT_RANGES) &&
+                                        checkRanges(sumPrice, state.checkedSaleRanges, SALE_RANGES)) {
+                                        
+                                        bHasMatch = true;
+                                        // 조건에 맞으면 해당 그룹의 호실들을 모두 '생존(_match)' 시키고 '결합 테두리(_isPartOfMerge)' 부여
+                                        group.forEach((gu, idx) => {
+                                            gu._match = true;
+                                            gu._isPartOfMerge = true;
+                                            if (idx === 0) {
+                                                // 첫 번째 호실에만 결합된 최대 평수를 뱃지로 띄우기 위해 기록
+                                                if (!gu._mergeStartArea || sumArea > gu._mergeStartArea) {
+                                                    gu._mergeStartArea = sumArea;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (bHasMatch) newChecked.add(b);
+            });
+
+            state.checkedBuildings = newChecked;
+            renderList(); 
+            renderStacking();
         }
 
         function renderList() {
@@ -1328,7 +1338,8 @@
                     list.appendChild(divider); lastExit = currentExit;
                 }
                 const vacant = units.filter(d => d.status === '공실').length; 
-                const isChk = state.checkedBuildings.has(b); const hasMatch = units.some(checkMatch);
+                const isChk = state.checkedBuildings.has(b); 
+                const hasMatch = units.some(u => u._match); // [픽스] match 플래그 사용
                 const div = document.createElement('div'); div.className = `flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 cursor-pointer ${isChk ? 'bg-emerald-50' : ''}`;
                 div.onclick = (e) => { if (e.target.type !== 'checkbox') toggleBuilding(b); };
                 div.innerHTML = `<div class="flex items-center gap-2 overflow-hidden"><input type="checkbox" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" ${isChk ? 'checked' : ''} onchange="toggleBuilding('${b}')"><span class="text-xs font-bold truncate ${hasMatch ? 'text-slate-800' : 'text-slate-400'}">${b}</span></div>${vacant > 0 ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 rounded-full font-bold">${vacant}</span>` : ''}`; list.appendChild(div);
@@ -1367,14 +1378,18 @@
                 const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
                 const fCont = document.createElement('div'); fCont.className = "p-3 md:p-4 space-y-2"; let visCnt = 0;
                 floors.forEach(f => {
-                    const fUnits = units.filter(u => u.floor === f).sort((x,y) => x.unit.localeCompare(y.unit, undefined, {numeric: true})); const hasMatch = fUnits.some(checkMatch);
+                    const fUnits = units.filter(u => u.floor === f).sort((x,y) => x.unit.localeCompare(y.unit, undefined, {numeric: true})); 
+                    const hasMatch = fUnits.some(u => u._match);
                     const avgRentF = calcGroupedStats(fUnits, 'rent');
+                    
                     if (!state.isSummaryMode || hasMatch) {
                         visCnt++; const row = document.createElement('div'); row.className = "flex items-stretch min-h-[76px] border-b border-slate-100 pb-2 last:border-0";
                         row.innerHTML = `<div class="w-12 md:w-16 flex-shrink-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500 rounded-l-lg p-1 border-r border-slate-200"><span class="font-extrabold text-sm md:text-base leading-none">${f}층</span><span class="text-[9px] md:text-[10px] text-emerald-600 font-bold mt-1 leading-none text-center">${fmtRentAvg(avgRentF)}</span></div>`;
                         const grid = document.createElement('div'); grid.className = "flex-1 flex flex-wrap gap-2 items-center pl-2 md:pl-3";
+                        
                         fUnits.forEach(u => {
-                            const isM = checkMatch(u); const cls = STATUS_CLASS_MAP[u.status] || 'bg-st-미정'; const w = Math.max(80, Math.min(200, u.area_p * 6));
+                            const isM = u._match; 
+                            const cls = STATUS_CLASS_MAP[u.status] || 'bg-st-미정'; const w = Math.max(80, Math.min(200, u.area_p * 6));
                             let borderClass = ''; 
                             if (u.pos === '코너') borderClass = 'pos-corner'; else if (u.pos === '전면') borderClass = 'pos-front'; else if (u.pos === '후면') borderClass = 'pos-back'; else if (u.pos === '측면') borderClass = 'pos-side'; else if (u.pos === '내측') borderClass = 'pos-inner';
                             const borderColor = BORDER_COLOR_MAP[u.status] || '#94a3b8';
@@ -1404,7 +1419,17 @@
                             const isSelected = state.comparisonList.has(u.id);
                             const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" data-id="${u.id}"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'} pointer-events-none"></i></div>`;
 
-                            el.innerHTML = `${star} ${question} ${adWarn} ${doneBadge} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
+                            // [픽스] 가상 확장 결합 UI 주입 (오렌지 점선 테두리 및 뱃지)
+                            let mergeLine = '';
+                            let mergeBadge = '';
+                            if (u._isPartOfMerge) {
+                                mergeLine = `<div class="absolute bottom-[-1px] left-0 right-0 h-[4px] border-b-[4px] border-dashed border-orange-500 z-20 pointer-events-none rounded-b-lg"></div>`;
+                            }
+                            if (u._mergeStartArea > 0) {
+                                mergeBadge = `<span class="absolute -top-2 left-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-md z-30 font-black tracking-tighter whitespace-nowrap animate-bounce" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">💡 +확장 ${u._mergeStartArea.toFixed(0)}p</span>`;
+                            }
+
+                            el.innerHTML = `${mergeBadge}${star} ${question} ${adWarn} ${doneBadge} ${mergeLine} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
                             
                             el.onclick = (e) => {
                                 if (e.target.closest('.btn-compare')) {
