@@ -281,7 +281,7 @@
                     <span class="hidden md:inline">광교마을 상가 지도</span>
                     <span class="md:hidden">상가 지도</span>
                 </h1>
-                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.1</span>
+                <span class="text-[10px] opacity-80 font-bold hidden md:inline text-yellow-300">v8.1.1</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -614,7 +614,6 @@
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
-        // [픽스] 평수 10-20평 ➡️ 10-15평, 15-20평 분할
         const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
         const AREA_RANGES = [ 
             { id: '10under', label: '10평 ↓', min: 0, max: 10 }, 
@@ -679,7 +678,18 @@
             });
         });
 
-        // 범위 체크 헬퍼 함수
+        // [복구] 필수 필터 업데이트 함수 
+        function updateExits() { 
+            const exits = [...new Set(state.allData.map(d => d.exit).filter(Boolean))].sort(); 
+            document.getElementById('exitFilter').innerHTML = `<option value="all">출구 전체</option>` + exits.map(e => `<option value="${e}">${e}</option>`).join(''); 
+        }
+        function updateFilter(k, v) { 
+            if (k === 'search') state.search = v.toLowerCase(); 
+            if (k === 'exit') state.filterExit = v; 
+            if (k === 'group') state.filterStatusGroup = v; 
+            applySmartSelection(); 
+        }
+
         function checkRanges(val, ranges, rangeDefs) {
             if (ranges.size === 0) return true;
             let pass = false;
@@ -1127,7 +1137,7 @@
                     pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
                     pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
                     group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
-                    _match: false, _isPartOfMerge: false, _mergeStartArea: 0 // 가상 확장 속성 초기화
+                    _match: false, _isPartOfMerge: false, _mergeStartArea: 0
                 };
             }).filter(x => x);
 
@@ -1166,7 +1176,11 @@
             });
             
             state.checkedBuildings = new Set(state.buildings);
-            updateExits(); document.getElementById('statusToggleBar').classList.remove('hidden'); document.getElementById('emptyState').classList.add('hidden'); document.getElementById('stackingContainer').classList.remove('hidden'); renderList(); renderStacking();
+            updateExits(); 
+            document.getElementById('statusToggleBar').classList.remove('hidden'); 
+            document.getElementById('emptyState').classList.add('hidden'); 
+            document.getElementById('stackingContainer').classList.remove('hidden'); 
+            renderList(); renderStacking();
         }
 
         function normalizeStatus(st) {
@@ -1179,13 +1193,11 @@
             return '미정';
         }
 
-        // [핵심 픽스] 스마트 선택 로직 (가상 확장 병합 알고리즘 포함)
         function applySmartSelection() {
             const isFilterActive = state.search || state.filterExit !== 'all' || state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0 || state.isImportantMode || state.isRoadsideMode || state.filterStatusGroup !== 'all' || state.activeStatus.size !== STATUS_ACTIVE.length || state.historyStatus.size !== STATUS_HISTORY.length;
 
             const newChecked = new Set();
 
-            // 상태 초기화
             state.allData.forEach(d => {
                 d._match = false;
                 d._isPartOfMerge = false;
@@ -1208,7 +1220,6 @@
                     return;
                 }
 
-                // 1. 개별 호실 단일 필터 검사
                 units.forEach(u => {
                     let pass = true;
 
@@ -1229,7 +1240,6 @@
                         if (state.filterStatusGroup === '매매관련') {
                             if (!['매매', '매매/임대'].includes(s)) statusPass = false;
                         } else if (state.filterStatusGroup === '임대관련') {
-                            // [픽스] 임대관련일 때 ??(is_question) 이면 무조건 통과
                             if (!['임대', '매매/임대', '타부동산'].includes(s) && !u.is_question) statusPass = false;
                         } else if (state.filterStatusGroup === '완료') {
                             if (!s.includes('완료')) statusPass = false;
@@ -1238,7 +1248,7 @@
                         if (statusPass) {
                             let activePass = true;
                             if (STATUS_ACTIVE.includes(s) && !state.activeStatus.has(s)) {
-                                if (state.filterStatusGroup === '임대관련' && u.is_question) { /* 생존 */ }
+                                if (state.filterStatusGroup === '임대관련' && u.is_question) { }
                                 else activePass = false;
                             }
                             if (STATUS_HISTORY.includes(s) && !state.historyStatus.has(s)) activePass = false;
@@ -1255,7 +1265,6 @@
                     }
                 });
 
-                // 2. 가상 확장 결합(Sliding Window Merge) 검사
                 if (state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0) {
                     const floors = [...new Set(units.map(u => u.floor))];
                     floors.forEach(f => {
@@ -1268,7 +1277,6 @@
                             for (let j = i; j < fUnits.length; j++) {
                                 const u = fUnits[j];
 
-                                // 기초 텍스트 검색 필터 등은 통과해야 묶일 자격이 됨
                                 let basePass = true;
                                 if (state.search) {
                                     const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
@@ -1279,9 +1287,8 @@
                                     if (!terms.every(term => txt.includes(term))) basePass = false;
                                 }
                                 if (state.isImportantMode && !(u.is_imp || u.is_question)) basePass = false;
-                                if (!basePass) break; // 중간에 이빨이 빠지면 연속된 블록이 끊어짐
+                                if (!basePass) break; 
 
-                                // 묶을 수 있는 상태인지 확인 (임대, 매/임, 타부, ??)
                                 const isMergeable = ['임대', '매매/임대', '타부동산'].includes(u.status) || u.is_question;
                                 if (!isMergeable) break;
 
@@ -1290,19 +1297,16 @@
                                 sumPrice += (u.price_sell || 0); 
                                 group.push(u);
 
-                                // 2개 이상 묶였을 때 합산값이 필터 범위에 들어오는지 확인
                                 if (group.length > 1) {
                                     if (checkRanges(sumArea, state.checkedAreaRanges, AREA_RANGES) &&
                                         checkRanges(sumRent, state.checkedRentRanges, RENT_RANGES) &&
                                         checkRanges(sumPrice, state.checkedSaleRanges, SALE_RANGES)) {
                                         
                                         bHasMatch = true;
-                                        // 조건에 맞으면 해당 그룹의 호실들을 모두 '생존(_match)' 시키고 '결합 테두리(_isPartOfMerge)' 부여
                                         group.forEach((gu, idx) => {
                                             gu._match = true;
                                             gu._isPartOfMerge = true;
                                             if (idx === 0) {
-                                                // 첫 번째 호실에만 결합된 최대 평수를 뱃지로 띄우기 위해 기록
                                                 if (!gu._mergeStartArea || sumArea > gu._mergeStartArea) {
                                                     gu._mergeStartArea = sumArea;
                                                 }
@@ -1339,10 +1343,10 @@
                 }
                 const vacant = units.filter(d => d.status === '공실').length; 
                 const isChk = state.checkedBuildings.has(b); 
-                const hasMatch = units.some(u => u._match); // [픽스] match 플래그 사용
+                const hasMatch = units.some(u => u._match);
                 const div = document.createElement('div'); div.className = `flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 cursor-pointer ${isChk ? 'bg-emerald-50' : ''}`;
                 div.onclick = (e) => { if (e.target.type !== 'checkbox') toggleBuilding(b); };
-                div.innerHTML = `<div class="flex items-center gap-2 overflow-hidden"><input type="checkbox" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" ${isChk ? 'checked' : ''} onchange="toggleBuilding('${b}')"><span class="text-xs font-bold truncate ${hasMatch ? 'text-slate-800' : 'text-slate-400'}">${b}</span></div>${vacant > 0 ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 rounded-full font-bold">${vacant}</span>` : ''}`; list.appendChild(div);
+                div.innerHTML = `<div class="flex items-center gap-2 overflow-hidden"><input type="checkbox" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" ${isChk ? 'checked' : ''} onchange="toggleBuilding('${b}')"><span class="text-xs font-bold truncate ${hasMatch ? 'text-slate-800' : 'text-slate-400'}">${cleanBuildingName(b)}</span></div>${vacant > 0 ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 rounded-full font-bold">${vacant}</span>` : ''}`; list.appendChild(div);
             });
         }
         function toggleBuilding(b) { if (state.checkedBuildings.has(b)) state.checkedBuildings.delete(b); else state.checkedBuildings.add(b); renderList(); renderStacking(); }
@@ -1374,7 +1378,7 @@
                 const units = state.allData.filter(d => d.building === b); if (!units.length) return;
                 const avgSell = calcGroupedStats(units, 'sell'); const avgRent = calcGroupedStats(units, 'rent');
                 const wrapper = document.createElement('div'); wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden";
-                wrapper.innerHTML = `<div class="bg-slate-50 px-3 md:px-4 py-3 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2"><div class="flex items-center gap-3"><h3 class="font-extrabold text-base md:text-lg text-slate-800">${b}</h3><button onclick="openBuildingModal('${b}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] md:text-xs font-bold text-slate-600 border border-slate-300">상세</button></div><div class="flex gap-2 text-[10px] md:text-xs"><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(매매)</span> <strong class="text-red-500">${fmtSellAvg(avgSell)}</strong></span><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(임대)</span> <strong class="text-emerald-600">${fmtRentAvg(avgRent)}</strong></span></div></div>`;
+                wrapper.innerHTML = `<div class="bg-slate-50 px-3 md:px-4 py-3 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2"><div class="flex items-center gap-3"><h3 class="font-extrabold text-base md:text-lg text-slate-800">${cleanBuildingName(b)}</h3><button onclick="openBuildingModal('${b}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] md:text-xs font-bold text-slate-600 border border-slate-300">상세</button></div><div class="flex gap-2 text-[10px] md:text-xs"><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(매매)</span> <strong class="text-red-500">${fmtSellAvg(avgSell)}</strong></span><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(임대)</span> <strong class="text-emerald-600">${fmtRentAvg(avgRent)}</strong></span></div></div>`;
                 const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
                 const fCont = document.createElement('div'); fCont.className = "p-3 md:p-4 space-y-2"; let visCnt = 0;
                 floors.forEach(f => {
@@ -1419,7 +1423,6 @@
                             const isSelected = state.comparisonList.has(u.id);
                             const compareBtn = `<div class="btn-compare ${isSelected ? 'selected' : ''}" data-id="${u.id}"><i class="${isSelected ? 'ph-fill ph-check' : 'ph-bold ph-plus'} pointer-events-none"></i></div>`;
 
-                            // [픽스] 가상 확장 결합 UI 주입 (오렌지 점선 테두리 및 뱃지)
                             let mergeLine = '';
                             let mergeBadge = '';
                             if (u._isPartOfMerge) {
@@ -2065,7 +2068,6 @@
                 return;
             }
 
-            // 동적 Grid 및 인쇄 클래스 맵핑
             grid.className = `grid gap-4 md:gap-6 w-full grid-cols-1 md:grid-cols-${Math.min(bNames.length, 2)} lg:grid-cols-${bNames.length} print-cols-${bNames.length}`;
 
             const getF = f => {
@@ -2163,10 +2165,6 @@
                 grid.innerHTML += cardHtml;
             });
         }
-
-        // ==========================================
-        // [Step 4] 통매각 시뮬레이터 팝업 모달
-        // ==========================================
 
         function openSimulator(bName) {
             state.simTarget = bName;
