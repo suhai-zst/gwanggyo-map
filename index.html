@@ -1006,18 +1006,37 @@
         
         function updateAllToggleBtnState() { const btn = document.getElementById('toggleAllBtn'); if(state.activeStatus.size === 0 && state.historyStatus.size === 0) { btn.innerText = "전체 켜기"; btn.classList.add('inactive'); } else { btn.innerText = "전체 끄기"; btn.classList.remove('inactive'); } }
 
-        function resetFilters() {
-            state.search = ''; state.filterExit = 'all'; state.filterStatusGroup = 'all';
-            state.checkedRentRanges.clear(); state.checkedSaleRanges.clear(); state.checkedAreaRanges.clear(); 
-            state.isImportantMode = false; state.isSummaryMode = false; state.isRoadsideMode = false;
-            state.activeStatus = new Set([...STATUS_ACTIVE]); state.historyStatus = new Set([...STATUS_HISTORY]);
-            state.checkedBuildings = new Set(state.buildings);
-            document.getElementById('searchInput').value = ''; document.getElementById('exitFilter').value = 'all'; document.getElementById('statusGroupFilter').value = 'all';
-            document.querySelectorAll('.multi-select-dropdown input').forEach(cb => cb.checked = false);
-            setToggleUI('summaryToggle', false); setToggleUI('impToggle', false); setToggleUI('roadsideToggle', false);
-            state.comparisonList.clear(); state.splitGroups.clear(); updateCompareBar();
-            renderChips(); updateAllToggleBtnState(); renderList(); renderStacking();
-        }
+       function resetFilters() {
+    // 1. 모든 필터 상태(State) 값 초기화
+    state.search = ''; state.filterExit = 'all'; state.filterStatusGroup = 'all';
+    state.checkedRentRanges.clear(); state.checkedSaleRanges.clear(); state.checkedAreaRanges.clear(); 
+    state.isImportantMode = false; state.isSummaryMode = false; state.isRoadsideMode = false;
+    state.activeStatus = new Set([...STATUS_ACTIVE]); state.historyStatus = new Set([...STATUS_HISTORY]);
+    state.checkedBuildings = new Set(state.buildings);
+
+    // 2. 화면 상의 UI 컨트롤러(Input, Select, Checkbox) 초기화
+    document.getElementById('searchInput').value = ''; 
+    document.getElementById('exitFilter').value = 'all'; 
+    document.getElementById('statusGroupFilter').value = 'all';
+    document.querySelectorAll('.multi-select-dropdown input').forEach(cb => cb.checked = false);
+    
+    // 3. 토글 버튼 UI 초기화
+    setToggleUI('summaryToggle', false); 
+    setToggleUI('impToggle', false); 
+    setToggleUI('roadsideToggle', false);
+    
+    // 4. 장바구니(비교함) 초기화
+    state.comparisonList.clear(); 
+    state.splitGroups.clear(); 
+    updateCompareBar();
+    
+    // 5. 상태 칩(Chips) UI 렌더링
+    renderChips(); 
+    updateAllToggleBtnState(); 
+    
+    // [버그 픽스 핵심] 단순 화면 그리기가 아니라, 스마트 엔진을 재가동하여 모든 호실의 _match(생존) 이름표를 리셋!
+    applySmartSelection();
+      }
         function setToggleUI(idPrefix, isActive) { const bg = document.getElementById(idPrefix + 'Bg'); const knob = document.getElementById(idPrefix + 'Knob'); const activeColor = idPrefix === 'impToggle' ? 'bg-yellow-500' : (idPrefix === 'roadsideToggle' ? 'bg-blue-500' : 'bg-emerald-500'); if(isActive) { bg.classList.replace('bg-black/30', activeColor); bg.classList.replace('bg-black/40', activeColor); knob.classList.replace('left-0.5', 'translate-x-4'); } else { bg.className = bg.className.replace(activeColor, 'bg-black/40'); knob.classList.replace('translate-x-4', 'left-0.5'); } }
         function toggleSummary() { state.isSummaryMode = !state.isSummaryMode; setToggleUI('summaryToggle', state.isSummaryMode); renderStacking(); }
         function toggleImportant() { state.isImportantMode = !state.isImportantMode; setToggleUI('impToggle', state.isImportantMode); applySmartSelection(); }
