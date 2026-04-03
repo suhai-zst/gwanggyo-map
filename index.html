@@ -1970,27 +1970,45 @@
             }
         }
 
-        function initDashboard() {
-            if(state.buildings.length === 0) {
-                alert("엑셀 데이터를 먼저 불러와 주세요.");
-                toggleDashboard();
-                return;
-            }
-            
-            const sels = ['dashSel1', 'dashSel2', 'dashSel3'];
-            sels.forEach(id => {
-                const select = document.getElementById(id);
-                select.innerHTML = '<option value="">선택 안함</option>';
-                state.buildings.forEach(b => { select.innerHTML += `<option value="${b}">${b}</option>`; });
-            });
+       function initDashboard() {
+    if(state.buildings.length === 0) {
+        alert("엑셀 데이터를 먼저 불러와 주세요.");
+        toggleDashboard();
+        return;
+    }
+    
+    // 엑셀에서 출구 데이터 자동 추출
+    const exits = [...new Set(state.allData.map(d => d.exit).filter(Boolean))].sort();
+    
+    let optionsHtml = '<option value="">선택 안함</option>';
+    
+    // 상권 테마 그룹 생성
+    optionsHtml += '<optgroup label="[거시 상권] 통합 비교">';
+    optionsHtml += `<option value="Z|대로변">대로변 상가 전체</option>`;
+    exits.forEach(e => {
+        optionsHtml += `<option value="Z|${e}">${e} 상권 전체</option>`;
+    });
+    optionsHtml += '</optgroup>';
+    
+    // 개별 건물 그룹 생성
+    optionsHtml += '<optgroup label="[개별 건물] 단독 비교">';
+    state.buildings.forEach(b => { 
+        optionsHtml += `<option value="B|${b}">${cleanBuildingName(b)}</option>`; 
+    });
+    optionsHtml += '</optgroup>';
 
-            if(state.checkedBuildings.size > 0) {
-                document.getElementById('dashSel1').value = Array.from(state.checkedBuildings)[0];
-            }
-            
-            document.getElementById('dashPrintDate').innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-            renderMacroDash();
-        }
+    const sels = ['dashSel1', 'dashSel2', 'dashSel3'];
+    sels.forEach(id => {
+        document.getElementById(id).innerHTML = optionsHtml;
+    });
+
+    if(state.checkedBuildings.size > 0) {
+        document.getElementById('dashSel1').value = 'B|' + Array.from(state.checkedBuildings)[0];
+    }
+    
+    document.getElementById('dashPrintDate').innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    renderMacroDash();
+}
 
         function getTierStats(units, filterFn) {
             const tUnits = units.filter(filterFn);
@@ -2079,159 +2097,194 @@
             return totalValManwon;
         }
 
-        function renderMacroDash() {
-            const bNames = ['dashSel1', 'dashSel2', 'dashSel3'].map(id => document.getElementById(id).value).filter(Boolean);
-            const grid = document.getElementById('dashMacroGrid');
-            const isAvmOn = document.getElementById('chkShowAvm').checked;
-            const isRatioOn = document.getElementById('chkShowRatio').checked;
-            
-            grid.innerHTML = '';
-            
-            if(bNames.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-20 text-slate-400 font-bold text-lg"><i class="ph-duotone ph-buildings text-4xl block mb-2"></i> 상단에서 비교할 건물을 선택해주세요.</div>`;
-                grid.className = "w-full";
-                return;
+function renderMacroDash() {
+    const selections = ['dashSel1', 'dashSel2', 'dashSel3'].map(id => document.getElementById(id).value).filter(Boolean);
+    const grid = document.getElementById('dashMacroGrid');
+    const isAvmOn = document.getElementById('chkShowAvm').checked;
+    const isRatioOn = document.getElementById('chkShowRatio').checked;
+    
+    grid.innerHTML = '';
+    
+    if(selections.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-slate-400 font-bold text-lg"><i class="ph-duotone ph-buildings text-4xl block mb-2"></i> 상단에서 비교할 상권이나 건물을 선택해주세요.</div>`;
+        grid.className = "w-full";
+        return;
+    }
+
+    grid.className = `grid gap-4 md:gap-6 w-full grid-cols-1 md:grid-cols-${Math.min(selections.length, 2)} lg:grid-cols-${selections.length} print-cols-${selections.length}`;
+
+    const getF = f => {
+        if(!f) return 0;
+        if(f.includes('B')) return -parseInt(f.replace('B',''));
+        return parseInt(f.replace(/\D/g,'')) || 0;
+    };
+
+    const tiersDef = [
+        { label: '1층 (전면/대로변)', f: u => getF(u.floor)===1 && ['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
+        { label: '1층 (후면/내측)', f: u => getF(u.floor)===1 && !['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
+        { label: '2층', f: u => getF(u.floor)===2 },
+        { label: '3층 이상 (상층부)', f: u => getF(u.floor)>=3 }
+    ];
+
+    selections.forEach(sel => {
+        const type = sel.substring(0, 2); // 'B|'(건물) 또는 'Z|'(구역/상권)
+        const val = sel.substring(2);
+        
+        let units = [];
+        let displayName = '';
+        let isZone = false;
+        
+        if (type === 'B|') {
+            units = state.allData.filter(d => d.building === val);
+            displayName = cleanBuildingName(val);
+        } else if (type === 'Z|') {
+            isZone = true;
+            if (val === '대로변') {
+                units = state.allData.filter(d => ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))));
+                displayName = `[상권] 대로변 전체`;
+            } else {
+                units = state.allData.filter(d => d.exit === val);
+                displayName = `[상권] ${val}`;
             }
-
-            grid.className = `grid gap-4 md:gap-6 w-full grid-cols-1 md:grid-cols-${Math.min(bNames.length, 2)} lg:grid-cols-${bNames.length} print-cols-${bNames.length}`;
-
-            const getF = f => {
-                if(!f) return 0;
-                if(f.includes('B')) return -parseInt(f.replace('B',''));
-                return parseInt(f.replace(/\D/g,'')) || 0;
-            };
-
-            const tiersDef = [
-                { label: '1층 (전면/대로변)', f: u => getF(u.floor)===1 && ['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
-                { label: '1층 (후면/내측)', f: u => getF(u.floor)===1 && !['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
-                { label: '2층', f: u => getF(u.floor)===2 },
-                { label: '3층 이상 (상층부)', f: u => getF(u.floor)>=3 }
-            ];
-
-            bNames.forEach(bName => {
-                const units = state.allData.filter(d => d.building === bName);
-                if(units.length === 0) return;
-
-                let tableHtml = `<table class="w-full text-xs text-center border-collapse">
-                    <thead><tr class="bg-slate-100 text-slate-600 border-b border-slate-300">
-                        <th class="py-2 px-1">분류(Tier)</th><th class="py-2 px-1">임대(평)</th><th class="py-2 px-1">매매(평)</th><th class="py-2 px-1">수익률</th>
-                    </tr></thead><tbody class="divide-y divide-slate-100">`;
-
-                tiersDef.forEach(tDef => {
-                    const stats = getTierStats(units, tDef.f);
-                    if(stats) {
-                        tableHtml += `<tr class="hover:bg-slate-50">
-                            <td class="py-2 px-1 font-bold text-slate-700 text-left border-r border-slate-100 pl-2">
-                                ${tDef.label}<br><span class="text-[9px] text-slate-400 font-normal">총 ${stats.totalArea.toFixed(0)}평 / ${stats.count}호</span>
-                            </td>
-                            <td class="py-2 px-1 text-emerald-700 font-bold">${fmtRentAvg(stats.ppRent)}</td>
-                            <td class="py-2 px-1 text-red-600 font-bold">${fmtSellAvg(stats.ppSell)}</td>
-                            <td class="py-2 px-1 text-red-500 font-bold">${stats.yieldRate > 0 ? stats.yieldRate.toFixed(1)+'%' : '-'}</td>
-                        </tr>`;
-                    }
-                });
-                tableHtml += `</tbody></table>`;
-
-                let ratioHtml = '';
-                if(isRatioOn) {
-                    let tArea = 0, rArea = 0, sArea = 0;
-                    let processedForArea = new Set();
-                    units.forEach(u => {
-                        let gid = u.unique_group_id || `single_${u.id}`;
-                        if(processedForArea.has(gid)) return;
-                        processedForArea.add(gid);
-                        let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                        
-                        let isRent = members.some(m => ['임대', '매매/임대', '타부동산'].includes(m.status));
-                        let isSell = members.some(m => ['매매', '매매/임대'].includes(m.status));
-                        
-                        members.forEach(m => {
-                            tArea += (m.area_p || 0);
-                            if (isRent) rArea += (m.area_p || 0);
-                            if (isSell) sArea += (m.area_p || 0);
-                        });
-                    });
-                    
-                    const rRatio = tArea > 0 ? ((rArea/tArea)*100).toFixed(1) : 0;
-                    const sRatio = tArea > 0 ? ((sArea/tArea)*100).toFixed(1) : 0;
-                    
-                    ratioHtml = `<div class="text-center bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-600 mb-3 shadow-sm"><span class="font-bold">시장 진행률 (면적기준):</span> 임대 <span class="text-emerald-600 font-black">${rRatio}%</span> / 매매 <span class="text-red-500 font-black">${sRatio}%</span></div>`;
-                }
-
-                let avmHtml = '';
-                if(isAvmOn) {
-                    const avmVal = calcBuildingAVM(units);
-                    const avmStr = fmtKoreanMoney(avmVal);
-                    avmHtml = `<div class="mt-auto bg-yellow-50 rounded-lg p-3 border border-yellow-200 text-center shadow-sm">
-                        <span class="text-[10px] font-bold text-yellow-700 block mb-1">장부기반 건물 전체 가치 추정 (AVM)</span>
-                        <span class="text-lg md:text-xl font-black text-red-600">💰 약 ${avmStr}</span>
-                    </div>`;
-                }
-
-                const cleanName = cleanBuildingName(bName);
-                let cardHtml = `
-                    <div class="dash-card bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full">
-                        <div class="bg-slate-800 px-4 py-3 border-b border-slate-900 flex justify-between items-center">
-                            <h3 class="text-white font-black text-base flex items-center gap-2">
-                                <i class="ph-fill ph-building text-yellow-400"></i> 
-                                <span class="outline-none border-b border-dashed border-slate-600 focus:border-slate-300 transition-colors" contenteditable="true" spellcheck="false" title="클릭하여 건물명 수정">${cleanName}</span>
-                            </h3>
-                            <button onclick="openSimulator('${bName}')" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600 transition shadow no-print-dash"><i class="ph-bold ph-sliders"></i> 시뮬레이터</button>
-                        </div>
-                        <div class="p-3 md:p-4 flex-1 flex flex-col">
-                            ${ratioHtml}
-                            <div class="overflow-x-auto border border-slate-200 rounded-lg mb-4 flex-1">
-                                ${tableHtml}
-                            </div>
-                            ${avmHtml}
-                        </div>
-                    </div>
-                `;
-                grid.innerHTML += cardHtml;
-            });
         }
+        
+        if(units.length === 0) return;
 
-        function openSimulator(bName) {
-            state.simTarget = bName;
-            const units = state.allData.filter(d => d.building === bName);
-            
-            let sumPrice = 0, sumDep = 0, sumRent = 0;
-            let processed = new Set();
+        let tableHtml = `<table class="w-full text-xs text-center border-collapse">
+            <thead><tr class="bg-slate-100 text-slate-600 border-b border-slate-300">
+                <th class="py-2 px-1">분류(Tier)</th><th class="py-2 px-1">임대(평)</th><th class="py-2 px-1">매매(평)</th><th class="py-2 px-1">수익률</th>
+            </tr></thead><tbody class="divide-y divide-slate-100">`;
+
+        tiersDef.forEach(tDef => {
+            const stats = getTierStats(units, tDef.f);
+            if(stats) {
+                tableHtml += `<tr class="hover:bg-slate-50">
+                    <td class="py-2 px-1 font-bold text-slate-700 text-left border-r border-slate-100 pl-2">
+                        ${tDef.label}<br><span class="text-[9px] text-slate-400 font-normal">총 ${stats.totalArea.toFixed(0)}평 / ${stats.count}호</span>
+                    </td>
+                    <td class="py-2 px-1 text-emerald-700 font-bold">${fmtRentAvg(stats.ppRent)}</td>
+                    <td class="py-2 px-1 text-red-600 font-bold">${fmtSellAvg(stats.ppSell)}</td>
+                    <td class="py-2 px-1 text-red-500 font-bold">${stats.yieldRate > 0 ? stats.yieldRate.toFixed(1)+'%' : '-'}</td>
+                </tr>`;
+            }
+        });
+        tableHtml += `</tbody></table>`;
+
+        let ratioHtml = '';
+        if(isRatioOn) {
+            let tArea = 0, rArea = 0, sArea = 0;
+            let processedForArea = new Set();
             units.forEach(u => {
                 let gid = u.unique_group_id || `single_${u.id}`;
-                if(processed.has(gid)) return;
-                processed.add(gid);
+                if(processedForArea.has(gid)) return;
+                processedForArea.add(gid);
                 let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                
+                let isRent = members.some(m => ['임대', '매매/임대', '타부동산'].includes(m.status));
+                let isSell = members.some(m => ['매매', '매매/임대'].includes(m.status));
+                
                 members.forEach(m => {
-                    sumPrice += (m.price_sell||0);
-                    sumDep += (m.deposit||0);
-                    sumRent += (m.rent||0);
+                    tArea += (m.area_p || 0);
+                    if (isRent) rArea += (m.area_p || 0);
+                    if (isSell) sArea += (m.area_p || 0);
                 });
             });
-
-            if (sumPrice === 0) {
-                sumPrice = Math.round(calcBuildingAVM(units)); 
-            }
-
-            state.simOrigPrice = sumPrice;
-            state.simOrigDep = sumDep;
-            state.simOrigRent = sumRent;
-
-            const cleanName = cleanBuildingName(bName);
-            document.getElementById('simBuildingName').innerText = cleanName;
-            document.getElementById('simBuildingNamePrint').innerText = cleanName;
             
-            document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
-            document.getElementById('simInputDep').value = sumDep.toLocaleString();
-            document.getElementById('simInputRent').value = sumRent.toLocaleString();
+            const rRatio = tArea > 0 ? ((rArea/tArea)*100).toFixed(1) : 0;
+            const sRatio = tArea > 0 ? ((sArea/tArea)*100).toFixed(1) : 0;
             
-            setupSlider('Price', sumPrice, sumPrice * 1.5 || 1000000);
-            setupSlider('Dep', sumDep, sumDep * 1.5 || 100000);
-            setupSlider('Rent', sumRent, sumRent * 1.5 || 10000);
-
-            document.getElementById('simulatorModal').classList.remove('hidden');
-            calcSimulator();
+            ratioHtml = `<div class="text-center bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-600 mb-3 shadow-sm"><span class="font-bold">시장 진행률 (면적기준):</span> 임대 <span class="text-emerald-600 font-black">${rRatio}%</span> / 매매 <span class="text-red-500 font-black">${sRatio}%</span></div>`;
         }
+
+        let avmHtml = '';
+        if(isAvmOn) {
+            const avmVal = calcBuildingAVM(units);
+            const avmStr = fmtKoreanMoney(avmVal);
+            avmHtml = `<div class="mt-auto bg-yellow-50 rounded-lg p-3 border border-yellow-200 text-center shadow-sm">
+                <span class="text-[10px] font-bold text-yellow-700 block mb-1">장부기반 ${isZone ? '상권 전체' : '건물'} 가치 추정 (AVM)</span>
+                <span class="text-lg md:text-xl font-black text-red-600">💰 약 ${avmStr}</span>
+            </div>`;
+        }
+
+        const iconClass = isZone ? "ph-map-pin" : "ph-building";
+        
+        let cardHtml = `
+            <div class="dash-card bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-800 px-4 py-3 border-b border-slate-900 flex justify-between items-center">
+                    <h3 class="text-white font-black text-base flex items-center gap-2">
+                        <i class="ph-fill ${iconClass} text-yellow-400"></i> 
+                        <span class="outline-none border-b border-dashed border-slate-600 focus:border-slate-300 transition-colors" contenteditable="true" spellcheck="false" title="클릭하여 수정">${displayName}</span>
+                    </h3>
+                    <button onclick="openSimulator('${sel}')" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600 transition shadow no-print-dash"><i class="ph-bold ph-sliders"></i> 시뮬</button>
+                </div>
+                <div class="p-3 md:p-4 flex-1 flex flex-col">
+                    ${ratioHtml}
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg mb-4 flex-1">
+                        ${tableHtml}
+                    </div>
+                    ${avmHtml}
+                </div>
+            </div>
+        `;
+        grid.innerHTML += cardHtml;
+    });
+}
+
+function openSimulator(targetSel) {
+    state.simTarget = targetSel;
+    
+    const type = targetSel.substring(0, 2);
+    const val = targetSel.substring(2);
+    let units = [];
+    let displayName = '';
+    
+    if (type === 'B|') {
+        units = state.allData.filter(d => d.building === val);
+        displayName = cleanBuildingName(val);
+    } else if (type === 'Z|') {
+        if (val === '대로변') {
+            units = state.allData.filter(d => ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))));
+            displayName = `[상권] 대로변 전체`;
+        } else {
+            units = state.allData.filter(d => d.exit === val);
+            displayName = `[상권] ${val}`;
+        }
+    }
+
+    let sumPrice = 0, sumDep = 0, sumRent = 0;
+    let processed = new Set();
+    units.forEach(u => {
+        let gid = u.unique_group_id || `single_${u.id}`;
+        if(processed.has(gid)) return;
+        processed.add(gid);
+        let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+        members.forEach(m => {
+            sumPrice += (m.price_sell||0);
+            sumDep += (m.deposit||0);
+            sumRent += (m.rent||0);
+        });
+    });
+
+    if (sumPrice === 0) { sumPrice = Math.round(calcBuildingAVM(units)); }
+
+    state.simOrigPrice = sumPrice;
+    state.simOrigDep = sumDep;
+    state.simOrigRent = sumRent;
+
+    document.getElementById('simBuildingName').innerText = displayName;
+    document.getElementById('simBuildingNamePrint').innerText = displayName;
+    
+    document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
+    document.getElementById('simInputDep').value = sumDep.toLocaleString();
+    document.getElementById('simInputRent').value = sumRent.toLocaleString();
+    
+    setupSlider('Price', sumPrice, sumPrice * 1.5 || 1000000);
+    setupSlider('Dep', sumDep, sumDep * 1.5 || 100000);
+    setupSlider('Rent', sumRent, sumRent * 1.5 || 10000);
+
+    document.getElementById('simulatorModal').classList.remove('hidden');
+    calcSimulator();
+}
 
         function setupSlider(type, val, max) {
             const slider = document.getElementById('simSlider' + type);
@@ -2266,39 +2319,46 @@
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
         }
 
-        function applyAvmToSimulator() {
-            if(!state.simTarget) return;
-            const units = state.allData.filter(d => d.building === state.simTarget);
-            const avmPrice = Math.round(calcBuildingAVM(units)); 
-            
-            if(avmPrice <= 0) {
-                alert("AVM 가치를 산출할 수 있는 데이터가 부족합니다.");
-                return;
-            }
-
-            let ratio = 1;
-            if(state.simOrigPrice > 0) {
-                ratio = avmPrice / state.simOrigPrice;
-            }
-
-            const newDep = Math.round(state.simOrigDep * ratio);
-            const newRent = Math.round(state.simOrigRent * ratio);
-
-            document.getElementById('simInputPrice').value = avmPrice.toLocaleString();
-            document.getElementById('simInputDep').value = newDep.toLocaleString();
-            document.getElementById('simInputRent').value = newRent.toLocaleString();
-            
-            syncSliderFromInput('price');
-            syncSliderFromInput('dep');
-            syncSliderFromInput('rent');
-            
-            formatSimInput(document.getElementById('simInputPrice'), 'lblSimPriceKo');
-            formatSimInput(document.getElementById('simInputDep'), 'lblSimDepKo');
-            formatSimInput(document.getElementById('simInputRent'), 'lblSimRentKo');
-
-            calcSimulator();
+function applyAvmToSimulator() {
+    if(!state.simTarget) return;
+    
+    const type = state.simTarget.substring(0, 2);
+    const val = state.simTarget.substring(2);
+    let units = [];
+    
+    if (type === 'B|') {
+        units = state.allData.filter(d => d.building === val);
+    } else if (type === 'Z|') {
+        if (val === '대로변') {
+            units = state.allData.filter(d => ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))));
+        } else {
+            units = state.allData.filter(d => d.exit === val);
         }
+    }
+    
+    const avmPrice = Math.round(calcBuildingAVM(units)); 
+    if(avmPrice <= 0) { alert("AVM 가치를 산출할 수 있는 데이터가 부족합니다."); return; }
 
+    let ratio = 1;
+    if(state.simOrigPrice > 0) { ratio = avmPrice / state.simOrigPrice; }
+
+    const newDep = Math.round(state.simOrigDep * ratio);
+    const newRent = Math.round(state.simOrigRent * ratio);
+
+    document.getElementById('simInputPrice').value = avmPrice.toLocaleString();
+    document.getElementById('simInputDep').value = newDep.toLocaleString();
+    document.getElementById('simInputRent').value = newRent.toLocaleString();
+    
+    syncSliderFromInput('price');
+    syncSliderFromInput('dep');
+    syncSliderFromInput('rent');
+    
+    formatSimInput(document.getElementById('simInputPrice'), 'lblSimPriceKo');
+    formatSimInput(document.getElementById('simInputDep'), 'lblSimDepKo');
+    formatSimInput(document.getElementById('simInputRent'), 'lblSimRentKo');
+
+    calcSimulator();
+}
         function calcSimulator() {
             const price = parseInt(document.getElementById('simInputPrice').value.replace(/,/g,'')) || 0;
             const dep = parseInt(document.getElementById('simInputDep').value.replace(/,/g,'')) || 0;
