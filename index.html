@@ -1218,77 +1218,148 @@
             return '미정';
         }
 
-        function applySmartSelection() {
-            const isFilterActive = state.search || state.filterExit !== 'all' || state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0 || state.isImportantMode || state.isRoadsideMode || state.filterStatusGroup !== 'all' || state.activeStatus.size !== STATUS_ACTIVE.length || state.historyStatus.size !== STATUS_HISTORY.length;
+function applySmartSelection() {
+    const isFilterActive = state.search || state.filterExit !== 'all' || state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0 || state.isImportantMode || state.isRoadsideMode || state.filterStatusGroup !== 'all' || state.activeStatus.size !== STATUS_ACTIVE.length || state.historyStatus.size !== STATUS_HISTORY.length;
 
-            const newChecked = new Set();
+    const newChecked = new Set();
 
-            state.allData.forEach(d => {
-                d._match = false;
-                d._isPartOfMerge = false;
-                d._mergeStartArea = 0;
-            });
+    // 1. 모든 호실의 필터 생존/병합 상태를 딥 리셋
+    state.allData.forEach(d => {
+        d._match = false;
+        d._isPartOfMerge = false;
+        d._mergeStartArea = 0;
+    });
 
-            state.buildings.forEach(b => {
-                const units = state.allData.filter(d => d.building === b);
-                if (units.length === 0) return;
+    state.buildings.forEach(b => {
+        const units = state.allData.filter(d => d.building === b);
+        if (units.length === 0) return;
 
-                const dFirst = units[0];
-                if (state.filterExit !== 'all' && dFirst.exit !== state.filterExit) return;
-                if (state.isRoadsideMode && !ROADSIDE_TARGETS.some(t => b.replace(/\s/g,'').includes(t.replace(/\s/g,'')))) return;
+        const dFirst = units[0];
+        if (state.filterExit !== 'all' && dFirst.exit !== state.filterExit) return;
+        if (state.isRoadsideMode && !ROADSIDE_TARGETS.some(t => b.replace(/\s/g,'').includes(t.replace(/\s/g,'')))) return;
 
-                let bHasMatch = false;
+        let bHasMatch = false;
 
-                if (!isFilterActive) {
-                    units.forEach(u => u._match = true);
-                    newChecked.add(b);
-                    return;
+        if (!isFilterActive) {
+            units.forEach(u => u._match = true);
+            newChecked.add(b);
+            return;
+        }
+
+        // 2. [기본 룰] 개별 호실 1:1 필터 검사 (기존과 동일)
+        units.forEach(u => {
+            let pass = true;
+
+            if (state.search) {
+                const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
+                let extraTags = "";
+                const isRentListing = ['임대', '매매/임대', '타부동산'].includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
+                if (isRentListing && u.total_premium === 0) extraTags += " 무권리";
+                const txt = `${u.building} ${u.unit} ${u.store_name} ${u.tenant} ${u.memo} ${u.rawStatus} ${u.owner} ${u.owner_tel} ${u.tenant_tel} ${u.floor}층${extraTags}`.toLowerCase();
+                if (!terms.every(term => txt.includes(term))) pass = false;
+            }
+            if (state.isImportantMode && !(u.is_imp || u.is_question)) pass = false;
+
+            if (pass) {
+                const s = u.status;
+                let statusPass = true;
+                
+                if (state.filterStatusGroup === '매매관련') {
+                    if (!['매매', '매매/임대'].includes(s)) statusPass = false;
+                } else if (state.filterStatusGroup === '임대관련') {
+                    // 임대관련일 때 ??(is_question) 이면 무조건 통과
+                    if (!['임대', '매매/임대', '타부동산'].includes(s) && !u.is_question) statusPass = false;
+                } else if (state.filterStatusGroup === '완료') {
+                    if (!s.includes('완료')) statusPass = false;
                 }
 
-                units.forEach(u => {
-                    let pass = true;
-
-                    if (state.search) {
-                        const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
-                        let extraTags = "";
-                        const isRentListing = ['임대', '매매/임대', '타부동산'].includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
-                        if (isRentListing && u.total_premium === 0) extraTags += " 무권리";
-                        const txt = `${u.building} ${u.unit} ${u.store_name} ${u.tenant} ${u.memo} ${u.rawStatus} ${u.owner} ${u.owner_tel} ${u.tenant_tel} ${u.floor}층${extraTags}`.toLowerCase();
-                        if (!terms.every(term => txt.includes(term))) pass = false;
+                if (statusPass) {
+                    let activePass = true;
+                    if (STATUS_ACTIVE.includes(s) && !state.activeStatus.has(s)) {
+                        if (state.filterStatusGroup === '임대관련' && u.is_question) { /* 생존 */ }
+                        else activePass = false;
                     }
-                    if (state.isImportantMode && !(u.is_imp || u.is_question)) pass = false;
+                    if (STATUS_HISTORY.includes(s) && !state.historyStatus.has(s)) activePass = false;
 
-                    if (pass) {
-                        const s = u.status;
-                        let statusPass = true;
-                        
-                        if (state.filterStatusGroup === '매매관련') {
-                            if (!['매매', '매매/임대'].includes(s)) statusPass = false;
-                        } else if (state.filterStatusGroup === '임대관련') {
-                            if (!['임대', '매매/임대', '타부동산'].includes(s) && !u.is_question) statusPass = false;
-                        } else if (state.filterStatusGroup === '완료') {
-                            if (!s.includes('완료')) statusPass = false;
-                        }
-
-                        if (statusPass) {
-                            let activePass = true;
-                            if (STATUS_ACTIVE.includes(s) && !state.activeStatus.has(s)) {
-                                if (state.filterStatusGroup === '임대관련' && u.is_question) { }
-                                else activePass = false;
-                            }
-                            if (STATUS_HISTORY.includes(s) && !state.historyStatus.has(s)) activePass = false;
-
-                            if (activePass) {
-                                if (checkRanges(u.total_area_p, state.checkedAreaRanges, AREA_RANGES) &&
-                                    checkRanges(u.rent, state.checkedRentRanges, RENT_RANGES) &&
-                                    checkRanges(u.total_price_sell, state.checkedSaleRanges, SALE_RANGES)) {
-                                    u._match = true;
-                                    bHasMatch = true;
-                                }
-                            }
+                    if (activePass) {
+                        if (checkRanges(u.total_area_p, state.checkedAreaRanges, AREA_RANGES) &&
+                            checkRanges(u.rent, state.checkedRentRanges, RENT_RANGES) &&
+                            checkRanges(u.total_price_sell, state.checkedSaleRanges, SALE_RANGES)) {
+                            u._match = true;
+                            bHasMatch = true;
                         }
                     }
-                });
+                }
+            }
+        });
+
+        // 3. [핵심 픽스: 대안 A] 가상 확장 결합(Sliding Window Merge) 검사
+        // 오직 '평수(Area)' 필터를 1개 이상 선택했을 때만 이 거대한 병합 엔진이 돌아갑니다.
+        if (state.checkedAreaRanges.size > 0) {
+            const floors = [...new Set(units.map(u => u.floor))];
+            floors.forEach(f => {
+                const fUnits = units.filter(u => u.floor === f).sort((x,y) => x.unit.localeCompare(y.unit, undefined, {numeric: true}));
+
+                for (let i = 0; i < fUnits.length; i++) {
+                    let sumArea = 0, sumRent = 0, sumPrice = 0;
+                    let group = [];
+
+                    for (let j = i; j < fUnits.length; j++) {
+                        const u = fUnits[j];
+
+                        let basePass = true;
+                        if (state.search) {
+                            const terms = state.search.split(',').map(t => t.trim()).filter(t => t);
+                            let extraTags = "";
+                            const isRentListing = ['임대', '매매/임대', '타부동산'].includes(u.status) && (u.total_deposit > 0 || u.total_rent > 0);
+                            if (isRentListing && u.total_premium === 0) extraTags += " 무권리";
+                            const txt = `${u.building} ${u.unit} ${u.store_name} ${u.tenant} ${u.memo} ${u.rawStatus} ${u.owner} ${u.owner_tel} ${u.tenant_tel} ${u.floor}층${extraTags}`.toLowerCase();
+                            if (!terms.every(term => txt.includes(term))) basePass = false;
+                        }
+                        if (state.isImportantMode && !(u.is_imp || u.is_question)) basePass = false;
+                        if (!basePass) break; // 중간에 이빨이 빠지면 연속된 블록이 끊어짐
+
+                        // 묶을 수 있는 상태인지 확인 (임대, 매/임, 타부, ??)
+                        const isMergeable = ['임대', '매매/임대', '타부동산'].includes(u.status) || u.is_question;
+                        if (!isMergeable) break;
+
+                        sumArea += u.area_p;
+                        sumRent += (u.rent || 0);
+                        sumPrice += (u.price_sell || 0); 
+                        group.push(u);
+
+                        // 2개 이상 묶였을 때 합산값이 필터 범위에 들어오는지 확인
+                        if (group.length > 1) {
+                            if (checkRanges(sumArea, state.checkedAreaRanges, AREA_RANGES) &&
+                                checkRanges(sumRent, state.checkedRentRanges, RENT_RANGES) &&
+                                checkRanges(sumPrice, state.checkedSaleRanges, SALE_RANGES)) {
+                                
+                                bHasMatch = true;
+                                // 조건에 맞으면 해당 그룹의 호실들을 모두 '생존(_match)' 시키고 띠를 둘러줍니다
+                                group.forEach((gu, idx) => {
+                                    gu._match = true;
+                                    gu._isPartOfMerge = true;
+                                    if (idx === 0) {
+                                        // 첫 번째 호실에만 뱃지 표시용 평수 기록
+                                        if (!gu._mergeStartArea || sumArea > gu._mergeStartArea) {
+                                            gu._mergeStartArea = sumArea;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+        } // 가상 확장 엔진 종료
+
+        if (bHasMatch) newChecked.add(b);
+    });
+
+    state.checkedBuildings = newChecked;
+    renderList(); 
+    renderStacking();
+}
 
                 if (state.checkedAreaRanges.size > 0 || state.checkedRentRanges.size > 0 || state.checkedSaleRanges.size > 0) {
                     const floors = [...new Set(units.map(u => u.floor))];
