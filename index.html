@@ -2379,7 +2379,15 @@
             document.getElementById('resNetMonthly').innerText = fmtKoreanMoney(netMonthly);
             document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
         }
-
+function normalizeStatus(st) {
+    const s = st.replace(/\s+/g,'');
+    if(s.includes('매매') && s.includes('임대')) return '매매/임대';
+    if(s.includes('임대완료')) return '임대완료'; if(s.includes('매매완료')) return '매매완료';
+    if(s === '매매') return '매매'; if(s === '임대') return '임대'; 
+    if(s.includes('작업필요')) return '작업필요'; if(s.includes('작업불가')) return '작업불가';
+    if(s.includes('전광교마을')) return '전광교마을'; if(s.includes('타부동산')) return '타부동산';
+    return '미정';
+}
     </script>
 </body>
 </html>
