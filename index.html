@@ -654,6 +654,7 @@
                             <input type="range" id="usimSliderPrice" min="0" max="500000" step="100" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'price', 'lblUsimPriceKo'); calcUnitSimulator();">
                             <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printUsimValPrice"></div>
                             <div id="usimAvmBasis" class="text-[9px] text-slate-500 font-bold mt-1 text-right no-print-sim hidden"></div>
+                            <div id="printUsimAvmBasis" class="hidden print-sim-only text-[9px] text-slate-500 font-bold mt-1 text-right border-t border-slate-100 pt-1"></div>
                         </div>
                         <div>
                             <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblUsimDepKo"></span></div>
@@ -2567,7 +2568,7 @@ function applyAvmToSimulator() {
         }
 
         // 호실 시뮬레이터 로직
-        function openUnitSimulator(id) {
+function openUnitSimulator(id) {
             const target = state.allData.find(d => d.id === id);
             let units = [target];
             if(target.unique_group_id) {
@@ -2588,48 +2589,35 @@ function applyAvmToSimulator() {
             document.getElementById('usimInputDep').value = sumDep.toLocaleString();
             document.getElementById('usimInputRent').value = sumRent.toLocaleString();
 
+            // 호실 대출(LTV) 초기값 30%로 조정
+            document.getElementById('usimLtv').value = 30;
+            document.getElementById('lblUsimLtv').innerText = 30;
+
             setupSlider('Price', sumPrice, sumPrice * 1.5 || 500000);
             setupSlider('Dep', sumDep, sumDep * 1.5 || 50000);
             setupSlider('Rent', sumRent, sumRent * 1.5 || 5000);
             
-            // 슬라이더 ID가 다르므로 수동 설정
             document.getElementById('usimSliderPrice').value = sumPrice; document.getElementById('usimSliderPrice').max = sumPrice * 1.5 || 500000;
             document.getElementById('usimSliderDep').value = sumDep; document.getElementById('usimSliderDep').max = sumDep * 1.5 || 50000;
             document.getElementById('usimSliderRent').value = sumRent; document.getElementById('usimSliderRent').max = sumRent * 1.5 || 5000;
 
-            // AI AVM 계산 (해당 건물 해당 층 평균 + 구역 해당 층 평균)
-            const bUnits = state.allData.filter(d => d.building === target.building && d.floor === target.floor && d.price_sell > 0);
-            let bAvg = getAvgPP(bUnits, 'sell');
-
+            // AI AVM 데이터 사전 계산
+            const bUnits = state.allData.filter(d => d.building === target.building && d.floor === target.floor);
             const zone = ROADSIDE_TARGETS.some(t => target.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : target.exit;
-            const zUnits = state.allData.filter(d => {
-                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
-                return dZone === zone && d.floor === target.floor && d.price_sell > 0;
-            });
-            let zAvg = getAvgPP(zUnits, 'sell');
-
-            // 방어 로직 (결측치 대체)
-            if (!bAvg) bAvg = getAvgPP(state.allData.filter(d => d.building === target.building && d.price_sell > 0), 'sell'); // 해당 층 없으면 건물 전체
-            if (!zAvg) zAvg = bAvg; // 구역 데이터 없으면 건물 데이터로 퉁
-            if (!bAvg) bAvg = zAvg;
-
-            let finalAvg = (bAvg + zAvg) / 2;
-            state.unitSimAvm = Math.round(finalAvg * sumArea);
+            
+            // 전역 변수에 현재 호실의 기하학적 면적 저장 (AVM 계산용)
+            state.unitSimArea = sumArea;
+            state.unitSimBuilding = target.building;
+            state.unitSimFloor = target.floor;
+            state.unitSimZone = zone;
             state.unitSimOrigPrice = sumPrice;
             state.unitSimOrigDep = sumDep;
             state.unitSimOrigRent = sumRent;
 
-            let basisText = "";
-            if (bAvg > 0 && zAvg > 0) {
-                basisText = `💡 <b>산출근거:</b> ${cleanBuildingName(target.building)} ${target.floor}층 평균(${fmtSellAvg(bAvg)}) + ${zone}상권 ${target.floor}층 평균(${fmtSellAvg(zAvg)}) 반영`;
-            } else {
-                basisText = `💡 <b>산출근거:</b> 인근 매매 평단가 데이터 기반 추정`;
-            }
-            const basisEl = document.getElementById('usimAvmBasis');
-            basisEl.innerHTML = basisText;
-            basisEl.classList.add('hidden');
-
             document.getElementById('unitSimulatorModal').classList.remove('hidden');
+            document.getElementById('usimAvmBasis').classList.add('hidden'); // 초기화
+            document.getElementById('printUsimAvmBasis').classList.add('hidden');
+            
             calcUnitSimulator();
         }
 
@@ -2650,20 +2638,53 @@ function applyAvmToSimulator() {
         }
 
         function applyUnitAvm() {
-            if (!state.unitSimAvm || state.unitSimAvm <= 0) {
-                alert("평가에 필요한 인근 매매 데이터가 부족합니다."); return;
-            }
-            let ratio = 1;
-            if (state.unitSimOrigPrice > 0) ratio = state.unitSimAvm / state.unitSimOrigPrice;
-            
-            const newDep = Math.round(state.unitSimOrigDep * ratio);
-            const newRent = Math.round(state.unitSimOrigRent * ratio);
+            const bName = state.unitSimBuilding;
+            const floor = state.unitSimFloor;
+            const zone = state.unitSimZone;
+            const area = state.unitSimArea;
 
-            document.getElementById('usimInputPrice').value = state.unitSimAvm.toLocaleString();
-            document.getElementById('usimInputDep').value = newDep.toLocaleString();
-            document.getElementById('usimInputRent').value = newRent.toLocaleString();
+            // 1. 매매가 AVM (주변 매매 평단가 평균)
+            let bAvgSell = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.price_sell > 0), 'sell');
+            let zAvgSell = getAvgPP(state.allData.filter(d => {
+                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
+                return dZone === zone && d.floor === floor && d.price_sell > 0;
+            }), 'sell');
+            if(!bAvgSell) bAvgSell = getAvgPP(state.allData.filter(d => d.building === bName && d.price_sell > 0), 'sell');
+            if(!zAvgSell) zAvgSell = bAvgSell; if(!bAvgSell) bAvgSell = zAvgSell;
+
+            // 2. 임대료 AVM (특수 매물 제외를 위해 월세가 있는 매물만 필터링)
+            let bAvgRent = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.rent > 10), 'rent');
+            let zAvgRent = getAvgPP(state.allData.filter(d => {
+                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
+                return dZone === zone && d.floor === floor && d.rent > 10;
+            }), 'rent');
+            if(!bAvgRent) bAvgRent = getAvgPP(state.allData.filter(d => d.building === bName && d.rent > 10), 'rent');
+            if(!zAvgRent) zAvgRent = bAvgRent; if(!bAvgRent) bAvgRent = zAvgRent;
+
+            // 3. 보증금 AVM (은행 등 고액 보증금 제외를 위해 적정 범위 필터링)
+            let bAvgDep = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.deposit > 0 && d.deposit < 30000), 'dep');
+            let zAvgDep = getAvgPP(state.allData.filter(d => {
+                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
+                return dZone === zone && d.floor === floor && d.deposit > 0 && d.deposit < 30000;
+            }), 'dep');
+            if(!bAvgDep) bAvgDep = getAvgPP(state.allData.filter(d => d.building === bName && d.deposit > 0), 'dep');
+            if(!zAvgDep) zAvgDep = bAvgDep; if(!bAvgDep) bAvgDep = zAvgDep;
+
+            if (bAvgSell <= 0) { alert("데이터가 부족하여 산출이 어렵습니다."); return; }
+
+            const finalSell = Math.round(((bAvgSell + zAvgSell)/2) * area);
+            const finalRent = Math.round(((bAvgRent + zAvgRent)/2) * area);
+            const finalDep = Math.round(((bAvgDep + zAvgDep)/2) * area);
+
+            document.getElementById('usimInputPrice').value = finalSell.toLocaleString();
+            document.getElementById('usimInputDep').value = finalDep.toLocaleString();
+            document.getElementById('usimInputRent').value = finalRent.toLocaleString();
             
+            let basisText = `💡 <b>산출근거:</b> ${bName} ${floor}층 시세 + ${zone}상권 ${floor}층 시세 5:5 반영 (특수매물 제외)`;
+            document.getElementById('usimAvmBasis').innerHTML = basisText;
+            document.getElementById('printUsimAvmBasis').innerHTML = basisText;
             document.getElementById('usimAvmBasis').classList.remove('hidden');
+            document.getElementById('printUsimAvmBasis').classList.remove('hidden');
 
             syncSliderFromInput('usim', 'price'); syncSliderFromInput('usim', 'dep'); syncSliderFromInput('usim', 'rent');
             calcUnitSimulator();
@@ -2742,6 +2763,9 @@ function applyAvmToSimulator() {
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
 
+            const titleText = document.getElementById('usimTitle').innerText;
+            const safeTitle = titleText.replace(/[^a-zA-Z0-9가-힣\s]/g, '').trim();
+
             const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
             const clone = content.cloneNode(true);
             
@@ -2750,16 +2774,18 @@ function applyAvmToSimulator() {
                 el.style.display = 'block'; el.classList.remove('hidden');
             });
             
+            // 캡처 레이아웃 강제 세팅
             clone.style.width = '600px';
             clone.style.height = 'auto';
             clone.style.maxHeight = 'none';
-            clone.style.borderRadius = '0';
+            clone.style.borderRadius = '16px';
             clone.style.boxShadow = 'none';
+            clone.style.margin = '0';
 
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
-            cloneContainer.style.background = '#f8fafc';
-            cloneContainer.style.padding = '0';
+            cloneContainer.style.cssText = "position:absolute; top:-9999px; left:-9999px; background:#f8fafc; padding:40px; display:flex; justify-content:center; width:800px;";
+            
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
@@ -2771,24 +2797,23 @@ function applyAvmToSimulator() {
                 btn.innerHTML = originalText; btn.disabled = false;
                 
                 canvas.toBlob(async (blob) => {
-                    const file = new File([blob], '호실_투자분석.jpg', { type: 'image/jpeg' });
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    const fileName = `[${safeTitle} 투자 분석].jpg`;
+                    const file = new File([blob], fileName, { type: 'image/jpeg' });
                     
-                    if (!isMobile) {
+                    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                         const link = document.createElement('a');
-                        link.download = '호실_투자분석.jpg'; link.href = URL.createObjectURL(blob); link.click();
-                        alert('이미지가 저장되었습니다.'); return; 
+                        link.download = fileName; link.href = URL.createObjectURL(blob); link.click();
+                        return; 
                     }
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try { await navigator.share({ files: [file], title: '호실 투자 분석' }); } 
-                        catch (err) { if(err.name !== 'AbortError') showImageFallback(URL.createObjectURL(blob), ''); }
+                        await navigator.share({ files: [file], title: `${safeTitle} 투자 분석` });
                     } else {
                         showImageFallback(URL.createObjectURL(blob), '');
                     }
-                }, 'image/jpeg', 0.9);
+                }, 'image/jpeg', 0.95);
             } catch (e) {
                 if (document.getElementById('offscreen-capture-container')) document.body.removeChild(document.getElementById('offscreen-capture-container'));
-                btn.innerHTML = originalText; btn.disabled = false; alert('캡처 오류');
+                btn.innerHTML = originalText; btn.disabled = false;
             }
         }
     </script>
