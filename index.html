@@ -620,97 +620,127 @@
             </div>
         </div>
     </div>
-<div id="unitSimulatorModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 backdrop-blur-sm" style="z-index: 999999 !important;" onclick="if(event.target === this) closeUnitSimulator()">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[95vh]">
-            <div class="bg-slate-800 px-5 py-4 flex justify-between items-center no-print-sim">
-                <h3 class="text-white font-black text-base flex items-center gap-2">
-                    <i class="ph-bold ph-storefront text-emerald-400"></i> 
-                    <span id="usimTitle" class="text-emerald-400 font-black"></span> 
-                    호실 투자 시뮬레이터
+<div id="unitSimulatorModal" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center p-4 backdrop-blur-sm" style="z-index: 999999 !important;" onclick="if(event.target === this) closeUnitSimulator()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[95vh]">
+            <div class="bg-slate-800 px-6 py-4 flex justify-between items-center no-print-sim">
+                <h3 class="text-white font-black text-lg flex items-center gap-2">
+                    <i class="ph-bold ph-storefront text-blue-400"></i> 
+                    <span id="usimTitle" class="text-blue-400 font-black"></span> 
+                    가치평가 및 투자 시뮬레이션
                 </h3>
                 <div class="flex gap-2 items-center">
-                    <button onclick="shareUnitSimulator()" id="usimShareBtn" class="text-xs text-white bg-blue-600 hover:bg-blue-500 px-2 py-1.5 rounded shadow flex items-center gap-1 font-bold"><i class="ph-bold ph-share-network"></i> 공유</button>
-                    <button onclick="printUnitSimulator()" class="text-xs text-white bg-emerald-600 hover:bg-emerald-500 px-2 py-1.5 rounded shadow flex items-center gap-1 font-bold"><i class="ph-bold ph-printer"></i> 인쇄</button>
-                    <button onclick="closeUnitSimulator()" class="text-slate-400 hover:text-white ml-1"><i class="ph-bold ph-x text-lg"></i></button>
+                    <button onclick="shareUnitSimulator()" id="usimShareBtn" class="text-sm text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded shadow flex items-center gap-1 font-bold"><i class="ph-bold ph-share-network"></i> 공유</button>
+                    <button onclick="closeUnitSimulator()" class="text-slate-400 hover:text-white ml-2"><i class="ph-bold ph-x text-xl"></i></button>
                 </div>
             </div>
-            
-            <div class="hidden print-sim-only px-6 pt-6 pb-2 border-b-2 border-slate-800">
-                <h1 class="text-2xl font-black text-slate-900"><span id="usimTitlePrint" class="text-emerald-700"></span> 가치평가 및 실투자 시뮬레이션</h1>
-            </div>
 
-            <div class="p-5 flex-1 flex flex-col bg-slate-50 overflow-y-auto" id="usimPrintContentBody">
-                <div class="mb-5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <div class="flex justify-between items-end mb-3 no-print-sim border-b border-slate-100 pb-2">
-                        <span class="text-xs font-black text-slate-500 uppercase">개별 호실 매입 조건 (단위: 만원)</span>
-                    </div>
-                    <div class="flex flex-col gap-4">
-                        <div>
-                            <div class="flex justify-between items-end mb-1">
-                                <div><span class="text-xs font-bold text-slate-600">매매가 (만원)</span><span class="text-[10px] text-red-600 font-black ml-2 no-print-sim" id="lblUsimPriceKo"></span></div>
-                                <button onclick="applyUnitAvm()" class="text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition shadow-sm flex items-center gap-1 no-print-sim"><i class="ph-bold ph-magic-wand"></i> AI 적정가 불러오기</button>
-                            </div>
-                            <input type="text" id="usimInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this, 'lblUsimPriceKo'); syncSliderFromInput('usim', 'price'); calcUnitSimulator();">
-                            <input type="range" id="usimSliderPrice" min="0" max="500000" step="100" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'price', 'lblUsimPriceKo'); calcUnitSimulator();">
-                            <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printUsimValPrice"></div>
-                            <div id="usimAvmBasis" class="text-[9px] text-slate-500 font-bold mt-1 text-right no-print-sim hidden"></div>
-                            <div id="printUsimAvmBasis" class="hidden print-sim-only text-[9px] text-slate-500 font-bold mt-1 text-right border-t border-slate-100 pt-1"></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblUsimDepKo"></span></div>
-                            <input type="text" id="usimInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this, 'lblUsimDepKo'); syncSliderFromInput('usim', 'dep'); calcUnitSimulator();">
-                            <input type="range" id="usimSliderDep" min="0" max="50000" step="100" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'dep', 'lblUsimDepKo'); calcUnitSimulator();">
-                            <div class="hidden print-sim-only text-base font-bold text-slate-700 text-right pb-1 border-b border-slate-200" id="printUsimValDep"></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">월세 (만원)</span><span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblUsimRentKo"></span></div>
-                            <input type="text" id="usimInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this, 'lblUsimRentKo'); syncSliderFromInput('usim', 'rent'); calcUnitSimulator();">
-                            <input type="range" id="usimSliderRent" min="0" max="5000" step="10" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'rent', 'lblUsimRentKo'); calcUnitSimulator();">
-                            <div class="hidden print-sim-only text-base font-black text-emerald-600 text-right pb-1 border-b border-slate-200" id="printUsimValRent"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-5 no-print-sim">
-                    <div class="flex justify-between gap-4">
-                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 (LTV)</span><span class="font-black text-blue-600"><span id="lblUsimLtv">60</span>%</span></div><input type="range" id="usimLtv" min="0" max="90" step="5" value="60" class="slider-range" oninput="document.getElementById('lblUsimLtv').innerText=this.value; calcUnitSimulator();"></div>
-                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 금리</span><span class="font-black text-orange-600"><span id="lblUsimRate">4.5</span>%</span></div><input type="range" id="usimRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range" oninput="document.getElementById('lblUsimRate').innerText=parseFloat(this.value).toFixed(1); calcUnitSimulator();"></div>
-                    </div>
-                    <div class="flex justify-between gap-4 border-t border-slate-200 pt-4 mt-4">
-                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">취득세율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="usimTax" value="4.6" class="w-full text-right text-xs font-bold text-slate-700 outline-none py-1" onkeyup="calcUnitSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
-                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">중개보수율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="usimFeeRate" value="0.9" class="w-full text-right text-xs font-bold text-slate-700 outline-none py-1" onkeyup="calcUnitSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
-                    </div>
-                </div>
+            <div class="flex flex-col md:flex-row bg-slate-50 flex-1 overflow-y-auto" id="usimPrintContentBody">
                 
-                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">* 적용 조건: 대출 <span id="printUsimLtv"></span>% / 금리 <span id="printUsimRate"></span>% / 취득세 <span id="printUsimTax"></span>% / 중개보수 <span id="printUsimFee"></span>%</div>
+                <div class="w-full md:w-[40%] p-6 border-r border-slate-200 bg-white flex flex-col gap-5">
+                    <div class="hidden print-sim-only mb-4 border-b-2 border-slate-800 pb-2">
+                        <h1 class="text-2xl font-black text-slate-900"><span id="usimTitlePrint" class="text-blue-700"></span> 가치평가 보고서</h1>
+                    </div>
 
-                <div class="bg-slate-800 rounded-xl p-4 text-white shadow-inner border border-slate-700 mt-auto print-high-contrast">
-                    <div class="flex justify-between items-center mb-3"><span class="text-xs text-slate-300 font-bold">호실 명목 수익률 (Cap Rate)</span><span class="text-lg font-black text-yellow-400" id="resUsimCapRate">0.00%</span></div>
-                    <div class="w-full h-px bg-slate-600 mb-3"></div>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금/수수료 포함)</span><span class="font-bold" id="resUsimTotalCost">0원</span></div>
-                        <div class="flex justify-between text-[11px] text-slate-400 px-2"><span class="">↳ 취득세 및 중개보수</span><span class="" id="resUsimTaxFee">0원</span></div>
-                        <div class="flex justify-between mt-1"><span class="text-slate-400 font-medium text-xs">대출 금액</span><span class="font-bold text-blue-300" id="resUsimLoan">0원</span></div>
-                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1 border border-slate-600"><span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span><span class="font-black text-emerald-400" id="resUsimCash">0원</span></div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <h4 class="text-xs font-black text-slate-500 mb-3 uppercase">대상 호실 기준 정보</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between mb-1"><span class="text-sm font-bold text-slate-600">적용 월세 (만원)</span><span class="text-xs text-blue-600 font-black" id="lblUsimRentKo"></span></div>
+                                <input type="text" id="usimInputRent" class="w-full border border-slate-300 rounded px-3 py-2 text-right font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none" onkeyup="calcUnitSimulator();">
+                            </div>
+                            <div class="text-[11px] text-slate-500 font-bold bg-white p-2 rounded border border-slate-100" id="usimMarketBasis">
+                                </div>
+                        </div>
                     </div>
-                    <div class="w-full h-px bg-slate-600 my-3"></div>
-                    <div class="space-y-2 text-sm mb-4">
-                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">월 대출 이자</span><span class="font-bold text-orange-300" id="resUsimInterest">0원</span></div>
-                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600"><span class="text-slate-200 font-bold text-xs">월 순수익 (월세 - 이자)</span><span class="font-black text-white" id="resUsimNetMonthly">0원</span></div>
+
+                    <div class="space-y-5 no-print-sim">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="font-bold text-slate-700">보증금 배수 (월세 대비)</span><span class="font-black text-slate-700"><span id="lblUsimDepMult">15</span>개월</span></div>
+                            <input type="range" id="usimDepMult" min="12" max="24" step="1" value="15" class="w-full accent-slate-600" oninput="document.getElementById('lblUsimDepMult').innerText=this.value; calcUnitSimulator();">
+                        </div>
+                        <div class="pt-3 border-t border-slate-100">
+                            <div class="flex justify-between text-sm mb-1"><span class="font-bold text-emerald-700">목표 수익률 (투자 관점)</span><span class="font-black text-emerald-600"><span id="lblUsimCapRate">4.5</span>%</span></div>
+                            <input type="range" id="usimCapRate" min="3.0" max="6.0" step="0.1" value="4.5" class="w-full accent-emerald-500" oninput="document.getElementById('lblUsimCapRate').innerText=parseFloat(this.value).toFixed(1); calcUnitSimulator();">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="font-bold text-orange-600">시장 시세 반영 비중</span><span class="font-black text-orange-600"><span id="lblUsimWeight">50</span>%</span></div>
+                            <input type="range" id="usimWeight" min="0" max="100" step="5" value="50" class="w-full accent-orange-500" oninput="document.getElementById('lblUsimWeight').innerText=this.value; calcUnitSimulator();">
+                            <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>수익 100%</span><span>시세 100%</span></div>
+                        </div>
                     </div>
-                    <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md"><span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span><span class="text-xl font-black text-white drop-shadow-sm" id="resUsimRoe">0.00%</span></div>
+
+                    <div class="space-y-4 pt-4 border-t border-slate-200 no-print-sim">
+                        <div class="flex gap-4">
+                            <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 (LTV)</span><span class="font-black text-slate-700"><span id="lblUsimLtv">30</span>%</span></div><input type="range" id="usimLtv" min="0" max="80" step="5" value="30" class="w-full accent-slate-400" oninput="document.getElementById('lblUsimLtv').innerText=this.value; calcUnitSimulator();"></div>
+                            <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 금리</span><span class="font-black text-slate-700"><span id="lblUsimRate">4.5</span>%</span></div><input type="range" id="usimRate" min="2.0" max="8.0" step="0.1" value="4.5" class="w-full accent-slate-400" oninput="document.getElementById('lblUsimRate').innerText=parseFloat(this.value).toFixed(1); calcUnitSimulator();"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-[60%] p-6 flex flex-col justify-between">
+                    
+                    <div class="mb-8 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="text-sm font-black text-slate-800 mb-4 border-b border-slate-100 pb-2">AI 적정가 산출 엔진</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-emerald-700">수익가치 (투자 기준)</span></div>
+                                <div class="w-full bg-slate-100 rounded-md h-8 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-3 text-white font-bold text-sm transition-all duration-300">0원</div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-orange-600">시장가치 (시세 기준)</span></div>
+                                <div class="w-full bg-slate-100 rounded-md h-8 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-3 text-white font-bold text-sm transition-all duration-300">0원</div></div>
+                            </div>
+                            <div class="pt-3">
+                                <div class="flex justify-between text-sm font-black mb-1"><span class="text-blue-700">최종 도출 적정가</span></div>
+                                <div class="w-full bg-slate-200 rounded-md h-10 overflow-hidden shadow-inner"><div id="barFinal" class="h-full bg-blue-600 flex items-center justify-end px-4 text-white font-black text-base md:text-lg transition-all duration-300 drop-shadow-md">0원</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <div class="text-xs font-bold text-blue-600 mb-1">최종 적정 매매가</div>
+                            <div class="text-2xl font-black text-blue-900" id="resUsimFinalPrice">0원</div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <div class="text-xs font-bold text-yellow-700 mb-1">명목 수익률 (Cap Rate)</div>
+                            <div class="text-2xl font-black text-yellow-900" id="resUsimCapRate">0.00%</div>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <div class="text-xs font-bold text-slate-400 mb-1">필요 실투자금 (현금)</div>
+                            <div class="text-2xl font-black text-white" id="resUsimCash">0원</div>
+                        </div>
+                        <div class="bg-emerald-600 p-4 rounded-lg border border-emerald-500 shadow-md">
+                            <div class="text-xs font-bold text-emerald-100 mb-1">최종 실투자수익률 (ROE)</div>
+                            <div class="text-2xl font-black text-white" id="resUsimRoe">0.00%</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden text-sm">
+                        <div class="grid grid-cols-2 bg-slate-50 border-b border-slate-200">
+                            <div class="p-3 border-r border-slate-200 flex justify-between"><span class="text-slate-500 font-bold">산출 보증금</span><span class="font-black text-slate-800" id="ldgDeposit">0원</span></div>
+                            <div class="p-3 flex justify-between"><span class="text-slate-500 font-bold">대출 금액</span><span class="font-black text-blue-700" id="ldgLoan">0원</span></div>
+                        </div>
+                        <div class="grid grid-cols-1 border-b border-slate-200">
+                            <div class="p-3 flex justify-between bg-red-50/50"><span class="text-slate-600 font-bold">취득세 및 중개수수료 <span class="text-[10px] text-slate-400 ml-1 font-normal">(4.6% + 0.9%)</span></span><span class="font-bold text-red-600" id="ldgTaxFee">0원</span></div>
+                        </div>
+                        <div class="grid grid-cols-1 bg-slate-50">
+                            <div class="p-3 flex justify-between items-center"><span class="text-slate-600 font-bold">월 순수익 <span class="text-[10px] text-slate-400 ml-1 font-normal">(월세 - 대출이자)</span></span><span class="font-black text-emerald-600 text-lg" id="ldgNet">0원</span></div>
+                        </div>
+                    </div>
+                    <div class="hidden print-sim-only text-right mt-2 text-[10px] text-slate-400">* 본 분석 자료는 투자 참고용이며, 실제 거래 시 제세공과금 등 차이가 발생할 수 있습니다.</div>
                 </div>
             </div>
             
-            <div class="hidden print-sim-only border-t-2 border-emerald-800 rounded-b-xl" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+            <div class="hidden print-sim-only border-t border-slate-300" style="background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <div class="flex justify-between items-center w-full px-6 py-4">
                     <div class="flex-1">
-                        <p class="font-bold text-sm" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
-                        <p class="text-sm font-black" style="color: #fb923c !important;">상현역 1번출구 031-255-7373</p>
+                        <p class="font-bold text-sm text-slate-800">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 text-slate-500">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="text-sm font-black text-blue-700 mt-1">상현역 1번출구 031-255-7373</p>
                     </div>
                     <div class="text-right flex-1">
-                        <p class="text-sm font-bold" style="color: #fde047 !important;">송영재 이사 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">상가 및 투자 상담</span></p>
-                        <p class="text-sm font-black" style="color: #fb923c !important;">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">vsong.w.zest@gmail.com</span></p>
+                        <p class="text-sm font-bold text-slate-800">송영재 이사 <span class="text-[10px] font-normal ml-2 text-slate-500">상가 및 투자 상담</span></p>
+                        <p class="text-sm font-black text-blue-700 mt-1">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 text-slate-500">vsong.w.zest@gmail.com</span></p>
                     </div>
                 </div>
             </div>
@@ -2576,74 +2606,23 @@ function openUnitSimulator(id) {
             }
             
             const sumArea = units.reduce((acc, cur) => acc + cur.area_p, 0);
-            const sumPrice = units.reduce((acc, cur) => acc + (cur.price_sell || 0), 0);
-            const sumDep = units.reduce((acc, cur) => acc + (cur.deposit || 0), 0);
             const sumRent = units.reduce((acc, cur) => acc + (cur.rent || 0), 0);
 
             const title = `${cleanBuildingName(target.building)} ${units.map(u=>u.unit).join(', ')}호`;
             document.getElementById('usimTitle').innerText = title;
-            document.getElementById('usimTitlePrint').innerText = title;
+            if(document.getElementById('usimTitlePrint')) document.getElementById('usimTitlePrint').innerText = title;
 
-            // 값 세팅
-            document.getElementById('usimInputPrice').value = sumPrice.toLocaleString();
-            document.getElementById('usimInputDep').value = sumDep.toLocaleString();
-            document.getElementById('usimInputRent').value = sumRent.toLocaleString();
-
-            // 호실 대출(LTV) 초기값 30%로 조정
-            document.getElementById('usimLtv').value = 30;
-            document.getElementById('lblUsimLtv').innerText = 30;
-
-            setupSlider('Price', sumPrice, sumPrice * 1.5 || 500000);
-            setupSlider('Dep', sumDep, sumDep * 1.5 || 50000);
-            setupSlider('Rent', sumRent, sumRent * 1.5 || 5000);
-            
-            document.getElementById('usimSliderPrice').value = sumPrice; document.getElementById('usimSliderPrice').max = sumPrice * 1.5 || 500000;
-            document.getElementById('usimSliderDep').value = sumDep; document.getElementById('usimSliderDep').max = sumDep * 1.5 || 50000;
-            document.getElementById('usimSliderRent').value = sumRent; document.getElementById('usimSliderRent').max = sumRent * 1.5 || 5000;
-
-            // AI AVM 데이터 사전 계산
-            const bUnits = state.allData.filter(d => d.building === target.building && d.floor === target.floor);
-            const zone = ROADSIDE_TARGETS.some(t => target.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : target.exit;
-            
-            // 전역 변수에 현재 호실의 기하학적 면적 저장 (AVM 계산용)
+            // 상태 저장
             state.unitSimArea = sumArea;
             state.unitSimBuilding = target.building;
             state.unitSimFloor = target.floor;
-            state.unitSimZone = zone;
-            state.unitSimOrigPrice = sumPrice;
-            state.unitSimOrigDep = sumDep;
-            state.unitSimOrigRent = sumRent;
+            state.unitSimZone = ROADSIDE_TARGETS.some(t => target.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : target.exit;
 
-            document.getElementById('unitSimulatorModal').classList.remove('hidden');
-            document.getElementById('usimAvmBasis').classList.add('hidden'); // 초기화
-            document.getElementById('printUsimAvmBasis').classList.add('hidden');
-            
-            calcUnitSimulator();
-        }
-
-        function getAvgPP(units, type) {
-            let sumP = 0, sumA = 0;
-            let processed = new Set();
-            units.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`;
-                if(processed.has(gid)) return;
-                processed.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                members.forEach(m => {
-                    if (type === 'sell') sumP += (m.price_sell || 0); else sumP += (m.rent || 0);
-                    sumA += (m.area_p || 0);
-                });
-            });
-            return sumA > 0 ? (sumP / sumA) : 0;
-        }
-
-        function applyUnitAvm() {
+            // [AI 시장 평단가 자동 추출 로직]
             const bName = state.unitSimBuilding;
             const floor = state.unitSimFloor;
             const zone = state.unitSimZone;
-            const area = state.unitSimArea;
 
-            // 1. 매매가 AVM (주변 매매 평단가 평균)
             let bAvgSell = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.price_sell > 0), 'sell');
             let zAvgSell = getAvgPP(state.allData.filter(d => {
                 const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
@@ -2652,115 +2631,100 @@ function openUnitSimulator(id) {
             if(!bAvgSell) bAvgSell = getAvgPP(state.allData.filter(d => d.building === bName && d.price_sell > 0), 'sell');
             if(!zAvgSell) zAvgSell = bAvgSell; if(!bAvgSell) bAvgSell = zAvgSell;
 
-            // 2. 임대료 AVM (특수 매물 제외를 위해 월세가 있는 매물만 필터링)
-            let bAvgRent = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.rent > 10), 'rent');
-            let zAvgRent = getAvgPP(state.allData.filter(d => {
-                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
-                return dZone === zone && d.floor === floor && d.rent > 10;
-            }), 'rent');
-            if(!bAvgRent) bAvgRent = getAvgPP(state.allData.filter(d => d.building === bName && d.rent > 10), 'rent');
-            if(!zAvgRent) zAvgRent = bAvgRent; if(!bAvgRent) bAvgRent = zAvgRent;
+            state.unitMarketAvg = Math.round((bAvgSell + zAvgSell) / 2) || 4000; // 결측 시 4000만 기본값
 
-            // 3. 보증금 AVM (은행 등 고액 보증금 제외를 위해 적정 범위 필터링)
-            let bAvgDep = getAvgPP(state.allData.filter(d => d.building === bName && d.floor === floor && d.deposit > 0 && d.deposit < 30000), 'dep');
-            let zAvgDep = getAvgPP(state.allData.filter(d => {
-                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
-                return dZone === zone && d.floor === floor && d.deposit > 0 && d.deposit < 30000;
-            }), 'dep');
-            if(!bAvgDep) bAvgDep = getAvgPP(state.allData.filter(d => d.building === bName && d.deposit > 0), 'dep');
-            if(!zAvgDep) zAvgDep = bAvgDep; if(!bAvgDep) bAvgDep = zAvgDep;
+            // 초기값 세팅 (월세가 0이면 150만원 기본 세팅)
+            document.getElementById('usimInputRent').value = (sumRent > 0 ? sumRent : 150).toLocaleString();
+            document.getElementById('usimMarketBasis').innerHTML = `💡 <b>시장가치 산출근거:</b> ${bName} ${floor}층 및 ${zone}상권 평균 평단가 <b>${fmtKoreanMoney(state.unitMarketAvg)}</b> 적용`;
 
-            if (bAvgSell <= 0) { alert("데이터가 부족하여 산출이 어렵습니다."); return; }
+            // 슬라이더 초기화
+            document.getElementById('usimCapRate').value = 4.5; document.getElementById('lblUsimCapRate').innerText = "4.5";
+            document.getElementById('usimWeight').value = 50; document.getElementById('lblUsimWeight').innerText = "50";
+            document.getElementById('usimDepMult').value = 15; document.getElementById('lblUsimDepMult').innerText = "15";
+            document.getElementById('usimLtv').value = 30; document.getElementById('lblUsimLtv').innerText = "30";
+            document.getElementById('usimRate').value = 4.5; document.getElementById('lblUsimRate').innerText = "4.5";
 
-            const finalSell = Math.round(((bAvgSell + zAvgSell)/2) * area);
-            const finalRent = Math.round(((bAvgRent + zAvgRent)/2) * area);
-            const finalDep = Math.round(((bAvgDep + zAvgDep)/2) * area);
-
-            document.getElementById('usimInputPrice').value = finalSell.toLocaleString();
-            document.getElementById('usimInputDep').value = finalDep.toLocaleString();
-            document.getElementById('usimInputRent').value = finalRent.toLocaleString();
-            
-            let basisText = `💡 <b>산출근거:</b> ${bName} ${floor}층 시세 + ${zone}상권 ${floor}층 시세 5:5 반영 (특수매물 제외)`;
-            document.getElementById('usimAvmBasis').innerHTML = basisText;
-            document.getElementById('printUsimAvmBasis').innerHTML = basisText;
-            document.getElementById('usimAvmBasis').classList.remove('hidden');
-            document.getElementById('printUsimAvmBasis').classList.remove('hidden');
-
-            syncSliderFromInput('usim', 'price'); syncSliderFromInput('usim', 'dep'); syncSliderFromInput('usim', 'rent');
+            document.getElementById('unitSimulatorModal').classList.remove('hidden');
             calcUnitSimulator();
         }
 
         function calcUnitSimulator() {
-            const price = parseInt(document.getElementById('usimInputPrice').value.replace(/,/g,'')) || 0;
-            const dep = parseInt(document.getElementById('usimInputDep').value.replace(/,/g,'')) || 0;
+            // 입력값 읽기
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
+            const capRate = parseFloat(document.getElementById('usimCapRate').value);
+            const weight = parseFloat(document.getElementById('usimWeight').value) / 100;
+            const depMult = parseInt(document.getElementById('usimDepMult').value);
+            const ltv = parseFloat(document.getElementById('usimLtv').value) / 100;
+            const intRate = parseFloat(document.getElementById('usimRate').value) / 100;
+            
+            const area = state.unitSimArea || 15;
+            const marketAvg = state.unitMarketAvg || 4000;
 
-            document.getElementById('lblUsimPriceKo').innerText = fmtKoreanMoney(price);
-            document.getElementById('lblUsimDepKo').innerText = fmtKoreanMoney(dep);
+            // UI 보정 (월세 입력창 쉼표 유지 및 한글 출력)
+            document.getElementById('usimInputRent').value = rent.toLocaleString();
             document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent);
 
-            document.getElementById('printUsimValPrice').innerText = document.getElementById('lblUsimPriceKo').innerText;
-            document.getElementById('printUsimValDep').innerText = document.getElementById('lblUsimDepKo').innerText;
-            document.getElementById('printUsimValRent').innerText = document.getElementById('lblUsimRentKo').innerText;
+            // 1. 보증금 산출 (100만 단위 반올림)
+            const deposit = Math.round((rent * depMult) / 100) * 100;
 
-            const ltv = parseFloat(document.getElementById('usimLtv').value) / 100;
-            const rate = parseFloat(document.getElementById('usimRate').value) / 100;
-            const taxRate = parseFloat(document.getElementById('usimTax').value) / 100;
-            const feeRate = parseFloat(document.getElementById('usimFeeRate').value) / 100 || 0;
+            // 2. 수익가치 산출
+            let yieldValue = 0;
+            if(capRate > 0) yieldValue = Math.round((((rent * 12) / (capRate / 100)) + deposit) / 100) * 100;
 
-            document.getElementById('printUsimLtv').innerText = (ltv*100).toFixed(0);
-            document.getElementById('printUsimRate').innerText = (rate*100).toFixed(1);
-            document.getElementById('printUsimTax').innerText = (taxRate*100).toFixed(1);
-            document.getElementById('printUsimFee').innerText = (feeRate*100).toFixed(1);
+            // 3. 시장가치 산출
+            const marketValue = Math.round((area * marketAvg) / 100) * 100;
 
-            let capRate = 0;
-            const pureCost = price - dep;
-            if(pureCost > 0 && rent > 0) capRate = ((rent * 12) / pureCost * 100);
-            
-            const tax = price * taxRate;
-            const fee = price * feeRate;
-            const totalCost = price + tax + fee;
-            const loanAmount = price * ltv;
-            const cashNeeded = totalCost - loanAmount - dep;
+            // 4. 최종 적정가 도출 (수익 vs 시장 비중 믹스)
+            const finalPrice = Math.round(((yieldValue * (1 - weight)) + (marketValue * weight)) / 100) * 100;
 
-            const monthlyInterest = (loanAmount * rate) / 12;
-            const netMonthly = rent - monthlyInterest;
+            // 5. 투자 및 재무 지표 계산
+            const taxFeeRate = 0.046 + 0.009; // 5.5%
+            const taxFee = finalPrice * taxFeeRate;
+            const loan = finalPrice * ltv;
+            const cashNeeded = finalPrice + taxFee - loan - deposit;
+            const monthlyInt = (loan * intRate) / 12;
+            const netMonthly = rent - monthlyInt;
 
+            let finalCapRate = 0;
+            if(finalPrice - deposit > 0) finalCapRate = (rent * 12) / (finalPrice - deposit) * 100;
             let roe = 0;
-            if(cashNeeded > 0 && netMonthly > 0) roe = ((netMonthly * 12) / cashNeeded * 100);
+            if(cashNeeded > 0) roe = (netMonthly * 12) / cashNeeded * 100;
 
-            document.getElementById('resUsimCapRate').innerText = capRate.toFixed(2) + '%';
-            document.getElementById('resUsimTotalCost').innerText = fmtKoreanMoney(totalCost);
-            document.getElementById('resUsimTaxFee').innerText = fmtKoreanMoney(tax + fee);
-            document.getElementById('resUsimLoan').innerText = fmtKoreanMoney(loanAmount);
+            // --- UI 렌더링 ---
+            document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice);
+            document.getElementById('resUsimCapRate').innerText = finalCapRate.toFixed(2) + '%';
             document.getElementById('resUsimCash').innerText = fmtKoreanMoney(cashNeeded);
-            document.getElementById('resUsimInterest').innerText = fmtKoreanMoney(monthlyInterest);
-            document.getElementById('resUsimNetMonthly').innerText = fmtKoreanMoney(netMonthly);
             document.getElementById('resUsimRoe').innerText = roe.toFixed(2) + '%';
+
+            document.getElementById('ldgDeposit').innerText = fmtKoreanMoney(deposit);
+            document.getElementById('ldgLoan').innerText = fmtKoreanMoney(loan);
+            document.getElementById('ldgTaxFee').innerText = fmtKoreanMoney(taxFee);
+            document.getElementById('ldgNet').innerText = fmtKoreanMoney(netMonthly);
+
+            // --- 막대 차트 (가로) 업데이트 ---
+            const maxVal = Math.max(yieldValue, marketValue, finalPrice) || 1;
+            
+            const barY = document.getElementById('barYield');
+            barY.style.width = (yieldValue / maxVal * 100) + '%';
+            barY.innerText = fmtKoreanMoney(yieldValue);
+
+            const barM = document.getElementById('barMarket');
+            barM.style.width = (marketValue / maxVal * 100) + '%';
+            barM.innerText = fmtKoreanMoney(marketValue);
+
+            const barF = document.getElementById('barFinal');
+            barF.style.width = (finalPrice / maxVal * 100) + '%';
+            barF.innerText = fmtKoreanMoney(finalPrice);
         }
 
-        function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
-
-        function printUnitSimulator() {
-            document.body.classList.add('is-sim-print-mode'); setPrintStyle('portrait');
-            // 기존 sim 인쇄 클래스를 임시로 usim 모달로 이동
-            const oldSim = document.getElementById('simulatorModal');
-            const newSim = document.getElementById('unitSimulatorModal');
-            oldSim.id = 'tempSim'; newSim.id = 'simulatorModal';
-            
-            setTimeout(() => { 
-                window.print(); 
-                setTimeout(() => {
-                    document.body.classList.remove('is-sim-print-mode');
-                    newSim.id = 'unitSimulatorModal'; oldSim.id = 'simulatorModal'; // 원복
-                }, 500); 
-            }, 100);
+        function closeUnitSimulator() { 
+            document.getElementById('unitSimulatorModal').classList.add('hidden'); 
         }
 
         async function shareUnitSimulator() {
             const btn = document.getElementById('usimShareBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 생성중...`;
             btn.disabled = true;
 
             const titleText = document.getElementById('usimTitle').innerText;
@@ -2774,30 +2738,35 @@ function openUnitSimulator(id) {
                 el.style.display = 'block'; el.classList.remove('hidden');
             });
             
-            // 캡처 레이아웃 강제 세팅
-            clone.style.width = '600px';
+            // A4 가로(Landscape) 규격 강제 적용
+            clone.style.width = '100%';
             clone.style.height = 'auto';
             clone.style.maxHeight = 'none';
-            clone.style.borderRadius = '16px';
+            clone.style.borderRadius = '0px';
             clone.style.boxShadow = 'none';
             clone.style.margin = '0';
+            
+            // 차트 텍스트 줄바꿈 방지
+            const bars = clone.querySelectorAll('.h-full.flex.items-center');
+            bars.forEach(b => b.style.whiteSpace = 'nowrap');
 
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
-            cloneContainer.style.cssText = "position:absolute; top:-9999px; left:-9999px; background:#f8fafc; padding:40px; display:flex; justify-content:center; width:800px;";
+            // A4 가로폭(약 1123px) 및 배경 세팅
+            cloneContainer.style.cssText = "position:absolute; top:-9999px; left:-9999px; background:#ffffff; padding:40px; width:1123px;";
             
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 150));
             
             try {
-                const canvas = await html2canvas(cloneContainer, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+                const canvas = await html2canvas(cloneContainer, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText; btn.disabled = false;
                 
                 canvas.toBlob(async (blob) => {
-                    const fileName = `[${safeTitle} 투자 분석].jpg`;
+                    const fileName = `[${safeTitle} 가치평가 및 투자분석].jpg`;
                     const file = new File([blob], fileName, { type: 'image/jpeg' });
                     
                     if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
