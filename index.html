@@ -620,7 +620,101 @@
             </div>
         </div>
     </div>
+<div id="unitSimulatorModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 backdrop-blur-sm" style="z-index: 999999 !important;" onclick="if(event.target === this) closeUnitSimulator()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[95vh]">
+            <div class="bg-slate-800 px-5 py-4 flex justify-between items-center no-print-sim">
+                <h3 class="text-white font-black text-base flex items-center gap-2">
+                    <i class="ph-bold ph-storefront text-emerald-400"></i> 
+                    <span id="usimTitle" class="text-emerald-400 font-black"></span> 
+                    호실 투자 시뮬레이터
+                </h3>
+                <div class="flex gap-2 items-center">
+                    <button onclick="shareUnitSimulator()" id="usimShareBtn" class="text-xs text-white bg-blue-600 hover:bg-blue-500 px-2 py-1.5 rounded shadow flex items-center gap-1 font-bold"><i class="ph-bold ph-share-network"></i> 공유</button>
+                    <button onclick="printUnitSimulator()" class="text-xs text-white bg-emerald-600 hover:bg-emerald-500 px-2 py-1.5 rounded shadow flex items-center gap-1 font-bold"><i class="ph-bold ph-printer"></i> 인쇄</button>
+                    <button onclick="closeUnitSimulator()" class="text-slate-400 hover:text-white ml-1"><i class="ph-bold ph-x text-lg"></i></button>
+                </div>
+            </div>
+            
+            <div class="hidden print-sim-only px-6 pt-6 pb-2 border-b-2 border-slate-800">
+                <h1 class="text-2xl font-black text-slate-900"><span id="usimTitlePrint" class="text-emerald-700"></span> 가치평가 및 실투자 시뮬레이션</h1>
+            </div>
 
+            <div class="p-5 flex-1 flex flex-col bg-slate-50 overflow-y-auto" id="usimPrintContentBody">
+                <div class="mb-5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-end mb-3 no-print-sim border-b border-slate-100 pb-2">
+                        <span class="text-xs font-black text-slate-500 uppercase">개별 호실 매입 조건 (단위: 만원)</span>
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <div class="flex justify-between items-end mb-1">
+                                <div><span class="text-xs font-bold text-slate-600">매매가 (만원)</span><span class="text-[10px] text-red-600 font-black ml-2 no-print-sim" id="lblUsimPriceKo"></span></div>
+                                <button onclick="applyUnitAvm()" class="text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition shadow-sm flex items-center gap-1 no-print-sim"><i class="ph-bold ph-magic-wand"></i> AI 적정가 불러오기</button>
+                            </div>
+                            <input type="text" id="usimInputPrice" class="dash-input text-red-600 no-print-sim" onkeyup="formatSimInput(this, 'lblUsimPriceKo'); syncSliderFromInput('usim', 'price'); calcUnitSimulator();">
+                            <input type="range" id="usimSliderPrice" min="0" max="500000" step="100" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'price', 'lblUsimPriceKo'); calcUnitSimulator();">
+                            <div class="hidden print-sim-only text-lg font-black text-red-600 text-right pb-1 border-b border-slate-200" id="printUsimValPrice"></div>
+                            <div id="usimAvmBasis" class="text-[9px] text-slate-500 font-bold mt-1 text-right no-print-sim hidden"></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">보증금 (만원)</span><span class="text-[10px] text-slate-600 font-black no-print-sim" id="lblUsimDepKo"></span></div>
+                            <input type="text" id="usimInputDep" class="dash-input no-print-sim" onkeyup="formatSimInput(this, 'lblUsimDepKo'); syncSliderFromInput('usim', 'dep'); calcUnitSimulator();">
+                            <input type="range" id="usimSliderDep" min="0" max="50000" step="100" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'dep', 'lblUsimDepKo'); calcUnitSimulator();">
+                            <div class="hidden print-sim-only text-base font-bold text-slate-700 text-right pb-1 border-b border-slate-200" id="printUsimValDep"></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1"><span class="text-xs font-bold text-slate-600">월세 (만원)</span><span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblUsimRentKo"></span></div>
+                            <input type="text" id="usimInputRent" class="dash-input text-emerald-600 no-print-sim" onkeyup="formatSimInput(this, 'lblUsimRentKo'); syncSliderFromInput('usim', 'rent'); calcUnitSimulator();">
+                            <input type="range" id="usimSliderRent" min="0" max="5000" step="10" class="slider-range mt-2 no-print-sim" oninput="syncInputFromSlider('usim', 'rent', 'lblUsimRentKo'); calcUnitSimulator();">
+                            <div class="hidden print-sim-only text-base font-black text-emerald-600 text-right pb-1 border-b border-slate-200" id="printUsimValRent"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5 no-print-sim">
+                    <div class="flex justify-between gap-4">
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 (LTV)</span><span class="font-black text-blue-600"><span id="lblUsimLtv">60</span>%</span></div><input type="range" id="usimLtv" min="0" max="90" step="5" value="60" class="slider-range" oninput="document.getElementById('lblUsimLtv').innerText=this.value; calcUnitSimulator();"></div>
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 금리</span><span class="font-black text-orange-600"><span id="lblUsimRate">4.5</span>%</span></div><input type="range" id="usimRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range" oninput="document.getElementById('lblUsimRate').innerText=parseFloat(this.value).toFixed(1); calcUnitSimulator();"></div>
+                    </div>
+                    <div class="flex justify-between gap-4 border-t border-slate-200 pt-4 mt-4">
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">취득세율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="usimTax" value="4.6" class="w-full text-right text-xs font-bold text-slate-700 outline-none py-1" onkeyup="calcUnitSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
+                        <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">중개보수율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="usimFeeRate" value="0.9" class="w-full text-right text-xs font-bold text-slate-700 outline-none py-1" onkeyup="calcUnitSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
+                    </div>
+                </div>
+                
+                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">* 적용 조건: 대출 <span id="printUsimLtv"></span>% / 금리 <span id="printUsimRate"></span>% / 취득세 <span id="printUsimTax"></span>% / 중개보수 <span id="printUsimFee"></span>%</div>
+
+                <div class="bg-slate-800 rounded-xl p-4 text-white shadow-inner border border-slate-700 mt-auto print-high-contrast">
+                    <div class="flex justify-between items-center mb-3"><span class="text-xs text-slate-300 font-bold">호실 명목 수익률 (Cap Rate)</span><span class="text-lg font-black text-yellow-400" id="resUsimCapRate">0.00%</span></div>
+                    <div class="w-full h-px bg-slate-600 mb-3"></div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금/수수료 포함)</span><span class="font-bold" id="resUsimTotalCost">0원</span></div>
+                        <div class="flex justify-between text-[11px] text-slate-400 px-2"><span class="">↳ 취득세 및 중개보수</span><span class="" id="resUsimTaxFee">0원</span></div>
+                        <div class="flex justify-between mt-1"><span class="text-slate-400 font-medium text-xs">대출 금액</span><span class="font-bold text-blue-300" id="resUsimLoan">0원</span></div>
+                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1 border border-slate-600"><span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span><span class="font-black text-emerald-400" id="resUsimCash">0원</span></div>
+                    </div>
+                    <div class="w-full h-px bg-slate-600 my-3"></div>
+                    <div class="space-y-2 text-sm mb-4">
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">월 대출 이자</span><span class="font-bold text-orange-300" id="resUsimInterest">0원</span></div>
+                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600"><span class="text-slate-200 font-bold text-xs">월 순수익 (월세 - 이자)</span><span class="font-black text-white" id="resUsimNetMonthly">0원</span></div>
+                    </div>
+                    <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md"><span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span><span class="text-xl font-black text-white drop-shadow-sm" id="resUsimRoe">0.00%</span></div>
+                </div>
+            </div>
+            
+            <div class="hidden print-sim-only border-t-2 border-emerald-800 rounded-b-xl" style="background-color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <div class="flex justify-between items-center w-full px-6 py-4">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm" style="color: #fde047 !important;">광교마을부동산 공인중개사사무소 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">상현역 1번출구 031-255-7373</p>
+                    </div>
+                    <div class="text-right flex-1">
+                        <p class="text-sm font-bold" style="color: #fde047 !important;">송영재 이사 <span class="text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">상가 및 투자 상담</span></p>
+                        <p class="text-sm font-black" style="color: #fb923c !important;">010-6570-7475 <span class="font-sans text-[10px] font-normal ml-2 opacity-90" style="color: #fde047 !important;">vsong.w.zest@gmail.com</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full md:w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
             <div class="h-14 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 bg-slate-50 relative z-10">
