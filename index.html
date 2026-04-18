@@ -2061,7 +2061,7 @@
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
@@ -2545,7 +2545,252 @@ function applyAvmToSimulator() {
             document.getElementById('resNetMonthly').innerText = fmtKoreanMoney(netMonthly);
             document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
         }
+// 슬라이더 동기화 보조 함수 (unit 시뮬레이터 호환용으로 확장)
+        function syncSliderFromInput(prefix, type) {
+            const capType = type.charAt(0).toUpperCase() + type.slice(1);
+            let inputId = prefix === 'usim' ? 'usimInput' + capType : 'simInput' + capType;
+            let sliderId = prefix === 'usim' ? 'usimSlider' + capType : 'simSlider' + capType;
+            const val = parseInt(document.getElementById(inputId).value.replace(/,/g,'')) || 0;
+            const slider = document.getElementById(sliderId);
+            if(slider && val > slider.max) slider.max = val * 1.5;
+            if(slider) slider.value = val;
+        }
 
+        function syncInputFromSlider(prefix, type, labelId) {
+            const capType = type.charAt(0).toUpperCase() + type.slice(1);
+            let inputId = prefix === 'usim' ? 'usimInput' + capType : 'simInput' + capType;
+            let sliderId = prefix === 'usim' ? 'usimSlider' + capType : 'simSlider' + capType;
+            const val = document.getElementById(sliderId).value;
+            const input = document.getElementById(inputId);
+            input.value = parseInt(val).toLocaleString();
+            document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
+        }
+
+        // 호실 시뮬레이터 로직
+        function openUnitSimulator(id) {
+            const target = state.allData.find(d => d.id === id);
+            let units = [target];
+            if(target.unique_group_id) {
+                units = state.allData.filter(d => d.unique_group_id === target.unique_group_id);
+            }
+            
+            const sumArea = units.reduce((acc, cur) => acc + cur.area_p, 0);
+            const sumPrice = units.reduce((acc, cur) => acc + (cur.price_sell || 0), 0);
+            const sumDep = units.reduce((acc, cur) => acc + (cur.deposit || 0), 0);
+            const sumRent = units.reduce((acc, cur) => acc + (cur.rent || 0), 0);
+
+            const title = `${cleanBuildingName(target.building)} ${units.map(u=>u.unit).join(', ')}호`;
+            document.getElementById('usimTitle').innerText = title;
+            document.getElementById('usimTitlePrint').innerText = title;
+
+            // 값 세팅
+            document.getElementById('usimInputPrice').value = sumPrice.toLocaleString();
+            document.getElementById('usimInputDep').value = sumDep.toLocaleString();
+            document.getElementById('usimInputRent').value = sumRent.toLocaleString();
+
+            setupSlider('Price', sumPrice, sumPrice * 1.5 || 500000);
+            setupSlider('Dep', sumDep, sumDep * 1.5 || 50000);
+            setupSlider('Rent', sumRent, sumRent * 1.5 || 5000);
+            
+            // 슬라이더 ID가 다르므로 수동 설정
+            document.getElementById('usimSliderPrice').value = sumPrice; document.getElementById('usimSliderPrice').max = sumPrice * 1.5 || 500000;
+            document.getElementById('usimSliderDep').value = sumDep; document.getElementById('usimSliderDep').max = sumDep * 1.5 || 50000;
+            document.getElementById('usimSliderRent').value = sumRent; document.getElementById('usimSliderRent').max = sumRent * 1.5 || 5000;
+
+            // AI AVM 계산 (해당 건물 해당 층 평균 + 구역 해당 층 평균)
+            const bUnits = state.allData.filter(d => d.building === target.building && d.floor === target.floor && d.price_sell > 0);
+            let bAvg = getAvgPP(bUnits, 'sell');
+
+            const zone = ROADSIDE_TARGETS.some(t => target.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : target.exit;
+            const zUnits = state.allData.filter(d => {
+                const dZone = ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : d.exit;
+                return dZone === zone && d.floor === target.floor && d.price_sell > 0;
+            });
+            let zAvg = getAvgPP(zUnits, 'sell');
+
+            // 방어 로직 (결측치 대체)
+            if (!bAvg) bAvg = getAvgPP(state.allData.filter(d => d.building === target.building && d.price_sell > 0), 'sell'); // 해당 층 없으면 건물 전체
+            if (!zAvg) zAvg = bAvg; // 구역 데이터 없으면 건물 데이터로 퉁
+            if (!bAvg) bAvg = zAvg;
+
+            let finalAvg = (bAvg + zAvg) / 2;
+            state.unitSimAvm = Math.round(finalAvg * sumArea);
+            state.unitSimOrigPrice = sumPrice;
+            state.unitSimOrigDep = sumDep;
+            state.unitSimOrigRent = sumRent;
+
+            let basisText = "";
+            if (bAvg > 0 && zAvg > 0) {
+                basisText = `💡 <b>산출근거:</b> ${cleanBuildingName(target.building)} ${target.floor}층 평균(${fmtSellAvg(bAvg)}) + ${zone}상권 ${target.floor}층 평균(${fmtSellAvg(zAvg)}) 반영`;
+            } else {
+                basisText = `💡 <b>산출근거:</b> 인근 매매 평단가 데이터 기반 추정`;
+            }
+            const basisEl = document.getElementById('usimAvmBasis');
+            basisEl.innerHTML = basisText;
+            basisEl.classList.add('hidden');
+
+            document.getElementById('unitSimulatorModal').classList.remove('hidden');
+            calcUnitSimulator();
+        }
+
+        function getAvgPP(units, type) {
+            let sumP = 0, sumA = 0;
+            let processed = new Set();
+            units.forEach(u => {
+                let gid = u.unique_group_id || `single_${u.id}`;
+                if(processed.has(gid)) return;
+                processed.add(gid);
+                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                members.forEach(m => {
+                    if (type === 'sell') sumP += (m.price_sell || 0); else sumP += (m.rent || 0);
+                    sumA += (m.area_p || 0);
+                });
+            });
+            return sumA > 0 ? (sumP / sumA) : 0;
+        }
+
+        function applyUnitAvm() {
+            if (!state.unitSimAvm || state.unitSimAvm <= 0) {
+                alert("평가에 필요한 인근 매매 데이터가 부족합니다."); return;
+            }
+            let ratio = 1;
+            if (state.unitSimOrigPrice > 0) ratio = state.unitSimAvm / state.unitSimOrigPrice;
+            
+            const newDep = Math.round(state.unitSimOrigDep * ratio);
+            const newRent = Math.round(state.unitSimOrigRent * ratio);
+
+            document.getElementById('usimInputPrice').value = state.unitSimAvm.toLocaleString();
+            document.getElementById('usimInputDep').value = newDep.toLocaleString();
+            document.getElementById('usimInputRent').value = newRent.toLocaleString();
+            
+            document.getElementById('usimAvmBasis').classList.remove('hidden');
+
+            syncSliderFromInput('usim', 'price'); syncSliderFromInput('usim', 'dep'); syncSliderFromInput('usim', 'rent');
+            calcUnitSimulator();
+        }
+
+        function calcUnitSimulator() {
+            const price = parseInt(document.getElementById('usimInputPrice').value.replace(/,/g,'')) || 0;
+            const dep = parseInt(document.getElementById('usimInputDep').value.replace(/,/g,'')) || 0;
+            const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
+
+            document.getElementById('lblUsimPriceKo').innerText = fmtKoreanMoney(price);
+            document.getElementById('lblUsimDepKo').innerText = fmtKoreanMoney(dep);
+            document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent);
+
+            document.getElementById('printUsimValPrice').innerText = document.getElementById('lblUsimPriceKo').innerText;
+            document.getElementById('printUsimValDep').innerText = document.getElementById('lblUsimDepKo').innerText;
+            document.getElementById('printUsimValRent').innerText = document.getElementById('lblUsimRentKo').innerText;
+
+            const ltv = parseFloat(document.getElementById('usimLtv').value) / 100;
+            const rate = parseFloat(document.getElementById('usimRate').value) / 100;
+            const taxRate = parseFloat(document.getElementById('usimTax').value) / 100;
+            const feeRate = parseFloat(document.getElementById('usimFeeRate').value) / 100 || 0;
+
+            document.getElementById('printUsimLtv').innerText = (ltv*100).toFixed(0);
+            document.getElementById('printUsimRate').innerText = (rate*100).toFixed(1);
+            document.getElementById('printUsimTax').innerText = (taxRate*100).toFixed(1);
+            document.getElementById('printUsimFee').innerText = (feeRate*100).toFixed(1);
+
+            let capRate = 0;
+            const pureCost = price - dep;
+            if(pureCost > 0 && rent > 0) capRate = ((rent * 12) / pureCost * 100);
+            
+            const tax = price * taxRate;
+            const fee = price * feeRate;
+            const totalCost = price + tax + fee;
+            const loanAmount = price * ltv;
+            const cashNeeded = totalCost - loanAmount - dep;
+
+            const monthlyInterest = (loanAmount * rate) / 12;
+            const netMonthly = rent - monthlyInterest;
+
+            let roe = 0;
+            if(cashNeeded > 0 && netMonthly > 0) roe = ((netMonthly * 12) / cashNeeded * 100);
+
+            document.getElementById('resUsimCapRate').innerText = capRate.toFixed(2) + '%';
+            document.getElementById('resUsimTotalCost').innerText = fmtKoreanMoney(totalCost);
+            document.getElementById('resUsimTaxFee').innerText = fmtKoreanMoney(tax + fee);
+            document.getElementById('resUsimLoan').innerText = fmtKoreanMoney(loanAmount);
+            document.getElementById('resUsimCash').innerText = fmtKoreanMoney(cashNeeded);
+            document.getElementById('resUsimInterest').innerText = fmtKoreanMoney(monthlyInterest);
+            document.getElementById('resUsimNetMonthly').innerText = fmtKoreanMoney(netMonthly);
+            document.getElementById('resUsimRoe').innerText = roe.toFixed(2) + '%';
+        }
+
+        function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
+
+        function printUnitSimulator() {
+            document.body.classList.add('is-sim-print-mode'); setPrintStyle('portrait');
+            // 기존 sim 인쇄 클래스를 임시로 usim 모달로 이동
+            const oldSim = document.getElementById('simulatorModal');
+            const newSim = document.getElementById('unitSimulatorModal');
+            oldSim.id = 'tempSim'; newSim.id = 'simulatorModal';
+            
+            setTimeout(() => { 
+                window.print(); 
+                setTimeout(() => {
+                    document.body.classList.remove('is-sim-print-mode');
+                    newSim.id = 'unitSimulatorModal'; oldSim.id = 'simulatorModal'; // 원복
+                }, 500); 
+            }, 100);
+        }
+
+        async function shareUnitSimulator() {
+            const btn = document.getElementById('usimShareBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
+            btn.disabled = true;
+
+            const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
+            const clone = content.cloneNode(true);
+            
+            clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
+            clone.querySelectorAll('.print-sim-only').forEach(el => {
+                el.style.display = 'block'; el.classList.remove('hidden');
+            });
+            
+            clone.style.width = '600px';
+            clone.style.height = 'auto';
+            clone.style.maxHeight = 'none';
+            clone.style.borderRadius = '0';
+            clone.style.boxShadow = 'none';
+
+            const cloneContainer = document.createElement('div');
+            cloneContainer.id = 'offscreen-capture-container';
+            cloneContainer.style.background = '#f8fafc';
+            cloneContainer.style.padding = '0';
+            cloneContainer.appendChild(clone);
+            document.body.appendChild(cloneContainer);
+            
+            await new Promise(r => setTimeout(r, 100));
+            
+            try {
+                const canvas = await html2canvas(cloneContainer, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+                document.body.removeChild(cloneContainer);
+                btn.innerHTML = originalText; btn.disabled = false;
+                
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], '호실_투자분석.jpg', { type: 'image/jpeg' });
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    if (!isMobile) {
+                        const link = document.createElement('a');
+                        link.download = '호실_투자분석.jpg'; link.href = URL.createObjectURL(blob); link.click();
+                        alert('이미지가 저장되었습니다.'); return; 
+                    }
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ files: [file], title: '호실 투자 분석' }); } 
+                        catch (err) { if(err.name !== 'AbortError') showImageFallback(URL.createObjectURL(blob), ''); }
+                    } else {
+                        showImageFallback(URL.createObjectURL(blob), '');
+                    }
+                }, 'image/jpeg', 0.9);
+            } catch (e) {
+                if (document.getElementById('offscreen-capture-container')) document.body.removeChild(document.getElementById('offscreen-capture-container'));
+                btn.innerHTML = originalText; btn.disabled = false; alert('캡처 오류');
+            }
+        }
     </script>
 </body>
 </html>
