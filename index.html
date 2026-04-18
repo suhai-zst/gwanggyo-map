@@ -2596,7 +2596,7 @@ function applyAvmToSimulator() {
             input.value = parseInt(val).toLocaleString();
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
         }
-// [복구] 평균 평단가 산출 함수
+// 1. [핵심 부품] 평균 평단가 산출 엔진
         function getAvgPP(units, type) {
             let sumP = 0, sumA = 0;
             let processed = new Set();
@@ -2614,8 +2614,9 @@ function applyAvmToSimulator() {
             });
             return sumA > 0 ? (sumP / sumA) : 0;
         }
-        // 호실 시뮬레이터 로직
-function openUnitSimulator(id) {
+
+        // 2. 호실 시뮬레이터 팝업 열기 (v8.4)
+        function openUnitSimulator(id) {
             const target = state.allData.find(d => d.id === id);
             let units = [target];
             if(target.unique_group_id) {
@@ -2635,7 +2636,7 @@ function openUnitSimulator(id) {
             state.unitSimFloor = target.floor;
             state.unitSimZone = ROADSIDE_TARGETS.some(t => target.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))) ? '대로변' : target.exit;
 
-            // [AI 시장 평단가 자동 추출 로직]
+            // AI 시장 평단가 자동 추출
             const bName = state.unitSimBuilding;
             const floor = state.unitSimFloor;
             const zone = state.unitSimZone;
@@ -2648,7 +2649,7 @@ function openUnitSimulator(id) {
             if(!bAvgSell) bAvgSell = getAvgPP(state.allData.filter(d => d.building === bName && d.price_sell > 0), 'sell');
             if(!zAvgSell) zAvgSell = bAvgSell; if(!bAvgSell) bAvgSell = zAvgSell;
 
-            state.unitMarketAvg = Math.round((bAvgSell + zAvgSell) / 2) || 4000; // 결측 시 4000만 기본값
+            state.unitMarketAvg = Math.round((bAvgSell + zAvgSell) / 2) || 4000;
 
             // 초기값 세팅 (월세가 0이면 150만원 기본 세팅)
             document.getElementById('usimInputRent').value = (sumRent > 0 ? sumRent : 150).toLocaleString();
@@ -2665,8 +2666,8 @@ function openUnitSimulator(id) {
             calcUnitSimulator();
         }
 
+        // 3. 시뮬레이터 실시간 계산 엔진 (v8.4)
         function calcUnitSimulator() {
-            // 입력값 읽기
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const capRate = parseFloat(document.getElementById('usimCapRate').value);
             const weight = parseFloat(document.getElementById('usimWeight').value) / 100;
@@ -2677,25 +2678,16 @@ function openUnitSimulator(id) {
             const area = state.unitSimArea || 15;
             const marketAvg = state.unitMarketAvg || 4000;
 
-            // UI 보정 (월세 입력창 쉼표 유지 및 한글 출력)
             document.getElementById('usimInputRent').value = rent.toLocaleString();
             document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent);
 
-            // 1. 보증금 산출 (100만 단위 반올림)
             const deposit = Math.round((rent * depMult) / 100) * 100;
-
-            // 2. 수익가치 산출
             let yieldValue = 0;
             if(capRate > 0) yieldValue = Math.round((((rent * 12) / (capRate / 100)) + deposit) / 100) * 100;
-
-            // 3. 시장가치 산출
             const marketValue = Math.round((area * marketAvg) / 100) * 100;
-
-            // 4. 최종 적정가 도출 (수익 vs 시장 비중 믹스)
             const finalPrice = Math.round(((yieldValue * (1 - weight)) + (marketValue * weight)) / 100) * 100;
 
-            // 5. 투자 및 재무 지표 계산
-            const taxFeeRate = 0.046 + 0.009; // 5.5%
+            const taxFeeRate = 0.046 + 0.009; 
             const taxFee = finalPrice * taxFeeRate;
             const loan = finalPrice * ltv;
             const cashNeeded = finalPrice + taxFee - loan - deposit;
@@ -2707,7 +2699,6 @@ function openUnitSimulator(id) {
             let roe = 0;
             if(cashNeeded > 0) roe = (netMonthly * 12) / cashNeeded * 100;
 
-            // --- UI 렌더링 ---
             document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice);
             document.getElementById('resUsimCapRate').innerText = finalCapRate.toFixed(2) + '%';
             document.getElementById('resUsimCash').innerText = fmtKoreanMoney(cashNeeded);
@@ -2718,7 +2709,6 @@ function openUnitSimulator(id) {
             document.getElementById('ldgTaxFee').innerText = fmtKoreanMoney(taxFee);
             document.getElementById('ldgNet').innerText = fmtKoreanMoney(netMonthly);
 
-            // --- 막대 차트 (가로) 업데이트 ---
             const maxVal = Math.max(yieldValue, marketValue, finalPrice) || 1;
             
             const barY = document.getElementById('barYield');
@@ -2734,10 +2724,12 @@ function openUnitSimulator(id) {
             barF.innerText = fmtKoreanMoney(finalPrice);
         }
 
+        // 4. 모달 닫기
         function closeUnitSimulator() { 
             document.getElementById('unitSimulatorModal').classList.add('hidden'); 
         }
 
+        // 5. 시뮬레이터 캡처 및 공유 (v8.4 가로형)
         async function shareUnitSimulator() {
             const btn = document.getElementById('usimShareBtn');
             const originalText = btn.innerHTML;
@@ -2755,7 +2747,6 @@ function openUnitSimulator(id) {
                 el.style.display = 'block'; el.classList.remove('hidden');
             });
             
-            // A4 가로(Landscape) 규격 강제 적용
             clone.style.width = '100%';
             clone.style.height = 'auto';
             clone.style.maxHeight = 'none';
@@ -2763,13 +2754,11 @@ function openUnitSimulator(id) {
             clone.style.boxShadow = 'none';
             clone.style.margin = '0';
             
-            // 차트 텍스트 줄바꿈 방지
             const bars = clone.querySelectorAll('.h-full.flex.items-center');
             bars.forEach(b => b.style.whiteSpace = 'nowrap');
 
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
-            // A4 가로폭(약 1123px) 및 배경 세팅
             cloneContainer.style.cssText = "position:absolute; top:-9999px; left:-9999px; background:#ffffff; padding:40px; width:1123px;";
             
             cloneContainer.appendChild(clone);
