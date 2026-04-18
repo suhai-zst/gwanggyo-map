@@ -2592,17 +2592,35 @@ function applyAvmToSimulator() {
             input.value = parseInt(val).toLocaleString();
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
         }
-// 1. 평균 평단가 산출 엔진
-        // [v8.4.3] 한글 금액 포맷터 (1억 단위 대응)
+// [v8.4.4] 금액 표기 버그 수정 및 가독성 강화
         function fmtSmartMoney(val) {
-            if (!val || val <= 0) return "0원";
-            if (val >= 10000) {
-                const uk = Math.floor(val / 10000);
-                const man = val % 10000;
+            if (val === undefined || val === null || val < 0) return "0원";
+            if (val === 0) return "0원";
+            
+            const totalMan = Math.round(val); // 소수점 반올림
+            
+            if (totalMan >= 10000) {
+                const uk = Math.floor(totalMan / 10000);
+                const man = totalMan % 10000;
+                // 만원 단위가 0이라도 '0원'보다는 '억원'만 깔끔하게 표시
                 return man === 0 ? `${uk}억원` : `${uk}억 ${man.toLocaleString()}만원`;
             }
-            return `${val.toLocaleString()}만원`;
+            
+            // 만원 단위일 때 천 단위 콤마 필수 적용 (예: 205만원)
+            return `${totalMan.toLocaleString()}만원`;
         }
+
+        // calcUnitSimulator 함수 내 이자 계산 로직 (이 부분만 찾아서 교체)
+        // ... 중간 생략 ...
+        const loan = Math.round(finalPrice * ltv);
+        const taxFee = Math.round(finalPrice * 0.055);
+        const cashNeeded = finalPrice + taxFee - loan - deposit;
+        
+        // 월 이자 계산 정밀도 높임 (금리 4.5% -> 0.045)
+        const annualRate = parseFloat(document.getElementById('usimRate').value) / 100;
+        const monthlyInt = Math.round((loan * annualRate) / 12); 
+        const netMonthly = rent - monthlyInt;
+        // ... 하단 렌더링 부분으로 이어짐 ...
 
         // 평균 평단가 엔진
         function getAvgPP(units, type) {
@@ -2697,7 +2715,8 @@ function applyAvmToSimulator() {
             const taxFee = Math.round(finalPrice * 0.055);
             const loan = Math.round(finalPrice * ltv);
             const cashNeeded = finalPrice + taxFee - loan - deposit;
-            const monthlyInt = Math.round((loan * (intRate / 100)) / 12);
+            const annualRate = parseFloat(document.getElementById('usimRate').value) / 100;
+            const monthlyInt = Math.round((loan * annualRate) / 12);
             const netMonthly = rent - monthlyInt;
 
             let finalCapRate = 0;
