@@ -2596,7 +2596,24 @@ function applyAvmToSimulator() {
             input.value = parseInt(val).toLocaleString();
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
         }
-
+// [복구] 평균 평단가 산출 함수
+        function getAvgPP(units, type) {
+            let sumP = 0, sumA = 0;
+            let processed = new Set();
+            units.forEach(u => {
+                let gid = u.unique_group_id || `single_${u.id}`;
+                if(processed.has(gid)) return;
+                processed.add(gid);
+                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                members.forEach(m => {
+                    if (type === 'sell') sumP += (m.price_sell || 0); 
+                    else if (type === 'rent') sumP += (m.rent || 0);
+                    else if (type === 'dep') sumP += (m.deposit || 0);
+                    sumA += (m.area_p || 0);
+                });
+            });
+            return sumA > 0 ? (sumP / sumA) : 0;
+        }
         // 호실 시뮬레이터 로직
 function openUnitSimulator(id) {
             const target = state.allData.find(d => d.id === id);
