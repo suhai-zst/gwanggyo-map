@@ -485,28 +485,49 @@
                     </div>
                 </div>
 
-                <div class="mb-5 no-print-sim">
+                <div class="mb-5 no-print-sim space-y-4">
                     <div class="flex justify-between gap-4">
                         <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 (LTV)</span><span class="font-black text-blue-600"><span id="lblLtv">60</span>%</span></div><input type="range" id="simLtv" min="0" max="90" step="5" value="60" class="slider-range" oninput="document.getElementById('lblLtv').innerText=this.value; calcSimulator();"></div>
                         <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">대출 금리</span><span class="font-black text-orange-600"><span id="lblRate">4.5</span>%</span></div><input type="range" id="simRate" min="2.0" max="8.0" step="0.1" value="4.5" class="slider-range" oninput="document.getElementById('lblRate').innerText=parseFloat(this.value).toFixed(1); calcSimulator();"></div>
                         <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">취득세율</span></div><div class="flex items-center bg-white border border-slate-300 rounded px-2"><input type="text" id="simTax" value="4.6" class="w-full text-right text-xs font-bold text-slate-700 outline-none" onkeyup="calcSimulator()"><span class="text-xs text-slate-400 ml-1">%</span></div></div>
                     </div>
+                    <div class="flex justify-between gap-4 border-t border-slate-200 pt-4">
+                        <div class="flex-1">
+                            <div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-600">중개보수율</span></div>
+                            <div class="flex items-center bg-white border border-slate-300 rounded px-2">
+                                <input type="text" id="simFeeRate" value="0.9" class="w-full text-right text-xs font-bold text-slate-700 outline-none py-1" onkeyup="calcSimulator()">
+                                <span class="text-xs text-slate-400 ml-1">%</span>
+                            </div>
+                        </div>
+                        <div class="flex-[2]">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-bold text-slate-600">월 기타수익 (관리비 마진 등)</span>
+                                <span class="text-[10px] text-emerald-600 font-black no-print-sim" id="lblSimOtherKo">0원</span>
+                            </div>
+                            <div class="flex items-center bg-white border border-slate-300 rounded px-2 focus-within:ring-2 focus-within:ring-emerald-500">
+                                <input type="text" id="simInputOther" value="0" class="w-full text-right text-sm font-bold text-emerald-600 outline-none py-1" onkeyup="formatSimInput(this, 'lblSimOtherKo'); calcSimulator();" placeholder="0">
+                                <span class="text-xs text-slate-500 ml-1 font-bold">만원</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">* 적용 조건: 대출 <span id="printLtv"></span>% / 금리 <span id="printRate"></span>% / 취득세 <span id="printTax"></span>%</div>
+                <div class="hidden print-sim-only mb-4 text-xs font-bold text-slate-500 text-right">* 적용 조건: 대출 <span id="printLtv"></span>% / 금리 <span id="printRate"></span>% / 취득세 <span id="printTax"></span>% / 중개보수 <span id="printFee"></span>%</div>
 
                 <div class="bg-slate-800 rounded-xl p-4 text-white shadow-inner border border-slate-700 mt-auto print-high-contrast">
-                    <div class="flex justify-between items-center mb-3"><span class="text-xs text-slate-300 font-bold">건물 명목 수익률 (Cap Rate)</span><span class="text-lg font-black text-yellow-400" id="resCapRate">0.00%</span></div>
+                    <div class="flex justify-between items-center mb-3"><span class="text-xs text-slate-300 font-bold">명목 수익률 (Cap Rate)</span><span class="text-lg font-black text-yellow-400" id="resCapRate">0.00%</span></div>
                     <div class="w-full h-px bg-slate-600 mb-3"></div>
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금포함)</span><span class="font-bold" id="resTotalCost">0원</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">대출 금액</span><span class="font-bold text-blue-300" id="resLoan">0원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">총 매입 원가 (세금/수수료 포함)</span><span class="font-bold" id="resTotalCost">0원</span></div>
+                        <div class="flex justify-between text-[11px] text-slate-400 px-2"><span class="">↳ 취득세 및 중개보수</span><span class="" id="resTaxFee">0원</span></div>
+                        <div class="flex justify-between mt-1"><span class="text-slate-400 font-medium text-xs">대출 금액</span><span class="font-bold text-blue-300" id="resLoan">0원</span></div>
                         <div class="flex justify-between bg-slate-700 p-2 rounded-lg my-1 border border-slate-600"><span class="text-slate-200 font-bold text-xs">필요 현금 (자기자본)</span><span class="font-black text-emerald-400" id="resCash">0원</span></div>
                     </div>
                     <div class="w-full h-px bg-slate-600 my-3"></div>
                     <div class="space-y-2 text-sm mb-4">
+                        <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">월 총 수입 (월세+기타수익)</span><span class="font-bold text-emerald-300" id="resTotalIncome">0원</span></div>
                         <div class="flex justify-between"><span class="text-slate-400 font-medium text-xs">월 대출 이자</span><span class="font-bold text-orange-300" id="resInterest">0원</span></div>
-                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600"><span class="text-slate-200 font-bold text-xs">월 순수익 (이자 공제)</span><span class="font-black text-white" id="resNetMonthly">0원</span></div>
+                        <div class="flex justify-between bg-slate-700 p-2 rounded-lg border border-slate-600"><span class="text-slate-200 font-bold text-xs">월 순수익 (이자 공제 후)</span><span class="font-black text-white" id="resNetMonthly">0원</span></div>
                     </div>
                     <div class="bg-emerald-600 rounded-lg p-3 flex justify-between items-center border border-emerald-500 shadow-md"><span class="text-xs font-black text-emerald-100">최종 실투자 수익률 (ROE)</span><span class="text-xl font-black text-white drop-shadow-sm" id="resRoe">0.00%</span></div>
                 </div>
@@ -2244,60 +2265,64 @@ function renderMacroDash() {
 }
 
 function openSimulator(targetSel) {
-    state.simTarget = targetSel;
-    
-    const type = targetSel.substring(0, 2);
-    const val = targetSel.substring(2);
-    let units = [];
-    let displayName = '';
-    
-    if (type === 'B|') {
-        units = state.allData.filter(d => d.building === val);
-        displayName = cleanBuildingName(val);
-    } else if (type === 'Z|') {
-        if (val === '대로변') {
-            units = state.allData.filter(d => ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))));
-            displayName = `[상권] 대로변 전체`;
-        } else {
-            units = state.allData.filter(d => d.exit === val);
-            displayName = `[상권] ${val}`;
+            state.simTarget = targetSel;
+            
+            const type = targetSel.substring(0, 2);
+            const val = targetSel.substring(2);
+            let units = [];
+            let displayName = '';
+            
+            if (type === 'B|') {
+                units = state.allData.filter(d => d.building === val);
+                displayName = cleanBuildingName(val);
+            } else if (type === 'Z|') {
+                if (val === '대로변') {
+                    units = state.allData.filter(d => ROADSIDE_TARGETS.some(t => d.building.replace(/\s/g,'').includes(t.replace(/\s/g,''))));
+                    displayName = `[상권] 대로변 전체`;
+                } else {
+                    units = state.allData.filter(d => d.exit === val);
+                    displayName = `[상권] ${val}`;
+                }
+            }
+
+            let sumPrice = 0, sumDep = 0, sumRent = 0;
+            let processed = new Set();
+            units.forEach(u => {
+                let gid = u.unique_group_id || `single_${u.id}`;
+                if(processed.has(gid)) return;
+                processed.add(gid);
+                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+                members.forEach(m => {
+                    sumPrice += (m.price_sell||0);
+                    sumDep += (m.deposit||0);
+                    sumRent += (m.rent||0);
+                });
+            });
+
+            if (sumPrice === 0) { sumPrice = Math.round(calcBuildingAVM(units)); }
+
+            state.simOrigPrice = sumPrice;
+            state.simOrigDep = sumDep;
+            state.simOrigRent = sumRent;
+
+            document.getElementById('simBuildingName').innerText = displayName;
+            document.getElementById('simBuildingNamePrint').innerText = displayName;
+            
+            // 창 열 때 기타수익 0으로 초기화
+            document.getElementById('simInputOther').value = "0";
+            document.getElementById('lblSimOtherKo').innerText = "0원";
+
+            document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
+            document.getElementById('simInputDep').value = sumDep.toLocaleString();
+            document.getElementById('simInputRent').value = sumRent.toLocaleString();
+            
+            setupSlider('Price', sumPrice, sumPrice * 1.5 || 1000000);
+            setupSlider('Dep', sumDep, sumDep * 1.5 || 100000);
+            setupSlider('Rent', sumRent, sumRent * 1.5 || 10000);
+
+            document.getElementById('simulatorModal').classList.remove('hidden');
+            calcSimulator();
         }
-    }
-
-    let sumPrice = 0, sumDep = 0, sumRent = 0;
-    let processed = new Set();
-    units.forEach(u => {
-        let gid = u.unique_group_id || `single_${u.id}`;
-        if(processed.has(gid)) return;
-        processed.add(gid);
-        let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-        members.forEach(m => {
-            sumPrice += (m.price_sell||0);
-            sumDep += (m.deposit||0);
-            sumRent += (m.rent||0);
-        });
-    });
-
-    if (sumPrice === 0) { sumPrice = Math.round(calcBuildingAVM(units)); }
-
-    state.simOrigPrice = sumPrice;
-    state.simOrigDep = sumDep;
-    state.simOrigRent = sumRent;
-
-    document.getElementById('simBuildingName').innerText = displayName;
-    document.getElementById('simBuildingNamePrint').innerText = displayName;
-    
-    document.getElementById('simInputPrice').value = sumPrice.toLocaleString();
-    document.getElementById('simInputDep').value = sumDep.toLocaleString();
-    document.getElementById('simInputRent').value = sumRent.toLocaleString();
-    
-    setupSlider('Price', sumPrice, sumPrice * 1.5 || 1000000);
-    setupSlider('Dep', sumDep, sumDep * 1.5 || 100000);
-    setupSlider('Rent', sumRent, sumRent * 1.5 || 10000);
-
-    document.getElementById('simulatorModal').classList.remove('hidden');
-    calcSimulator();
-}
 
         function setupSlider(type, val, max) {
             const slider = document.getElementById('simSlider' + type);
@@ -2376,10 +2401,12 @@ function applyAvmToSimulator() {
             const price = parseInt(document.getElementById('simInputPrice').value.replace(/,/g,'')) || 0;
             const dep = parseInt(document.getElementById('simInputDep').value.replace(/,/g,'')) || 0;
             const rent = parseInt(document.getElementById('simInputRent').value.replace(/,/g,'')) || 0;
+            const otherIncome = parseInt(document.getElementById('simInputOther').value.replace(/,/g,'')) || 0;
 
             document.getElementById('lblSimPriceKo').innerText = fmtKoreanMoney(price);
             document.getElementById('lblSimDepKo').innerText = fmtKoreanMoney(dep);
             document.getElementById('lblSimRentKo').innerText = fmtKoreanMoney(rent);
+            document.getElementById('lblSimOtherKo').innerText = fmtKoreanMoney(otherIncome);
 
             document.getElementById('printValPrice').innerText = document.getElementById('lblSimPriceKo').innerText;
             document.getElementById('printValDep').innerText = document.getElementById('lblSimDepKo').innerText;
@@ -2388,30 +2415,38 @@ function applyAvmToSimulator() {
             const ltv = parseFloat(document.getElementById('simLtv').value) / 100;
             const rate = parseFloat(document.getElementById('simRate').value) / 100;
             const taxRate = parseFloat(document.getElementById('simTax').value) / 100;
+            const feeRate = parseFloat(document.getElementById('simFeeRate').value) / 100 || 0;
 
             document.getElementById('printLtv').innerText = (ltv*100).toFixed(0);
             document.getElementById('printRate').innerText = (rate*100).toFixed(1);
             document.getElementById('printTax').innerText = (taxRate*100).toFixed(1);
+            if(document.getElementById('printFee')) document.getElementById('printFee').innerText = (feeRate*100).toFixed(1);
+
+            const totalMonthlyIncome = rent + otherIncome;
 
             let capRate = 0;
             const pureCost = price - dep;
-            if(pureCost > 0 && rent > 0) capRate = ((rent * 12) / pureCost * 100);
+            // 기타수익을 포함하여 Cap Rate 산출 (NOI 기준)
+            if(pureCost > 0 && totalMonthlyIncome > 0) capRate = ((totalMonthlyIncome * 12) / pureCost * 100);
             
             const tax = price * taxRate;
-            const totalCost = price + tax;
+            const fee = price * feeRate;
+            const totalCost = price + tax + fee;
             const loanAmount = price * ltv;
             const cashNeeded = totalCost - loanAmount - dep;
 
             const monthlyInterest = (loanAmount * rate) / 12;
-            const netMonthly = rent - monthlyInterest;
+            const netMonthly = totalMonthlyIncome - monthlyInterest;
 
             let roe = 0;
             if(cashNeeded > 0 && netMonthly > 0) roe = ((netMonthly * 12) / cashNeeded * 100);
 
             document.getElementById('resCapRate').innerText = capRate.toFixed(2) + '%';
             document.getElementById('resTotalCost').innerText = fmtKoreanMoney(totalCost);
+            document.getElementById('resTaxFee').innerText = fmtKoreanMoney(tax + fee);
             document.getElementById('resLoan').innerText = fmtKoreanMoney(loanAmount);
             document.getElementById('resCash').innerText = fmtKoreanMoney(cashNeeded);
+            document.getElementById('resTotalIncome').innerText = fmtKoreanMoney(totalMonthlyIncome);
             document.getElementById('resInterest').innerText = fmtKoreanMoney(monthlyInterest);
             document.getElementById('resNetMonthly').innerText = fmtKoreanMoney(netMonthly);
             document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
