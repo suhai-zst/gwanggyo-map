@@ -709,7 +709,7 @@
                         <div class="bg-emerald-600 p-2.5 rounded-lg border border-emerald-500 shadow-md"><div class="text-[10px] font-bold text-emerald-100 mb-0.5">실투자수익률(ROE)</div><div class="text-lg font-extrabold text-white" id="resUsimRoe">0.00%</div></div>
                     </div>
 
-                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm">
+                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm mt-auto">
                         <div class="p-2 flex justify-between items-center bg-slate-50 border-b border-slate-200">
                             <span class="font-bold text-slate-600">부대비용 (취득세 4.6% + 수수료 0.9%)</span>
                             <span class="font-bold text-slate-800" id="ldgTaxFee">0원</span>
@@ -2632,7 +2632,8 @@ function applyAvmToSimulator() {
         function calcUnitSimulator() {
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const cap = parseFloat(document.getElementById('usimCapRate').value), w = parseFloat(document.getElementById('usimWeight').value)/100, mult = parseInt(document.getElementById('usimDepMult').value), ltv = parseFloat(document.getElementById('usimLtv').value)/100;
-            const rate = parseFloat(document.getElementById('usimRate').value)/100;
+            const rateValue = document.getElementById('usimRate').value;
+            const rate = parseFloat(rateValue.replace(/[^0-9.]/g, '')) / 100;
             
             const dep = Math.round((rent * mult)/100)*100;
             let yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
@@ -2698,10 +2699,10 @@ function applyAvmToSimulator() {
                     scale: 2, 
                     useCORS: true, 
                     backgroundColor: '#ffffff',
-                    width: 1123,
-                    height: 794,
-                    x: 0,
-                    y: 0
+                    width: 1123,   // A4 가로 픽셀 고정
+                    height: 794,  // A4 세로 픽셀 고정
+                    x: 0,         // 캡처 시작 X좌표 강제 초기화
+                    y: 0          // 캡처 시작 Y좌표 강제 초기화
                 });
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText; btn.disabled = false;
