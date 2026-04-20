@@ -2672,6 +2672,48 @@ function applyAvmToSimulator() {
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
 
+        // 1. 건물 상세 모달 열기
+        function openBuildingDetail(buildingName) {
+            const bData = state.allData.filter(d => d.building === buildingName);
+            if (bData.length === 0) {
+                alert('해당 건물에 대한 데이터가 없습니다.');
+                return;
+            }
+
+            // 모달 제목 변경 (ID는 실제 HTML에 맞춰 확인 필요)
+            const modalTitle = document.getElementById('buildingDetailTitle');
+            if (modalTitle) modalTitle.innerText = buildingName + " 상세 정보";
+
+            // 건물 모달 열기
+            const modal = document.getElementById('buildingDetailModal');
+            if (modal) modal.classList.remove('hidden');
+            
+            // 주의: 테이블에 데이터를 뿌리는 로직(renderBuildingUnitTable 등)이 
+            // 별도로 존재한다면 이 위치에서 호출해야 합니다.
+        }
+
+        // 2. 고객용/관리용 모드 토글
+        function toggleViewMode() {
+            // 상태 반전
+            state.isAdminMode = !state.isAdminMode;
+            
+            // 버튼 UI 변경
+            const btn = document.getElementById('viewModeToggleBtn');
+            if (btn) {
+                btn.innerHTML = state.isAdminMode ? 
+                    '<i class="ph-bold ph-user-gear"></i> 관리용' : 
+                    '<i class="ph-bold ph-users"></i> 고객용';
+                btn.className = state.isAdminMode ? 
+                    "px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 shadow-sm" :
+                    "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 shadow-sm";
+            }
+
+            // 현재 열려있는 호실 상세 모달이 있다면 데이터를 즉시 다시 렌더링
+            if (state.currentUnitId && typeof openUnitDetail === 'function') {
+                openUnitDetail(state.currentUnitId);
+            }
+        }
+        
         async function shareUnitSimulator(action = 'share') {
             const btn = action === 'print' ? document.getElementById('usimPrintBtn') : document.getElementById('usimShareBtn');
             const originalText = btn.innerHTML;
