@@ -827,6 +827,9 @@
 
         function updateZoneIntelligence() {
             const stats = {};
+            // state가 정의되기 전에 호출될 경우를 대비한 안전장치
+            if (!state || !state.allData) return;
+            
             const validUnits = state.allData.filter(u => u.rent_norm > 0 && u.area_p > 0);
             validUnits.forEach(u => {
                 const zone = u.zone || "미지정";
@@ -849,15 +852,14 @@
             state.zoneStats = stats;
         }
 
- }
-
-        // 2. 로그인 프리패스 함수 (ReferenceError 방지)
+        // 2. 로그인 프리패스 함수 (ReferenceError 해결)
         function checkPin() {
-            document.getElementById('loginOverlay').classList.add('hidden');
+            const overlay = document.getElementById('loginOverlay');
+            if(overlay) overlay.classList.add('hidden');
             sessionStorage.setItem('isAuthorized', 'true');
         }
 
-        // 3. 상태 관리 객체 (여기에 zoneStats: {} 가 꼭 있어야 합니다)
+        // 3. 상태 관리 객체 (오타 및 괄호 닫기 수정 완료)
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
@@ -865,7 +867,10 @@
             isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
             realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
             isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0,
-            zoneStats: {} // 엔진 작동을 위한 필수 변수
+            zoneStats: {} 
+        };
+
+        // --- 이 아래부터 window.addEventListener('DOMContentLoaded', ... 가 오면 됩니다 ---
 
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
