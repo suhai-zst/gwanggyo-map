@@ -1358,138 +1358,140 @@
         function parseNum(val) { if (!val) return 0; if (typeof val === 'number') return val; return parseFloat(val.toString().replace(/,/g, '')) || 0; }
 
        function processData(data) {
-    const today = new Date();
-    // 1. 데이터 가공 및 정규화 월세 산출
-    const processed = data.map((r, i) => {
-        if (!r['건물'] && !r['건물명']) return null;
-        const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
-        const f = String(r['층'] || '').replace('층','').trim(); 
-        const u = String(r['호수'] || r['호'] || '').trim(); 
-        const storeName = String(r['업체명'] || r['상호'] || '').trim();
+            const today = new Date();
+            // 1. 데이터 가공 및 정규화 월세 산출
+            const processed = data.map((r, i) => {
+                if (!r['건물'] && !r['건물명']) return null;
+                const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
+                const f = String(r['층'] || '').replace('층','').trim(); 
+                const u = String(r['호수'] || r['호'] || '').trim(); 
+                const storeName = String(r['업체명'] || r['상호'] || '').trim();
 
-        if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
-        
-        const rawSt = (r['상태'] || '').trim(); 
-        const rawHist = (r['거래내역'] || '').trim();
+                if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
+                
+                const rawSt = (r['상태'] || '').trim(); 
+                const rawHist = (r['거래내역'] || '').trim();
 
-        // 삭제 매물 필터링
-        if (rawSt.includes('삭제') || rawHist.includes('삭제')) return null;
+                // 삭제 매물 필터링
+                if (rawSt.includes('삭제') || rawHist.includes('삭제')) return null;
 
-        let finalSt = '미정'; 
-        let displaySt = rawSt || rawHist || '미정';
-        if (rawSt) finalSt = normalizeStatus(rawSt); 
-        else if (rawHist) finalSt = normalizeStatus(rawHist);
-        
-        const rent = parseNum(r['월세']); 
-        const price = parseNum(r['매매가']); 
-        const deposit = parseNum(r['보증금']); 
-        const premium = parseNum(r['권리금']);
-        
-        let areaP = 0; 
-        if (r['전용평수']) areaP = parseNum(r['전용평수']); 
-        else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
-        
-        let areaS = 0; 
-        if (r['분양평수']) areaS = parseNum(r['분양평수']); 
-        else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
-        
-        let ppSell = parseNum(r['매매평단가']); 
-        let ppRent = parseNum(r['임대평단가']);
-        let yieldRate = 0; 
-        if (price > 0 && rent > 0) { 
-            const cost = price - deposit; 
-            if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); 
-        }
-        
-        let rawImp = ''; 
-        Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
-        let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
-        let isQuestion = (rawImp||'').toString().trim() === '??';
+                let finalSt = '미정'; 
+                let displaySt = rawSt || rawHist || '미정';
+                if (rawSt) finalSt = normalizeStatus(rawSt); 
+                else if (rawHist) finalSt = normalizeStatus(rawHist);
+                
+                const rent = parseNum(r['월세']); 
+                const price = parseNum(r['매매가']); 
+                const deposit = parseNum(r['보증금']); 
+                const premium = parseNum(r['권리금']);
+                
+                let areaP = 0; 
+                if (r['전용평수']) areaP = parseNum(r['전용평수']); 
+                else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
+                
+                let areaS = 0; 
+                if (r['분양평수']) areaS = parseNum(r['분양평수']); 
+                else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
+                
+                let ppSell = parseNum(r['매매평단가']); 
+                let ppRent = parseNum(r['임대평단가']);
+                let yieldRate = 0; 
+                if (price > 0 && rent > 0) { 
+                    const cost = price - deposit; 
+                    if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); 
+                }
+                
+                let rawImp = ''; 
+                Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
+                let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
+                let isQuestion = (rawImp||'').toString().trim() === '??';
 
-        let adDateStr = (r['광고일'] || '').toString().trim(); 
-        let isAdWarn = false;
-        if (adDateStr && adDateStr.match(/\d/)) { 
-            let d = new Date(adDateStr); 
-            if(!isNaN(d.getTime())) { 
-                const expiry = new Date(d); 
-                expiry.setDate(d.getDate() + 30); 
-                const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); 
-                if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; 
-            } 
-        }
-        
-        const gId = (r['통합'] || '').trim();
-        const tenantReal = String(r['임차인'] || '').trim(); 
-        const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
-        const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
+                let adDateStr = (r['광고일'] || '').toString().trim(); 
+                let isAdWarn = false;
+                if (adDateStr && adDateStr.match(/\d/)) { 
+                    let d = new Date(adDateStr); 
+                    if(!isNaN(d.getTime())) { 
+                        const expiry = new Date(d); 
+                        expiry.setDate(d.getDate() + 30); 
+                        const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); 
+                        if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; 
+                    } 
+                }
+                
+                const gId = (r['통합'] || '').trim();
+                const tenantReal = String(r['임차인'] || '').trim(); 
+                const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
+                const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
 
-        // 최종 객체 반환
-        return { 
-            id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
-            area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), zone: String(r['구역'] || r['출구'] || ''),
-            tenant: tenantReal, store_name: storeName, 
-            memo: String(r['협의내용'] || r['메모'] || '').trim(), 
-            price_sell: price, deposit: deposit, rent: rent, premium: premium, 
-            owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
-            pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
-            pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
-            // [중요 픽스] row -> r 로 변경, parseNum 적용
-            rent_norm: getNormalizedRent({ deposit: deposit, rent: rent }),
-            group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
-            _match: false, _isPartOfMerge: false, _mergeStartArea: 0
-        };
-    }).filter(x => x);
+                // 최종 객체 반환
+                return { 
+                    id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
+                    area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), zone: String(r['구역'] || r['출구'] || ''),
+                    tenant: tenantReal, store_name: storeName, 
+                    memo: String(r['협의내용'] || r['메모'] || '').trim(), 
+                    price_sell: price, deposit: deposit, rent: rent, premium: premium, 
+                    owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
+                    pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
+                    pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
+                    rent_norm: getNormalizedRent({ deposit: deposit, rent: rent }),
+                    group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
+                    _match: false, _isPartOfMerge: false, _mergeStartArea: 0
+                };
+            }).filter(x => x);
 
-    // 2. 가공된 데이터를 전역 변수에 저장
-    state.allData = processed;
+            // 2. 가공된 데이터를 전역 변수에 저장
+            state.allData = processed;
 
-    // 3. [통합 엔진 작동] 데이터 로딩 즉시 지능형 시세 산출 가동!
-    updateZoneIntelligence();
-}
+            // 3. [통합 엔진 작동] 데이터 로딩 즉시 지능형 시세 산출 가동!
+            updateZoneIntelligence();
 
-    const groupAreaMap = {}; const groupPriceMap = {};
-    const groupDepMap = {}; const groupRentMap = {}; const groupPremMap = {};
-    
-    state.allData.forEach(d => {
-        if(d.unique_group_id) {
-            if(!groupAreaMap[d.unique_group_id]) { 
-                groupAreaMap[d.unique_group_id] = 0; groupPriceMap[d.unique_group_id] = 0; 
-                groupDepMap[d.unique_group_id] = 0; groupRentMap[d.unique_group_id] = 0; groupPremMap[d.unique_group_id] = 0;
-            }
-            groupAreaMap[d.unique_group_id] += d.area_p; 
-            groupPriceMap[d.unique_group_id] += (d.price_sell || 0);
-            groupDepMap[d.unique_group_id] += (d.deposit || 0);
-            groupRentMap[d.unique_group_id] += (d.rent || 0);
-            groupPremMap[d.unique_group_id] += (d.premium || 0);
-        }
-    });
-    state.allData.forEach(d => {
-        if(d.unique_group_id) { 
-            d.total_area_p = groupAreaMap[d.unique_group_id]; d.total_price_sell = groupPriceMap[d.unique_group_id]; 
-            d.total_deposit = groupDepMap[d.unique_group_id]; d.total_rent = groupRentMap[d.unique_group_id]; d.total_premium = groupPremMap[d.unique_group_id];
-        } else { 
-            d.total_area_p = d.area_p; d.total_price_sell = d.price_sell; 
-            d.total_deposit = d.deposit; d.total_rent = d.rent; d.total_premium = d.premium;
-        }
-    });
-    
-    if (!state.allData.length) { alert('유효 데이터 없음 (헤더를 확인해주세요)'); return; }
-    state.buildings = [...new Set(state.allData.map(d => d.building))].sort(); 
-    state.buildings.sort((a,b) => {
-        const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
-        const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
-        if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
-    });
-    
-    state.checkedBuildings = new Set(state.buildings);
-    updateExits(); 
-    document.getElementById('statusToggleBar').classList.remove('hidden'); 
-    document.getElementById('emptyState').classList.add('hidden'); 
-    document.getElementById('stackingContainer').classList.remove('hidden'); 
-    
-    // [버그 픽스] 초기 화면 렌더링 시 스마트 선택 엔진을 가동하여 비선택(흐림) 현상 해결
-    applySmartSelection();
-}
+            // --- [핵심 픽스] 여기서 끊기지 않도록 중간에 있던 } 를 제거했습니다 ---
+
+            const groupAreaMap = {}; const groupPriceMap = {};
+            const groupDepMap = {}; const groupRentMap = {}; const groupPremMap = {};
+            
+            state.allData.forEach(d => {
+                if(d.unique_group_id) {
+                    if(!groupAreaMap[d.unique_group_id]) { 
+                        groupAreaMap[d.unique_group_id] = 0; groupPriceMap[d.unique_group_id] = 0; 
+                        groupDepMap[d.unique_group_id] = 0; groupRentMap[d.unique_group_id] = 0; groupPremMap[d.unique_group_id] = 0;
+                    }
+                    groupAreaMap[d.unique_group_id] += d.area_p; 
+                    groupPriceMap[d.unique_group_id] += (d.price_sell || 0);
+                    groupDepMap[d.unique_group_id] += (d.deposit || 0);
+                    groupRentMap[d.unique_group_id] += (d.rent || 0);
+                    groupPremMap[d.unique_group_id] += (d.premium || 0);
+                }
+            });
+            
+            state.allData.forEach(d => {
+                if(d.unique_group_id) { 
+                    d.total_area_p = groupAreaMap[d.unique_group_id]; d.total_price_sell = groupPriceMap[d.unique_group_id]; 
+                    d.total_deposit = groupDepMap[d.unique_group_id]; d.total_rent = groupRentMap[d.unique_group_id]; d.total_premium = groupPremMap[d.unique_group_id];
+                } else { 
+                    d.total_area_p = d.area_p; d.total_price_sell = d.price_sell; 
+                    d.total_deposit = d.deposit; d.total_rent = d.rent; d.total_premium = d.premium;
+                }
+            });
+            
+            if (!state.allData.length) { alert('유효 데이터 없음 (헤더를 확인해주세요)'); return; }
+            
+            state.buildings = [...new Set(state.allData.map(d => d.building))].sort(); 
+            state.buildings.sort((a,b) => {
+                const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
+                const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
+                if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
+            });
+            
+            state.checkedBuildings = new Set(state.buildings);
+            updateExits(); 
+            document.getElementById('statusToggleBar').classList.remove('hidden'); 
+            document.getElementById('emptyState').classList.add('hidden'); 
+            document.getElementById('stackingContainer').classList.remove('hidden'); 
+            
+            // [버그 픽스] 초기 화면 렌더링 시 스마트 선택 엔진을 가동하여 비선택(흐림) 현상 해결
+            applySmartSelection();
+        } // <--- 여기가 진짜 함수의 끝입니다.
 
         function normalizeStatus(st) {
             const s = st.replace(/\s+/g,'');
