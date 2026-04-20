@@ -635,24 +635,78 @@
     </style>
 
     <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="h-14 border-b border-slate-100 flex justify-between items-center px-5 bg-slate-50">
-                <h3 class="font-extrabold text-slate-800 flex items-center gap-2 text-lg"><i class="ph-fill ph-buildings text-emerald-600"></i> <span id="modalTitle">건물명</span></h3>
-                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg transition"><i class="ph-bold ph-x text-lg"></i></button>
+                <div class="flex items-center gap-3">
+                    <h3 class="font-extrabold text-slate-800 flex items-center gap-2 text-lg">
+                        <i class="ph-fill ph-buildings text-emerald-600"></i> 
+                        <span id="modalTitle">건물명</span>
+                    </h3>
+                    <button onclick="togglePrivacy()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors" title="고객용/관리용 전환">
+                        <i id="modalLockIcon" class="ph-bold ph-lock-key text-green-600 text-xl"></i>
+                    </button>
+                </div>
+                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg transition">
+                    <i class="ph-bold ph-x text-xl"></i>
+                </button>
             </div>
-            <div id="modalContent" class="flex-1 overflow-y-auto p-5"></div>
+            <div id="modalContent" class="flex-1 overflow-y-auto p-0">
+                </div>
         </div>
     </div>
 
-    <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
-            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-5 bg-slate-50">
-                <h3 class="font-extrabold text-slate-800 flex items-center gap-2 text-lg"><i class="ph-fill ph-buildings text-emerald-600"></i> <span id="modalTitle">건물명</span></h3>
-                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg transition"><i class="ph-bold ph-x text-lg"></i></button>
-            </div>
-            <div id="modalContent" class="flex-1 overflow-y-auto p-5"></div>
-        </div>
-    </div>
+    function openBuildingModal(buildingName) {
+            const bData = state.allData.filter(d => d.building === buildingName);
+            if (bData.length === 0) return;
+
+            document.getElementById('modalTitle').innerText = buildingName;
+            
+            // 보안 모드에 따른 아이콘 동기화
+            const lockIcon = document.getElementById('modalLockIcon');
+            if(lockIcon) {
+                lockIcon.className = state.isPrivacyMode ? "ph-bold ph-lock-key text-green-600 text-xl" : "ph-bold ph-lock-key-open text-red-500 text-xl";
+            }
+
+            let html = `
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-slate-100 sticky top-0 z-10 shadow-sm">
+                        <tr class="text-slate-500 text-xs">
+                            <th class="p-3 font-bold border-b text-center w-16">호실</th>
+                            <th class="p-3 font-bold border-b text-left">현재 업종 / 세부사항</th>
+                            <th class="p-3 font-bold border-b text-right">보증금/월세</th>
+                            <th class="p-3 font-bold border-b text-center w-24">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+            `;
+
+            bData.forEach(u => {
+                // [보안 로직] 관리용 모드일 때만 소유주/연락처 등 민감 정보 노출 (필요시 확장)
+                const displayDeposit = u.deposit ? u.deposit.toLocaleString() : '0';
+                const displayRent = u.rent ? u.rent.toLocaleString() : '0';
+                
+                html += `
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="p-3 text-center font-bold text-slate-700">${u.unit}호</td>
+                        <td class="p-3">
+                            <div class="font-bold text-slate-900">${u.tenant || '공실'}</div>
+                            <div class="text-[11px] text-slate-500">${u.area_p}평 / ${u.floor}층 / ${u.exit || '-'}</div>
+                        </td>
+                        <td class="p-3 text-right">
+                            <div class="font-extrabold text-blue-700">${displayDeposit}/${displayRent}</div>
+                            <div class="text-[10px] text-slate-400">만 원</div>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="closeBuildingModal(); openUnitSimulator(${u.id})" class="text-[11px] bg-white border border-slate-200 px-2 py-1 rounded shadow-sm hover:bg-slate-50 font-bold text-slate-600">평가</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('modalContent').innerHTML = html;
+            document.getElementById('buildingModal').classList.remove('hidden');
+        }
     
     <div id="unitSimulatorModal" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center p-4 backdrop-blur-sm" style="z-index: 999999 !important;" onclick="if(event.target === this) closeUnitSimulator()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden h-[794px] max-h-[95vh]">
@@ -2767,79 +2821,84 @@ function applyAvmToSimulator() {
         async function shareUnitSimulator(action = 'share') {
             const btn = action === 'print' ? document.getElementById('usimPrintBtn') : document.getElementById('usimShareBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 생성 중...`;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 처리 중...`;
             btn.disabled = true;
 
-            window.scrollTo(0, 0);
-
-            // 팝업 차단 우회: 로딩 전에 새 창을 먼저 열어둠
             let printWindow = null;
-            if (action === 'print') {
-                printWindow = window.open('', '_blank');
-                if (!printWindow) {
-                    alert('브라우저의 팝업 차단이 설정되어 있습니다. 팝업 차단을 해제하고 다시 시도해주세요.');
-                    btn.innerHTML = originalText; btn.disabled = false;
-                    return;
-                }
-                printWindow.document.write('<html><head><title>인쇄 준비 중...</title></head><body style="display:flex; justify-content:center; align-items:center; height:100vh; background:#f1f5f9; font-family:sans-serif; color:#475569;"><h2>보고서를 생성하고 있습니다. 잠시만 기다려주세요...</h2></body></html>');
-            }
 
-            const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
-            const clone = content.cloneNode(true);
-            
-            clone.classList.remove('max-w-5xl', 'max-h-[95vh]', 'h-[794px]');
-            clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
-            clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
-            
-            const originalInputs = content.querySelectorAll('input[type="range"]');
-            const cloneInputs = clone.querySelectorAll('input[type="range"]');
-            
-            cloneInputs.forEach((el, index) => {
-                const origEl = originalInputs[index];
-                const min = parseFloat(origEl.min) || 0;
-                const max = parseFloat(origEl.max) || 100;
-                const val = parseFloat(origEl.value) || 0;
-                
-                let percent = 0;
-                if (max > min) percent = ((val - min) / (max - min)) * 100;
-                if (percent > 100) percent = 100;
-                if (percent < 0) percent = 0;
-                
-                let color = '#94a3b8'; 
-                if (origEl.classList.contains('accent-slate-600')) color = '#475569';
-                else if (origEl.classList.contains('accent-emerald-500')) color = '#10b981';
-                else if (origEl.classList.contains('accent-orange-500')) color = '#f97316';
-                
-                const track = document.createElement('div');
-                track.style.cssText = "width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; position: relative; margin: 8px 0;";
-                const fill = document.createElement('div');
-                fill.style.cssText = `position: absolute; top: 0; left: 0; height: 100%; width: ${percent}%; background-color: ${color}; border-radius: 4px;`;
-                const thumb = document.createElement('div');
-                thumb.style.cssText = `position: absolute; top: 50%; left: ${percent}%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);`;
-                
-                track.appendChild(fill); track.appendChild(thumb);
-                el.parentNode.replaceChild(track, el);
-            });
-            
-            clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important; box-sizing: border-box !important; position: absolute !important; top: 0 !important; left: 0 !important;";
-            
-            const cloneContainer = document.createElement('div');
-            cloneContainer.id = 'offscreen-capture-container';
-            cloneContainer.style.cssText = "position:fixed; top:0; left:0; width:1123px; height:794px; background:#ffffff; z-index:-9999; margin:0; padding:0; overflow:hidden;";
-            cloneContainer.appendChild(clone);
-            document.body.appendChild(cloneContainer);
-            
-            await new Promise(r => setTimeout(r, 200)); 
-            
+            // [안전망 1] 함수 전체를 거대한 try-catch로 묶어 에러 발생 시 앱이 죽지 않게 보호합니다.
             try {
+                window.scrollTo(0, 0);
+
+                if (action === 'print') {
+                    printWindow = window.open('', '_blank');
+                    if (!printWindow) {
+                        alert('브라우저 팝업이 차단되었습니다. 주소창 우측에서 팝업 차단을 해제해주세요.');
+                        btn.innerHTML = originalText; btn.disabled = false;
+                        return;
+                    }
+                    printWindow.document.write('<html><head><title>보고서 생성 중...</title></head><body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f8fafc;font-family:sans-serif;color:#64748b;"><h2>보고서를 캡처하고 있습니다. 잠시만 기다려주세요...</h2></body></html>');
+                    // [핵심 픽스] 문서 쓰기를 닫아주어 캡처 엔진이 메모리를 뺏기지 않게 합니다.
+                    printWindow.document.close(); 
+                }
+
+                const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
+                const clone = content.cloneNode(true);
+                
+                clone.classList.remove('max-w-5xl', 'max-h-[95vh]', 'h-[794px]');
+                clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
+                clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
+                
+                // [안전망 2] 슬라이더를 그림으로 바꿀 때 혹시 모를 배열 에러를 방어합니다.
+                const originalInputs = Array.from(content.querySelectorAll('input[type="range"]'));
+                const cloneInputs = Array.from(clone.querySelectorAll('input[type="range"]'));
+                
+                cloneInputs.forEach((el, index) => {
+                    if(!originalInputs[index]) return;
+                    const origEl = originalInputs[index];
+                    const min = parseFloat(origEl.min) || 0;
+                    const max = parseFloat(origEl.max) || 100;
+                    const val = parseFloat(origEl.value) || 0;
+                    
+                    let percent = max > min ? ((val - min) / (max - min)) * 100 : 0;
+                    percent = Math.max(0, Math.min(100, percent));
+                    
+                    let color = '#94a3b8'; 
+                    if (origEl.classList.contains('accent-slate-600')) color = '#475569';
+                    else if (origEl.classList.contains('accent-emerald-500')) color = '#10b981';
+                    else if (origEl.classList.contains('accent-orange-500')) color = '#f97316';
+                    
+                    const track = document.createElement('div');
+                    track.style.cssText = "width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; position: relative; margin: 8px 0;";
+                    const fill = document.createElement('div');
+                    fill.style.cssText = `position: absolute; top: 0; left: 0; height: 100%; width: ${percent}%; background-color: ${color}; border-radius: 4px;`;
+                    const thumb = document.createElement('div');
+                    thumb.style.cssText = `position: absolute; top: 50%; left: ${percent}%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);`;
+                    
+                    track.appendChild(fill); track.appendChild(thumb);
+                    if(el.parentNode) el.parentNode.replaceChild(track, el);
+                });
+                
+                clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important; box-sizing: border-box !important; position: absolute !important; top: 0 !important; left: 0 !important;";
+                
+                const cloneContainer = document.createElement('div');
+                cloneContainer.id = 'offscreen-capture-container';
+                cloneContainer.style.cssText = "position:fixed; top:0; left:0; width:1123px; height:794px; background:#ffffff; z-index:-9999; margin:0; padding:0; overflow:hidden;";
+                cloneContainer.appendChild(clone);
+                document.body.appendChild(cloneContainer);
+                
+                await new Promise(r => setTimeout(r, 200)); 
+                
                 const canvas = await html2canvas(cloneContainer, { 
                     scale: 2, useCORS: true, backgroundColor: '#ffffff',
                     width: 1123, height: 794, scrollX: 0, scrollY: 0, x: 0, y: 0
                 });
+                
                 document.body.removeChild(cloneContainer);
-                btn.innerHTML = originalText; btn.disabled = false;
                 
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+                btn.innerHTML = originalText; btn.disabled = false;
 
                 if (action === 'print') {
                     printWindow.document.open();
@@ -2849,11 +2908,16 @@ function applyAvmToSimulator() {
                     const link = document.createElement('a'); 
                     link.download = `${fileName}.jpg`; link.href = dataUrl; link.click();
                 }
+                
             } catch (e) {
-                if (document.getElementById('offscreen-capture-container')) document.body.removeChild(document.getElementById('offscreen-capture-container'));
+                // [안전망 3] 에러 발생 시 모든 쓰레기를 청소하고 정확한 원인을 알립니다.
+                const c = document.getElementById('offscreen-capture-container');
+                if (c) document.body.removeChild(c);
                 btn.innerHTML = originalText; btn.disabled = false;
                 if (printWindow) printWindow.close();
-                alert('이미지 생성 중 오류가 발생했습니다.');
+                
+                alert('이미지 생성 중 오류가 발생했습니다.\n원인: ' + e.message);
+                console.error("Capture Error:", e);
             }
         }
     </script>
