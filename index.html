@@ -668,7 +668,7 @@
                         <div class="text-[10px] text-slate-500 font-bold leading-tight bg-white p-2 rounded border border-slate-100" id="usimMarketBasis"></div>
                     </div>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-2">
                         <div>
                             <div class="flex justify-between items-center text-xs mb-1"><span class="font-bold text-slate-700">보증금 배수</span><span class="font-extrabold text-slate-800"><span id="lblUsimDepMult">15</span>개월</span></div>
                             <input type="range" id="usimDepMult" min="12" max="24" step="1" value="15" class="w-full accent-slate-600 cursor-pointer" oninput="document.getElementById('lblUsimDepMult').innerText=this.value; calcUnitSimulator();">
@@ -729,15 +729,15 @@
                 </div>
             </div>
             
-            <div class="hidden print-sim-only border-t-2 border-orange-400 bg-emerald-800 px-8 py-3 flex-shrink-0" style="height: 52px;">
+            <div class="hidden print-sim-only px-8 py-3 flex-shrink-0" style="background-color: #065f46 !important; height: 52px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <div class="flex justify-between items-center h-full">
                     <div class="leading-tight">
-                        <p class="font-extrabold text-[12px] text-yellow-300">광교마을부동산 공인중개사사무소 <span class="font-normal text-emerald-100 ml-2">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
-                        <p class="font-bold text-[10px] text-emerald-200 mt-0.5">상현역 1번출구 031-255-7373</p>
+                        <p class="font-extrabold text-[12px] text-yellow-300">광교마을부동산 공인중개사사무소 <span class="font-normal ml-2">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="font-bold text-[11px] text-orange-400 mt-0.5">상현역 1번출구 031-255-7373</p>
                     </div>
                     <div class="text-right leading-tight">
-                        <p class="font-extrabold text-[12px] text-orange-300">송영재 이사 <span class="font-normal text-emerald-100 ml-2">상가 및 투자 전문 상담</span></p>
-                        <p class="font-bold text-[10px] text-emerald-200 mt-0.5">010-6570-7475 <span class="font-sans text-[10px] text-emerald-100 ml-1">vsong.w.zest@gmail.com</span></p>
+                        <p class="font-extrabold text-[12px] text-yellow-300">송영재 이사 <span class="font-normal ml-2">상가 및 투자 전문 상담</span></p>
+                        <p class="font-bold text-[11px] mt-0.5"><span class="text-orange-400 font-extrabold mr-1">010-6570-7475</span> <span class="font-sans text-emerald-100">vsong.w.zest@gmail.com</span></p>
                     </div>
                 </div>
             </div>
@@ -2682,19 +2682,24 @@ function applyAvmToSimulator() {
             const safeTitle = titleText.replace(/[^a-zA-Z0-9가-힣\s]/g, '').trim();
             const fileName = `[${safeTitle} 가치평가 보고서]`;
 
+            // [핵심 1] 캡처 찰나에 브라우저 스크롤을 무조건 최상단으로 끌어올려 좌우 쏠림을 원천 차단합니다.
+            window.scrollTo(0, 0);
+
             const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
             const clone = content.cloneNode(true);
             
-            // [해결 핵심] 화면 쏠림을 유발하던 max-w-5xl 등 브라우저 제약 클래스 강제 삭제
             clone.classList.remove('max-w-5xl', 'max-h-[95vh]', 'h-[794px]');
-            
             clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
             clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
             
-            // CSS 강제 주입: 오직 A4 사이즈(1123x794)만 허용
-            clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important;";
+            // [핵심 2] html2canvas가 슬라이더 높이를 부풀리는 고질적 버그 강제 억제
+            clone.querySelectorAll('input[type="range"]').forEach(el => {
+                el.style.cssText = "height: 6px !important; margin: 2px 0 !important; padding: 0 !important;";
+            });
             
-            // 캡처 도화지를 화면 왼쪽 위 구석(0,0)에 고정하여 오차 차단
+            // 캡처 전용 도화지 사이즈 및 위치 절대 고정 (여백 0)
+            clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important; box-sizing: border-box !important; position: absolute !important; top: 0 !important; left: 0 !important;";
+            
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
             cloneContainer.style.cssText = "position:fixed; top:0; left:0; width:1123px; height:794px; background:#ffffff; z-index:-9999; margin:0; padding:0; overflow:hidden;";
@@ -2710,8 +2715,10 @@ function applyAvmToSimulator() {
                     backgroundColor: '#ffffff',
                     width: 1123,
                     height: 794,
-                    x: 0, // 캡처 시작 X축 영점 고정
-                    y: 0  // 캡처 시작 Y축 영점 고정
+                    scrollX: 0, // 스크롤 오차 차단
+                    scrollY: 0, // 스크롤 오차 차단
+                    x: 0,
+                    y: 0
                 });
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText; btn.disabled = false;
