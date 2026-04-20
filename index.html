@@ -1215,7 +1215,7 @@
         function toggleSummary() { state.isSummaryMode = !state.isSummaryMode; setToggleUI('summaryToggle', state.isSummaryMode); renderStacking(); }
         function toggleImportant() { state.isImportantMode = !state.isImportantMode; setToggleUI('impToggle', state.isImportantMode); applySmartSelection(); }
         
-        function togglePrivacy() { 
+      function togglePrivacy() { 
             state.isPrivacyMode = !state.isPrivacyMode; 
             const ind = document.getElementById('privacyIndicator'); const lab = document.getElementById('privacyLabel'); 
             const lockIcon = document.getElementById('modalLockIcon');
@@ -1226,9 +1226,22 @@
                 ind.className = "w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"; lab.innerText = "관리용"; 
                 if(lockIcon) { lockIcon.className = "ph-bold ph-lock-key-open text-red-500"; }
             } 
-            if(!document.getElementById('buildingModal').classList.contains('hidden')) { openBuildingModal(document.getElementById('modalTitle').innerText); }
-            const panel = document.getElementById('detailPanel'); const curId = panel.dataset.currentId; 
-            if(curId && panel.classList.contains('show')) { const d = state.allData.find(x => x.id == curId); if(d) renderDetail(d); }
+            
+            // 건물 모달이 존재할 때만 업데이트 하도록 보호 로직 추가 (에러 방지)
+            const bModal = document.getElementById('buildingModal');
+            if(bModal && !bModal.classList.contains('hidden')) { 
+                const titleEl = document.getElementById('modalTitle');
+                if(titleEl) openBuildingModal(titleEl.innerText); 
+            }
+            
+            const panel = document.getElementById('detailPanel'); 
+            if(panel) {
+                const curId = panel.dataset.currentId; 
+                if(curId && panel.classList.contains('show')) { 
+                    const d = state.allData.find(x => x.id == curId); 
+                    if(d) renderDetail(d); 
+                }
+            }
         }
 
         function highlightGroup(uniqueGId) { if(!uniqueGId) return; const targets = document.querySelectorAll(`.unit-box[data-unique-group="${uniqueGId}"]`); targets.forEach(el => el.classList.add('group-hover')); }
@@ -2757,12 +2770,19 @@ function applyAvmToSimulator() {
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 생성 중...`;
             btn.disabled = true;
 
-            const titleText = document.getElementById('usimTitle').innerText;
-            const safeTitle = titleText.replace(/[^a-zA-Z0-9가-힣\s]/g, '').trim();
-            const fileName = `[${safeTitle} 가치평가 보고서]`;
-
-            // 캡처 전 화면 스크롤을 무조건 맨 위로 고정 (왼쪽 쏠림 원천 차단)
             window.scrollTo(0, 0);
+
+            // 팝업 차단 우회: 로딩 전에 새 창을 먼저 열어둠
+            let printWindow = null;
+            if (action === 'print') {
+                printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('브라우저의 팝업 차단이 설정되어 있습니다. 팝업 차단을 해제하고 다시 시도해주세요.');
+                    btn.innerHTML = originalText; btn.disabled = false;
+                    return;
+                }
+                printWindow.document.write('<html><head><title>인쇄 준비 중...</title></head><body style="display:flex; justify-content:center; align-items:center; height:100vh; background:#f1f5f9; font-family:sans-serif; color:#475569;"><h2>보고서를 생성하고 있습니다. 잠시만 기다려주세요...</h2></body></html>');
+            }
 
             const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
             const clone = content.cloneNode(true);
@@ -2771,7 +2791,6 @@ function applyAvmToSimulator() {
             clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
             clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
             
-            // [기적의 해결책] 캡처기가 읽지 못하는 슬라이더를 '그림(div 막대기)'으로 바꿔치기 합니다.
             const originalInputs = content.querySelectorAll('input[type="range"]');
             const cloneInputs = clone.querySelectorAll('input[type="range"]');
             
@@ -2786,32 +2805,22 @@ function applyAvmToSimulator() {
                 if (percent > 100) percent = 100;
                 if (percent < 0) percent = 0;
                 
-                // 슬라이더 색상 추출
                 let color = '#94a3b8'; 
                 if (origEl.classList.contains('accent-slate-600')) color = '#475569';
                 else if (origEl.classList.contains('accent-emerald-500')) color = '#10b981';
                 else if (origEl.classList.contains('accent-orange-500')) color = '#f97316';
                 
-                // 가짜 슬라이더 배경 (회색 선)
                 const track = document.createElement('div');
                 track.style.cssText = "width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; position: relative; margin: 8px 0;";
-                
-                // 가짜 슬라이더 채우기 (색상 선)
                 const fill = document.createElement('div');
                 fill.style.cssText = `position: absolute; top: 0; left: 0; height: 100%; width: ${percent}%; background-color: ${color}; border-radius: 4px;`;
-                
-                // 가짜 슬라이더 버튼 (동그라미)
                 const thumb = document.createElement('div');
                 thumb.style.cssText = `position: absolute; top: 50%; left: ${percent}%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);`;
                 
-                track.appendChild(fill);
-                track.appendChild(thumb);
-                
-                // 보이지 않는 원본 슬라이더를 그림으로 완벽 교체
+                track.appendChild(fill); track.appendChild(thumb);
                 el.parentNode.replaceChild(track, el);
             });
             
-            // 캡처용 도화지 절대 사이즈 방어
             clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important; box-sizing: border-box !important; position: absolute !important; top: 0 !important; left: 0 !important;";
             
             const cloneContainer = document.createElement('div');
@@ -2824,15 +2833,8 @@ function applyAvmToSimulator() {
             
             try {
                 const canvas = await html2canvas(cloneContainer, { 
-                    scale: 2, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff',
-                    width: 1123,
-                    height: 794,
-                    scrollX: 0,
-                    scrollY: 0,
-                    x: 0,
-                    y: 0
+                    scale: 2, useCORS: true, backgroundColor: '#ffffff',
+                    width: 1123, height: 794, scrollX: 0, scrollY: 0, x: 0, y: 0
                 });
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText; btn.disabled = false;
@@ -2840,18 +2842,17 @@ function applyAvmToSimulator() {
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
                 if (action === 'print') {
-                    const win = window.open('', '_blank');
-                    win.document.write(`<html><head><title>${fileName}</title><style>@page { size: A4 landscape; margin: 0; } body { margin: 0; display:flex; justify-content:center; align-items:center; background:#525659; min-height:100vh; } img { width: 100%; max-width: 1123px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }</style></head><body onload="setTimeout(function(){ window.print(); window.close(); }, 500);"><img src="${dataUrl}"></body></html>`);
-                    win.document.close();
+                    printWindow.document.open();
+                    printWindow.document.write(`<html><head><title>${fileName}</title><style>@page { size: A4 landscape; margin: 0; } body { margin: 0; display:flex; justify-content:center; align-items:center; background:#525659; min-height:100vh; } img { width: 100%; max-width: 1123px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }</style></head><body onload="setTimeout(function(){ window.print(); window.close(); }, 500);"><img src="${dataUrl}"></body></html>`);
+                    printWindow.document.close();
                 } else {
                     const link = document.createElement('a'); 
-                    link.download = `${fileName}.jpg`; 
-                    link.href = dataUrl; 
-                    link.click();
+                    link.download = `${fileName}.jpg`; link.href = dataUrl; link.click();
                 }
             } catch (e) {
                 if (document.getElementById('offscreen-capture-container')) document.body.removeChild(document.getElementById('offscreen-capture-container'));
                 btn.innerHTML = originalText; btn.disabled = false;
+                if (printWindow) printWindow.close();
                 alert('이미지 생성 중 오류가 발생했습니다.');
             }
         }
