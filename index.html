@@ -668,26 +668,43 @@
                         <div class="text-[10px] text-slate-500 font-bold leading-tight bg-white p-2 rounded border border-slate-100" id="usimMarketBasis"></div>
                     </div>
                     
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1"><span class="font-bold text-slate-700">보증금 배수</span><span class="font-extrabold text-slate-800"><span id="lblUsimDepMult">15</span>개월</span></div>
+                    <div class="flex flex-col gap-2.5 mt-1">
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 shadow-sm">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-bold text-slate-700">보증금 배수</span>
+                                <span class="font-extrabold text-slate-800"><span id="lblUsimDepMult">15</span>개월</span>
+                            </div>
                             <input type="range" id="usimDepMult" min="12" max="24" step="1" value="15" class="w-full accent-slate-600 cursor-pointer" oninput="document.getElementById('lblUsimDepMult').innerText=this.value; calcUnitSimulator();">
                         </div>
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1"><span class="font-bold text-emerald-700">목표 수익률</span><span class="font-extrabold text-emerald-600"><span id="lblUsimCapRate">4.0</span>%</span></div>
+                        
+                        <div class="bg-emerald-50/60 border border-emerald-200 rounded-lg p-2.5 shadow-sm">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-bold text-emerald-700">목표 수익률</span>
+                                <span class="font-extrabold text-emerald-600"><span id="lblUsimCapRate">4.0</span>%</span>
+                            </div>
                             <input type="range" id="usimCapRate" min="3.0" max="6.0" step="0.1" value="4.0" class="w-full accent-emerald-500 cursor-pointer" oninput="document.getElementById('lblUsimCapRate').innerText=parseFloat(this.value).toFixed(1); calcUnitSimulator();">
                         </div>
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1"><span class="font-bold text-orange-600">시세 반영 비중</span><span class="font-extrabold text-orange-600"><span id="lblUsimWeight">50</span>%</span></div>
+                        
+                        <div class="bg-orange-50/60 border border-orange-200 rounded-lg p-2.5 shadow-sm">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-bold text-orange-600">시세 반영 비중</span>
+                                <span class="font-extrabold text-orange-600"><span id="lblUsimWeight">50</span>%</span>
+                            </div>
                             <input type="range" id="usimWeight" min="0" max="100" step="5" value="50" class="w-full accent-orange-500 cursor-pointer" oninput="document.getElementById('lblUsimWeight').innerText=this.value; calcUnitSimulator();">
                         </div>
-                        <div class="flex gap-3 pt-2 border-t border-slate-100">
+                        
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 shadow-sm flex gap-4">
                             <div class="flex-1">
-                                <div class="flex justify-between items-center text-[10px] mb-1 font-bold text-slate-600"><span>LTV</span><span class="font-extrabold" id="lblUsimLtv">30%</span></div>
+                                <div class="flex justify-between items-center text-[10px] mb-2 font-bold text-slate-600">
+                                    <span>LTV</span><span class="font-extrabold text-slate-700" id="lblUsimLtv">30%</span>
+                                </div>
                                 <input type="range" id="usimLtv" min="0" max="80" step="5" value="30" class="w-full accent-slate-400" oninput="document.getElementById('lblUsimLtv').innerText=this.value+'%'; calcUnitSimulator();">
                             </div>
+                            <div class="w-px bg-slate-200"></div>
                             <div class="flex-1">
-                                <div class="flex justify-between items-center text-[10px] mb-1 font-bold text-slate-600"><span>금리</span><span class="font-extrabold" id="lblUsimRate">4.5%</span></div>
+                                <div class="flex justify-between items-center text-[10px] mb-2 font-bold text-slate-600">
+                                    <span>금리</span><span class="font-extrabold text-slate-700" id="lblUsimRate">4.5%</span>
+                                </div>
                                 <input type="range" id="usimRate" min="2.0" max="8.0" step="0.1" value="4.5" class="w-full accent-slate-400" oninput="document.getElementById('lblUsimRate').innerText=parseFloat(this.value).toFixed(1)+'%'; calcUnitSimulator();">
                             </div>
                         </div>
@@ -715,7 +732,7 @@
                         <div class="bg-emerald-600 p-3 rounded-lg border border-emerald-500 shadow-md"><div class="text-[10px] font-bold text-emerald-100 mb-1">실투자수익률(ROE)</div><div class="text-xl font-extrabold text-white" id="resUsimRoe">0.00%</div></div>
                     </div>
 
-                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm">
+                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm mt-auto">
                         <div class="p-2.5 flex justify-between items-center bg-slate-50 border-b border-slate-200">
                             <span class="font-bold text-slate-600">부대비용 (취득세 4.6% + 수수료 0.9%)</span>
                             <span class="font-bold text-slate-800" id="ldgTaxFee">0원</span>
@@ -2724,7 +2741,7 @@ function applyAvmToSimulator() {
             const safeTitle = titleText.replace(/[^a-zA-Z0-9가-힣\s]/g, '').trim();
             const fileName = `[${safeTitle} 가치평가 보고서]`;
 
-            // [핵심 1] 캡처 찰나에 브라우저 스크롤을 무조건 최상단으로 끌어올려 좌우 쏠림을 원천 차단합니다.
+            // 캡처 전 화면 스크롤을 무조건 맨 위로 고정 (왼쪽 쏠림 원천 차단)
             window.scrollTo(0, 0);
 
             const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
@@ -2734,12 +2751,47 @@ function applyAvmToSimulator() {
             clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
             clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
             
-            // [핵심 2] html2canvas가 슬라이더 높이를 부풀리는 고질적 버그 강제 억제
-            clone.querySelectorAll('input[type="range"]').forEach(el => {
-                el.style.cssText = "height: 6px !important; margin: 2px 0 !important; padding: 0 !important;";
+            // [기적의 해결책] 캡처기가 읽지 못하는 슬라이더를 '그림(div 막대기)'으로 바꿔치기 합니다.
+            const originalInputs = content.querySelectorAll('input[type="range"]');
+            const cloneInputs = clone.querySelectorAll('input[type="range"]');
+            
+            cloneInputs.forEach((el, index) => {
+                const origEl = originalInputs[index];
+                const min = parseFloat(origEl.min) || 0;
+                const max = parseFloat(origEl.max) || 100;
+                const val = parseFloat(origEl.value) || 0;
+                
+                let percent = 0;
+                if (max > min) percent = ((val - min) / (max - min)) * 100;
+                if (percent > 100) percent = 100;
+                if (percent < 0) percent = 0;
+                
+                // 슬라이더 색상 추출
+                let color = '#94a3b8'; 
+                if (origEl.classList.contains('accent-slate-600')) color = '#475569';
+                else if (origEl.classList.contains('accent-emerald-500')) color = '#10b981';
+                else if (origEl.classList.contains('accent-orange-500')) color = '#f97316';
+                
+                // 가짜 슬라이더 배경 (회색 선)
+                const track = document.createElement('div');
+                track.style.cssText = "width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; position: relative; margin: 8px 0;";
+                
+                // 가짜 슬라이더 채우기 (색상 선)
+                const fill = document.createElement('div');
+                fill.style.cssText = `position: absolute; top: 0; left: 0; height: 100%; width: ${percent}%; background-color: ${color}; border-radius: 4px;`;
+                
+                // 가짜 슬라이더 버튼 (동그라미)
+                const thumb = document.createElement('div');
+                thumb.style.cssText = `position: absolute; top: 50%; left: ${percent}%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);`;
+                
+                track.appendChild(fill);
+                track.appendChild(thumb);
+                
+                // 보이지 않는 원본 슬라이더를 그림으로 완벽 교체
+                el.parentNode.replaceChild(track, el);
             });
             
-            // 캡처 전용 도화지 사이즈 및 위치 절대 고정 (여백 0)
+            // 캡처용 도화지 절대 사이즈 방어
             clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important; box-sizing: border-box !important; position: absolute !important; top: 0 !important; left: 0 !important;";
             
             const cloneContainer = document.createElement('div');
@@ -2757,8 +2809,8 @@ function applyAvmToSimulator() {
                     backgroundColor: '#ffffff',
                     width: 1123,
                     height: 794,
-                    scrollX: 0, // 스크롤 오차 차단
-                    scrollY: 0, // 스크롤 오차 차단
+                    scrollX: 0,
+                    scrollY: 0,
                     x: 0,
                     y: 0
                 });
