@@ -785,6 +785,61 @@
         </div>
     </div>
 
+    <div id="rentAppraisalModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="ph ph-chart-line-up"></i> 시장 적정 임대료 분석
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1" id="appraisalSubject"></p>
+                </div>
+                <button onclick="closeRentAppraisal()" class="text-white/70 hover:text-white text-2xl"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-6" id="appraisalPrintArea">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
+                    <div class="flex justify-between items-end border-b border-slate-200 pb-3">
+                        <span class="text-slate-500 font-bold text-sm">시장 적정 가치 산출</span>
+                        <span class="text-xs text-slate-400">분석 시점: <span id="appraisalDate"></span></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-[11px] text-slate-400 mb-1">구역 평균 시세(평당)</p>
+                            <p class="text-lg font-bold text-slate-700" id="appraisalZoneAvg">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-400 mb-1">위치 가중치</p>
+                            <p class="text-lg font-bold text-emerald-600" id="appraisalWeight">-</p>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-emerald-100 rounded-lg p-4 text-center">
+                        <p class="text-xs text-emerald-600 font-bold mb-2">AI 추정 적정 임대료</p>
+                        <p class="text-2xl font-extrabold text-slate-900" id="appraisalFinalResult">보 - / 월 -</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="ph ph-scales text-blue-500"></i> 현재 호가 대비 분석
+                    </h4>
+                    <div id="appraisalComparison" class="text-sm space-y-2"></div>
+                </div>
+                <div class="text-[11px] text-slate-400 leading-relaxed bg-slate-50 p-3 rounded italic">
+                    ※ 주변 실거래 및 구역/위치별 가중치를 자동 계산한 결과입니다. 세부 조건에 따라 변동될 수 있습니다.
+                </div>
+            </div>
+    
+            <div class="p-4 bg-slate-50 border-t flex gap-2">
+                <button onclick="window.print()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700">
+                    <i class="ph ph-printer"></i> 리포트 출력
+                </button>
+                <button onclick="closeRentAppraisal()" class="flex-1 bg-white border border-slate-300 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-100">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
@@ -2247,7 +2302,7 @@
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><div class="flex items-center gap-2 mb-0.5"><span class="text-slate-400 text-[10px] md:text-xs font-bold">보증금/월세</span> <button onclick="openRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] md:text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition"><i class="ph-bold ph-chart-line-up"></i> 적정가</button></div> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
@@ -2972,6 +3027,47 @@ function applyAvmToSimulator() {
                 alert('에러 발생: ' + e.message);
             }
         }
+
+        // [신규] 적정 임대료 분석기 실행 함수
+        function openRentAppraisal(id) {
+            const u = state.allData.find(x => x.id == id);
+            if (!u) return;
+
+            const zoneData = state.zoneStats[u.zone || u.exit];
+            const avgPy = zoneData ? zoneData.avgPy : (u.rent_norm / u.area_p);
+            const weight = (zoneData && zoneData.posWeights[u.pos]) ? zoneData.posWeights[u.pos] : 1.0;
+            
+            const marketRent = Math.round(avgPy * weight * u.area_p);
+            const marketDeposit = marketRent * 12;
+
+            document.getElementById('appraisalSubject').innerText = `${u.building} ${u.unit}호 (전용 ${u.area_p.toFixed(1)}평 / ${u.pos || '일반'})`;
+            document.getElementById('appraisalDate').innerText = new Date().toLocaleDateString();
+            document.getElementById('appraisalZoneAvg').innerText = Math.round(avgPy).toLocaleString() + "만";
+            document.getElementById('appraisalWeight').innerText = "x " + weight.toFixed(2);
+            document.getElementById('appraisalFinalResult').innerText = `보 ${Math.round(marketDeposit).toLocaleString()} / 월 ${marketRent.toLocaleString()}`;
+
+            const diff = u.rent - marketRent;
+            const diffPercent = ((diff / marketRent) * 100).toFixed(1);
+            const compDiv = document.getElementById('appraisalComparison');
+            
+            let html = `
+                <div class="flex justify-between p-2 border-b"><span>현재 등록 호가</span> <span class="font-bold">${u.deposit}/${u.rent}</span></div>
+                <div class="flex justify-between p-2 border-b"><span>시장 적정가</span> <span class="text-emerald-600 font-bold">${Math.round(marketDeposit)}/${marketRent}</span></div>
+            `;
+
+            if (diff > 0) {
+                html += `<div class="p-3 bg-red-50 text-red-700 rounded-lg mt-2 text-xs font-bold">⚠️ 호가가 시장가 대비 ${diffPercent}% 높습니다. 공실 장기화 위험이 있어 조정 권고가 필요합니다.</div>`;
+            } else {
+                html += `<div class="p-3 bg-emerald-50 text-emerald-700 rounded-lg mt-2 text-xs font-bold">✅ 합리적인 가격대이거나 시장가보다 저렴하여 경쟁력이 높습니다.</div>`;
+            }
+            compDiv.innerHTML = html;
+            document.getElementById('rentAppraisalModal').classList.remove('hidden');
+        }
+
+        function closeRentAppraisal() {
+            document.getElementById('rentAppraisalModal').classList.add('hidden');
+        }
+        
     </script>
 </body>
 </html>
