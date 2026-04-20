@@ -638,7 +638,10 @@
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden h-[794px] max-h-[95vh]">
             
             <div class="bg-slate-800 px-5 py-3 flex justify-between items-center no-print-sim flex-shrink-0">
-                <h3 class="text-white font-extrabold text-base flex items-center gap-2"><i class="ph-bold ph-chart-line-up text-blue-400"></i> <span id="usimTitle" class="text-blue-400"></span> 가치평가</h3>
+                <h3 class="text-white font-extrabold text-base flex items-center gap-2">
+                    <i class="ph-bold ph-chart-line-up text-blue-400"></i> 
+                    <span id="usimTitle" class="text-blue-400"></span> 가치평가
+                </h3>
                 <div class="flex gap-2 items-center">
                     <button onclick="shareUnitSimulator('print')" id="usimPrintBtn" class="text-xs text-slate-800 bg-white hover:bg-slate-200 px-3 py-1.5 rounded shadow font-bold"><i class="ph-bold ph-printer"></i> PDF/인쇄</button>
                     <button onclick="shareUnitSimulator('share')" id="usimShareBtn" class="text-xs text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded shadow font-bold"><i class="ph-bold ph-share-network"></i> 이미지 저장</button>
@@ -650,7 +653,10 @@
                 
                 <div class="w-full md:w-[38%] p-4 border-r border-slate-200 bg-white flex flex-col gap-3">
                     <div class="hidden print-sim-only mb-2 border-b-2 border-slate-800 pb-2">
-                        <h1 class="text-xl font-extrabold text-slate-900 leading-tight"><span id="usimTitlePrint" class="text-blue-700"></span><br><span class="text-[15px]">가치평가 보고서</span></h1>
+                        <h1 class="text-xl font-extrabold text-slate-900 leading-tight">
+                            <span id="usimTitlePrint" class="text-blue-700"></span><br>
+                            <span class="text-[15px]">가치평가 보고서</span>
+                        </h1>
                     </div>
 
                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -688,29 +694,29 @@
                     </div>
                 </div>
 
-                <div class="w-full md:w-[62%] p-4 bg-white flex flex-col gap-3 overflow-hidden">
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-200">
+                <div class="w-full md:w-[62%] p-5 bg-white flex flex-col gap-4 overflow-hidden">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                             <h4 class="text-xs font-extrabold text-slate-800">AI 적정가 산출 엔진</h4>
                             <div class="text-[9px] font-bold text-slate-500" id="usimOrigState">로딩 중...</div>
                         </div>
-                        <div class="space-y-2">
-                            <div><div class="text-[9px] font-bold text-slate-400 mb-0.5">현 희망 매도가 (호가)</div><div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barOrig" class="h-full bg-slate-400 flex items-center justify-end px-2 text-white font-bold text-[9px]">0원</div></div></div>
-                            <div><div class="text-[9px] font-bold text-emerald-600 mb-0.5">수익가치 (투자 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
-                            <div><div class="text-[9px] font-bold text-orange-600 mb-0.5">시장가치 (시세 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
-                            <div class="pt-1"><div class="text-xs font-extrabold text-blue-700 mb-0.5">최종 도출 적정가</div><div class="w-full bg-slate-300 rounded h-9 overflow-hidden shadow-inner"><div id="barFinal" class="h-full bg-blue-600 flex items-center justify-end px-3 text-white font-extrabold text-[13px]">0원</div></div></div>
+                        <div class="space-y-3">
+                            <div><div class="text-[9px] font-bold text-slate-400 mb-1">현 희망 매도가 (호가)</div><div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barOrig" class="h-full bg-slate-400 flex items-center justify-end px-2 text-white font-bold text-[9px]">0원</div></div></div>
+                            <div><div class="text-[9px] font-bold text-emerald-600 mb-1">수익가치 (투자 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
+                            <div><div class="text-[9px] font-bold text-orange-600 mb-1">시장가치 (시세 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
+                            <div class="pt-2"><div class="text-xs font-extrabold text-blue-700 mb-1">최종 도출 적정가</div><div class="w-full bg-slate-300 rounded h-10 overflow-hidden shadow-inner"><div id="barFinal" class="h-full bg-blue-600 flex items-center justify-end px-3 text-white font-extrabold text-[15px]">0원</div></div></div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-200 shadow-sm"><div class="text-[10px] font-bold text-blue-600 mb-0.5">최종 적정가</div><div class="text-lg font-extrabold text-blue-900" id="resUsimFinalPrice">0원</div></div>
-                        <div class="bg-yellow-50 p-2.5 rounded-lg border border-yellow-200 shadow-sm"><div class="text-[10px] font-bold text-yellow-700 mb-0.5">명목 수익률</div><div class="text-lg font-extrabold text-yellow-900" id="resUsimCapRate">0.00%</div></div>
-                        <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700 shadow-md"><div class="text-[10px] font-bold text-slate-400 mb-0.5">필요 실투자금</div><div class="text-lg font-extrabold text-white" id="resUsimCash">0원</div></div>
-                        <div class="bg-emerald-600 p-2.5 rounded-lg border border-emerald-500 shadow-md"><div class="text-[10px] font-bold text-emerald-100 mb-0.5">실투자수익률(ROE)</div><div class="text-lg font-extrabold text-white" id="resUsimRoe">0.00%</div></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm"><div class="text-[10px] font-bold text-blue-600 mb-1">최종 적정가</div><div class="text-xl font-extrabold text-blue-900" id="resUsimFinalPrice">0원</div></div>
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 shadow-sm"><div class="text-[10px] font-bold text-yellow-700 mb-1">명목 수익률</div><div class="text-xl font-extrabold text-yellow-900" id="resUsimCapRate">0.00%</div></div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 shadow-md"><div class="text-[10px] font-bold text-slate-400 mb-1">필요 실투자금</div><div class="text-xl font-extrabold text-white" id="resUsimCash">0원</div></div>
+                        <div class="bg-emerald-600 p-3 rounded-lg border border-emerald-500 shadow-md"><div class="text-[10px] font-bold text-emerald-100 mb-1">실투자수익률(ROE)</div><div class="text-xl font-extrabold text-white" id="resUsimRoe">0.00%</div></div>
                     </div>
 
-                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm mt-auto">
-                        <div class="p-2 flex justify-between items-center bg-slate-50 border-b border-slate-200">
+                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm">
+                        <div class="p-2.5 flex justify-between items-center bg-slate-50 border-b border-slate-200">
                             <span class="font-bold text-slate-600">부대비용 (취득세 4.6% + 수수료 0.9%)</span>
                             <span class="font-bold text-slate-800" id="ldgTaxFee">0원</span>
                         </div>
@@ -723,13 +729,15 @@
                 </div>
             </div>
             
-            <div class="hidden print-sim-only border-t-2 border-orange-400 bg-emerald-800 px-6 py-2 flex-shrink-0" style="height: 38px;">
+            <div class="hidden print-sim-only border-t-2 border-orange-400 bg-emerald-800 px-8 py-3 flex-shrink-0" style="height: 52px;">
                 <div class="flex justify-between items-center h-full">
-                    <div class="leading-none mt-0.5">
-                        <p class="font-extrabold text-[11px] text-yellow-300">광교마을부동산 공인중개사사무소 <span class="text-[9px] font-normal text-emerald-100 ml-2">상현동 1131 | 031-255-7373</span></p>
+                    <div class="leading-tight">
+                        <p class="font-extrabold text-[12px] text-yellow-300">광교마을부동산 공인중개사사무소 <span class="font-normal text-emerald-100 ml-2">대표 양선휘 | 용인시 수지구 상현동 1131</span></p>
+                        <p class="font-bold text-[10px] text-emerald-200 mt-0.5">상현역 1번출구 031-255-7373</p>
                     </div>
-                    <div class="text-right leading-none mt-0.5">
-                        <p class="font-extrabold text-[11px] text-orange-300">송영재 이사 <span class="text-[9px] font-normal text-emerald-100 ml-2">010-6570-7475</span></p>
+                    <div class="text-right leading-tight">
+                        <p class="font-extrabold text-[12px] text-orange-300">송영재 이사 <span class="font-normal text-emerald-100 ml-2">상가 및 투자 전문 상담</span></p>
+                        <p class="font-bold text-[10px] text-emerald-200 mt-0.5">010-6570-7475 <span class="font-sans text-[10px] text-emerald-100 ml-1">vsong.w.zest@gmail.com</span></p>
                     </div>
                 </div>
             </div>
@@ -2632,8 +2640,7 @@ function applyAvmToSimulator() {
         function calcUnitSimulator() {
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const cap = parseFloat(document.getElementById('usimCapRate').value), w = parseFloat(document.getElementById('usimWeight').value)/100, mult = parseInt(document.getElementById('usimDepMult').value), ltv = parseFloat(document.getElementById('usimLtv').value)/100;
-            const rateValue = document.getElementById('usimRate').value;
-            const rate = parseFloat(rateValue.replace(/[^0-9.]/g, '')) / 100;
+            const rate = parseFloat(document.getElementById('usimRate').value)/100;
             
             const dep = Math.round((rent * mult)/100)*100;
             let yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
@@ -2668,7 +2675,7 @@ function applyAvmToSimulator() {
         async function shareUnitSimulator(action = 'share') {
             const btn = action === 'print' ? document.getElementById('usimPrintBtn') : document.getElementById('usimShareBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 처리중...`;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 생성 중...`;
             btn.disabled = true;
 
             const titleText = document.getElementById('usimTitle').innerText;
@@ -2678,17 +2685,19 @@ function applyAvmToSimulator() {
             const content = document.getElementById('unitSimulatorModal').querySelector('.bg-white');
             const clone = content.cloneNode(true);
             
+            // [해결 핵심] 화면 쏠림을 유발하던 max-w-5xl 등 브라우저 제약 클래스 강제 삭제
+            clone.classList.remove('max-w-5xl', 'max-h-[95vh]', 'h-[794px]');
+            
             clone.querySelectorAll('.no-print-sim').forEach(el => el.style.display = 'none');
             clone.querySelectorAll('.print-sim-only').forEach(el => { el.style.display = 'block'; el.classList.remove('hidden'); });
             
-            clone.style.width = '1123px'; 
-            clone.style.height = '794px'; 
-            clone.style.margin = '0';
-            clone.style.borderRadius = '0';
+            // CSS 강제 주입: 오직 A4 사이즈(1123x794)만 허용
+            clone.style.cssText = "width: 1123px !important; height: 794px !important; max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; overflow: hidden !important;";
             
+            // 캡처 도화지를 화면 왼쪽 위 구석(0,0)에 고정하여 오차 차단
             const cloneContainer = document.createElement('div');
             cloneContainer.id = 'offscreen-capture-container';
-            cloneContainer.style.cssText = "position:fixed; top:0; left:0; width:1123px; height:794px; background:#ffffff; z-index:-9999; margin:0; padding:0;";
+            cloneContainer.style.cssText = "position:fixed; top:0; left:0; width:1123px; height:794px; background:#ffffff; z-index:-9999; margin:0; padding:0; overflow:hidden;";
             cloneContainer.appendChild(clone);
             document.body.appendChild(cloneContainer);
             
@@ -2699,10 +2708,10 @@ function applyAvmToSimulator() {
                     scale: 2, 
                     useCORS: true, 
                     backgroundColor: '#ffffff',
-                    width: 1123,   // A4 가로 픽셀 고정
-                    height: 794,  // A4 세로 픽셀 고정
-                    x: 0,         // 캡처 시작 X좌표 강제 초기화
-                    y: 0          // 캡처 시작 Y좌표 강제 초기화
+                    width: 1123,
+                    height: 794,
+                    x: 0, // 캡처 시작 X축 영점 고정
+                    y: 0  // 캡처 시작 Y축 영점 고정
                 });
                 document.body.removeChild(cloneContainer);
                 btn.innerHTML = originalText; btn.disabled = false;
