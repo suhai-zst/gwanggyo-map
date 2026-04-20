@@ -849,6 +849,8 @@
             state.zoneStats = stats;
         }
 
+ }
+
         // 2. 로그인 프리패스 함수 (ReferenceError 방지)
         function checkPin() {
             document.getElementById('loginOverlay').classList.add('hidden');
@@ -864,18 +866,6 @@
             realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
             isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0,
             zoneStats: {} // 엔진 작동을 위한 필수 변수
-        };
-        // -----------------------------------------------------------
-        
-        let state = { 
-            allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
-            search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
-            activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', 
-            isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
-            realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
-            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0
-            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0,zoneStats: {}
-        };
 
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
