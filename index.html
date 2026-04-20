@@ -813,7 +813,7 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-        // --- 815줄 부근 BORDER_COLOR_MAP 선언 아래에 붙여넣으세요 ---
+        // 1. 보안 엔진 (기능 정상화용)
         function getNormalizedRent(u) {
             const deposit = parseFloat(u.deposit) || 0;
             const rent = parseFloat(u.rent) || 0;
@@ -824,7 +824,7 @@
             }
             return rent;
         }
-        
+
         function updateZoneIntelligence() {
             const stats = {};
             const validUnits = state.allData.filter(u => u.rent_norm > 0 && u.area_p > 0);
@@ -848,6 +848,23 @@
             }
             state.zoneStats = stats;
         }
+
+        // 2. 로그인 프리패스 함수 (ReferenceError 방지)
+        function checkPin() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            sessionStorage.setItem('isAuthorized', 'true');
+        }
+
+        // 3. 상태 관리 객체 (여기에 zoneStats: {} 가 꼭 있어야 합니다)
+        let state = { 
+            allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
+            search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
+            activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', 
+            isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
+            realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
+            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0,
+            zoneStats: {} // 엔진 작동을 위한 필수 변수
+        };
         // -----------------------------------------------------------
         
         let state = { 
