@@ -634,6 +634,26 @@
         }
     </style>
 
+    <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-5 bg-slate-50">
+                <h3 class="font-extrabold text-slate-800 flex items-center gap-2 text-lg"><i class="ph-fill ph-buildings text-emerald-600"></i> <span id="modalTitle">건물명</span></h3>
+                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg transition"><i class="ph-bold ph-x text-lg"></i></button>
+            </div>
+            <div id="modalContent" class="flex-1 overflow-y-auto p-5"></div>
+        </div>
+    </div>
+
+    <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="h-14 border-b border-slate-100 flex justify-between items-center px-5 bg-slate-50">
+                <h3 class="font-extrabold text-slate-800 flex items-center gap-2 text-lg"><i class="ph-fill ph-buildings text-emerald-600"></i> <span id="modalTitle">건물명</span></h3>
+                <button onclick="closeBuildingModal()" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded-lg transition"><i class="ph-bold ph-x text-lg"></i></button>
+            </div>
+            <div id="modalContent" class="flex-1 overflow-y-auto p-5"></div>
+        </div>
+    </div>
+    
     <div id="unitSimulatorModal" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center p-4 backdrop-blur-sm" style="z-index: 999999 !important;" onclick="if(event.target === this) closeUnitSimulator()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden h-[794px] max-h-[95vh]">
             
@@ -715,13 +735,13 @@
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                         <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                             <h4 class="text-xs font-extrabold text-slate-800">AI 적정가 산출 엔진</h4>
-                            <div class="text-[9px] font-bold text-slate-500" id="usimOrigState">로딩 중...</div>
+                            <div class="text-xs font-bold text-slate-500" id="usimOrigState">로딩 중...</div>
                         </div>
                         <div class="space-y-3">
-                            <div><div class="text-[9px] font-bold text-slate-400 mb-1">현 희망 매도가 (호가)</div><div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barOrig" class="h-full bg-slate-400 flex items-center justify-end px-2 text-white font-bold text-[9px]">0원</div></div></div>
-                            <div><div class="text-[9px] font-bold text-emerald-600 mb-1">수익가치 (투자 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
-                            <div><div class="text-[9px] font-bold text-orange-600 mb-1">시장가치 (시세 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-2 text-white font-bold text-[10px]">0원</div></div></div>
-                            <div class="pt-2"><div class="text-xs font-extrabold text-blue-700 mb-1">최종 도출 적정가</div><div class="w-full bg-slate-300 rounded h-10 overflow-hidden shadow-inner"><div id="barFinal" class="h-full bg-blue-600 flex items-center justify-end px-3 text-white font-extrabold text-[15px]">0원</div></div></div>
+                            <div><div class="text-[11px] font-bold text-slate-400 mb-0.5">현 희망 매도가 (호가)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barOrig" class="h-full bg-slate-400 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div></div>
+                            <div><div class="text-[11px] font-bold text-emerald-600 mb-0.5">수익가치 (투자 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div></div>
+                            <div><div class="text-[11px] font-bold text-orange-600 mb-0.5">시장가치 (시세 관점)</div><div class="w-full bg-slate-200 rounded h-6 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div></div>
+                            <div class="pt-1"><div class="text-[13px] font-extrabold text-blue-700 mb-0.5">최종 도출 적정가</div><div class="w-full bg-slate-300 rounded h-10 overflow-hidden shadow-inner"><div id="barFinal" class="h-full bg-blue-600 flex items-center justify-end px-3 text-white font-extrabold text-base">0원</div></div></div>
                         </div>
                     </div>
 
@@ -732,15 +752,15 @@
                         <div class="bg-emerald-600 p-3 rounded-lg border border-emerald-500 shadow-md"><div class="text-[10px] font-bold text-emerald-100 mb-1">실투자수익률(ROE)</div><div class="text-xl font-extrabold text-white" id="resUsimRoe">0.00%</div></div>
                     </div>
 
-                    <div class="bg-white rounded-lg border border-slate-200 text-[11px] shadow-sm mt-auto">
-                        <div class="p-2.5 flex justify-between items-center bg-slate-50 border-b border-slate-200">
-                            <span class="font-bold text-slate-600">부대비용 (취득세 4.6% + 수수료 0.9%)</span>
-                            <span class="font-bold text-slate-800" id="ldgTaxFee">0원</span>
+                    <div class="bg-white rounded-lg border border-slate-200 shadow-sm mt-auto">
+                        <div class="p-3 flex justify-between items-center bg-slate-50 border-b border-slate-200">
+                            <span class="font-bold text-slate-600 text-[11px]">부대비용 (취득세 4.6% + 수수료 0.9%)</span>
+                            <span class="font-extrabold text-slate-800 text-[13px]" id="ldgTaxFee">0원</span>
                         </div>
                         <div class="grid grid-cols-3 divide-x divide-slate-200 items-center">
-                            <div class="p-2 text-center"><div class="text-[9px] font-bold text-slate-400 mb-0.5">대출 금액</div><div class="font-extrabold text-blue-700" id="ldgLoan">0원</div></div>
-                            <div class="p-2 text-center"><div class="text-[9px] font-bold text-slate-400 mb-0.5">월 이자</div><div class="font-extrabold text-slate-700" id="ldgInterest">0원</div></div>
-                            <div class="p-2 text-center"><div class="text-[9px] font-bold text-slate-400 mb-0.5">월 순수익</div><div class="font-extrabold text-emerald-600" id="ldgNet">0원</div></div>
+                            <div class="p-3 text-center"><div class="text-[11px] font-bold text-slate-400 mb-1">대출 금액</div><div class="font-extrabold text-blue-700 text-[15px]" id="ldgLoan">0원</div></div>
+                            <div class="p-3 text-center"><div class="text-[11px] font-bold text-slate-400 mb-1">월 이자</div><div class="font-extrabold text-slate-700 text-[15px]" id="ldgInterest">0원</div></div>
+                            <div class="p-3 text-center"><div class="text-[11px] font-bold text-slate-400 mb-1">월 순수익</div><div class="font-extrabold text-emerald-600 text-[15px]" id="ldgNet">0원</div></div>
                         </div>
                     </div>
                 </div>
