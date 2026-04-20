@@ -849,14 +849,22 @@
             state.zoneStats = stats;
         }
 
-        // 2. 로그인 함수 (ReferenceError 해결의 핵심)
+        // 2. 로그인 함수 (HTML 버튼과 정확히 연결됨)
         function checkPin() {
-            const overlay = document.getElementById('loginOverlay');
-            if(overlay) overlay.classList.add('hidden');
-            sessionStorage.setItem('isAuthorized', 'true');
+            const input = document.getElementById('pinInput').value;
+            if (input === MASTER_PIN) {
+                sessionAuth = true;
+                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('pinError').classList.add('hidden');
+            } else {
+                document.getElementById('pinError').classList.remove('hidden');
+                document.getElementById('pinInput').value = '';
+                document.getElementById('pinInput').focus();
+            }
         }
 
-        // 3. 상태 관리 객체 (정확한 괄호 마감 및 단일 선언)
+        // 3. 상태 관리 객체 (정확한 괄호 마감 적용)
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
