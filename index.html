@@ -813,23 +813,20 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-        // 1. 보안 엔진 (기능 정상화용)
+        // 1. 보안 엔진 (보증금 정규화 및 구역 시세 학습)
         function getNormalizedRent(u) {
             const deposit = parseFloat(u.deposit) || 0;
             const rent = parseFloat(u.rent) || 0;
             if (deposit > rent * 18 && rent > 0) {
                 const excessDeposit = deposit - (rent * 12);
-                const normalizedMonthlyRent = rent + (excessDeposit * 0.05 / 12);
-                return Math.round(normalizedMonthlyRent);
+                return Math.round(rent + (excessDeposit * 0.05 / 12));
             }
             return rent;
         }
 
         function updateZoneIntelligence() {
-            const stats = {};
-            // state가 정의되기 전에 호출될 경우를 대비한 안전장치
             if (!state || !state.allData) return;
-            
+            const stats = {};
             const validUnits = state.allData.filter(u => u.rent_norm > 0 && u.area_p > 0);
             validUnits.forEach(u => {
                 const zone = u.zone || "미지정";
@@ -852,14 +849,14 @@
             state.zoneStats = stats;
         }
 
-        // 2. 로그인 프리패스 함수 (ReferenceError 해결)
+        // 2. 로그인 함수 (ReferenceError 해결의 핵심)
         function checkPin() {
             const overlay = document.getElementById('loginOverlay');
             if(overlay) overlay.classList.add('hidden');
             sessionStorage.setItem('isAuthorized', 'true');
         }
 
-        // 3. 상태 관리 객체 (오타 및 괄호 닫기 수정 완료)
+        // 3. 상태 관리 객체 (정확한 괄호 마감 및 단일 선언)
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
