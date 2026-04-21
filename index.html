@@ -875,6 +875,40 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
+
+        // ==========================================
+        // [V2.0] 1. 기초 분류 및 보증금 정규화 모듈
+        // ==========================================
+        
+        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
+        
+        // 대로변 판별 (명단 기준)
+        function getRoadsideType(buildingName) {
+            if (!buildingName) return '이면도로';
+            return ROADSIDE_TARGETS.some(name => buildingName.includes(name)) ? '대로변' : '이면도로';
+        }
+        
+        // 층별 티어(계급) 판별
+        function getFloorTier(f) {
+            if (!f) return '기타';
+            const floor = String(f).trim();
+            if (floor === '1') return '1층';
+            if (floor === '2') return '2층';
+            if (floor.toUpperCase().includes('B')) return '지하';
+            const fn = parseInt(floor.replace(/\D/g, ''));
+            return fn >= 3 ? '3층이상' : '기타';
+        }
+        
+        // 보증금 정규화 (12개월 초과분 연 5% 월세 환산)
+        function getNormalizedRent(deposit, rent) {
+            const dep = parseFloat(deposit) || 0;
+            const rnt = parseFloat(rent) || 0;
+            if (dep > rnt * 12 && rnt > 0) {
+                return rnt + ((dep - (rnt * 12)) * 0.05 / 12);
+            }
+            return rnt;
+        }
+        
         // 1. 보안 엔진 (보증금 정규화 및 구역 시세 학습)
         function getNormalizedRent(u) {
             const deposit = parseFloat(u.deposit) || 0;
@@ -886,27 +920,109 @@
             return rent;
         }
 
+        // ==========================================
+        // [V2.0] 2. 지능형 상권 학습 엔진 (데이터 두뇌)
+        // ==========================================
         function updateZoneIntelligence() {
             if (!state || !state.allData) return;
-            const stats = {};
-            const validUnits = state.allData.filter(u => u.rent_norm > 0 && u.area_p > 0);
-            validUnits.forEach(u => {
-                const zone = u.zone || "미지정";
-                if (!stats[zone]) stats[zone] = { units: [], posWeights: {} };
-                stats[zone].units.push(u.rent_norm / u.area_p);
-            });
-            for (let zone in stats) {
-                const areaPrents = stats[zone].units;
-                stats[zone].avgPy = areaPrents.reduce((a, b) => a + b, 0) / areaPrents.length;
-                const posMap = {};
-                state.allData.filter(u => u.zone === zone && u.rent_norm > 0).forEach(u => {
-                    if(!posMap[u.pos]) posMap[u.pos] = [];
-                    posMap[u.pos].push(u.rent_norm / u.area_p);
-                });
-                for(let p in posMap) {
-                    const posAvg = posMap[p].reduce((a, b) => a + b, 0) / posMap[p].length;
-                    stats[zone].posWeights[p] = posAvg / stats[zone].avgPy;
+            
+            // 1단계. 전역 데이터 보증금 정규화
+            state.allData.forEach(u => u.rent_norm = getNormalizedRent(u.deposit, u.rent));
+        
+            const groupMap = {};
+            state.allData.forEach(u => {
+                if (u.unique_group_id) {
+                    if (!groupMap[u.unique_group_id]) groupMap[u.unique_group_id] = [];
+                    groupMap[u.unique_group_id].push(u);
                 }
+            });
+        
+            // 2단계. [시장 연동 배수 추출] 상호명 '은행'을 배제한 순수 시장 비율 도출
+            let p1FSum = 0, p1FCnt = 0, p2FSum = 0, p2FCnt = 0;
+            const processedGroups = new Set();
+        
+            state.allData.forEach(u => {
+                const storeName = u.store_name || "";
+                
+                if (getRoadsideType(u.building) === '대로변' && u.rent_norm > 0 && u.area_p > 0 && !storeName.includes('은행')) {
+                    let py = 0;
+                    let tier = getFloorTier(u.floor);
+        
+                    if (u.unique_group_id) {
+                        // 단층 통매물 정상 합산
+                        if (!processedGroups.has(u.unique_group_id)) {
+                            const units = groupMap[u.unique_group_id];
+                            const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
+                            const tRnt = units.reduce((a,c)=>a+(c.rent||0),0);
+                            const tArea = units.reduce((a,c)=>a+c.area_p,0);
+                            py = getNormalizedRent(tDep, tRnt) / tArea;
+                            processedGroups.add(u.unique_group_id);
+                            
+                            if (tier === '1층') { p1FSum += py; p1FCnt++; }
+                            if (tier === '2층') { p2FSum += py; p2FCnt++; }
+                        }
+                    } else {
+                        // 일반 단일 호실 정상 합산
+                        py = u.rent_norm / u.area_p;
+                        if (tier === '1층') { p1FSum += py; p1FCnt++; }
+                        if (tier === '2층') { p2FSum += py; p2FCnt++; }
+                    }
+                }
+            });
+        
+            // 시장 비율 확정
+            const dynRatio = (p1FCnt > 0 && p2FCnt > 0) ? ((p1FSum/p1FCnt) / (p2FSum/p2FCnt)) : 2.6;
+            const TIER_WEIGHTS = { '1층': dynRatio, '2층': 1.0, '3층이상': 0.8, '지하': 0.5, '기타': 0.7 };
+        
+            // 3단계. 안분 적용 및 데이터 학습
+            const stats = {}; 
+            state.allData.forEach(u => {
+                const zone = u.zone || u.exit || "미지정";
+                const roadside = getRoadsideType(u.building);
+                const tier = getFloorTier(u.floor);
+                const storeName = u.store_name || "";
+                let learnedPy = 0;
+        
+                if (u.unique_group_id) {
+                    const units = groupMap[u.unique_group_id];
+                    const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
+                    const tRnt = units.reduce((a,c)=>a+(c.rent||0),0);
+                    const tRentNorm = getNormalizedRent(tDep, tRnt);
+                    const tArea = units.reduce((a,c)=>a+c.area_p,0);
+        
+                    // '은행'이거나 다층 매물인 경우만 가중치 쪼개기(안분) 실행
+                    const isMultiTier = new Set(units.map(x => getFloorTier(x.floor))).size > 1;
+                    if (isMultiTier || storeName.includes('은행')) {
+                        const wSum = units.reduce((a,c)=>a+(c.area_p * TIER_WEIGHTS[getFloorTier(c.floor)]), 0);
+                        learnedPy = (tRentNorm * (u.area_p * TIER_WEIGHTS[tier] / wSum)) / u.area_p;
+                    } else {
+                        learnedPy = tRentNorm / tArea;
+                    }
+                } else {
+                    learnedPy = u.rent_norm / u.area_p;
+                }
+        
+                // ★ 건물 통계에서 사용될 진짜 평단가 (객체에 저장)
+                u.learned_py = learnedPy;
+        
+                // 서랍(stats)에 데이터 분류 보관
+                if (learnedPy > 0) {
+                    if (!stats[zone]) stats[zone] = {};
+                    if (!stats[zone][roadside]) stats[zone][roadside] = {};
+                    if (!stats[zone][roadside][tier]) stats[zone][roadside][tier] = { units: [], posMap: {} };
+                    const s = stats[zone][roadside][tier];
+                    s.units.push(learnedPy);
+                    if (!s.posMap[u.pos]) s.posMap[u.pos] = [];
+                    s.posMap[u.pos].push(learnedPy);
+                }
+            });
+        
+            // 4단계. 그룹별 최종 평균 및 위치(전/후/코너) 가중치 산출
+            for(let z in stats) for(let r in stats[z]) for(let t in stats[z][r]) {
+                const s = stats[z][r][t];
+                s.avgPy = s.units.reduce((a,b)=>a+b,0)/s.units.length;
+                s.posWeights = {};
+                for(let p in s.posMap) s.posWeights[p] = (s.posMap[p].reduce((a,b)=>a+b,0)/s.posMap[p].length)/s.avgPy;
             }
             state.zoneStats = stats;
         }
@@ -3035,44 +3151,68 @@ function applyAvmToSimulator() {
             }
         }
 
-        // [신규] 적정 임대료 분석기 실행 함수
+        // ==========================================
+        // [V2.0] 3. 전문가용 적정가 산출 팝업 (상호 보정)
+        // ==========================================
         function openRentAppraisal(id) {
             const u = state.allData.find(x => x.id == id);
             if (!u) return;
-
-            const zoneData = state.zoneStats[u.zone || u.exit];
-            const avgPy = zoneData ? zoneData.avgPy : (u.rent_norm / u.area_p);
-            const weight = (zoneData && zoneData.posWeights[u.pos]) ? zoneData.posWeights[u.pos] : 1.0;
+        
+            const zone = u.zone || u.exit || "미지정";
+            const roadside = getRoadsideType(u.building);
+            const tier = getFloorTier(u.floor);
             
-            const marketRent = Math.round(avgPy * weight * u.area_p);
-            const marketDeposit = marketRent * 12;
-
-            document.getElementById('appraisalSubject').innerText = `${u.building} ${u.unit}호 (전용 ${u.area_p.toFixed(1)}평 / ${u.pos || '일반'})`;
-            document.getElementById('appraisalDate').innerText = new Date().toLocaleDateString();
-            document.getElementById('appraisalZoneAvg').innerText = Math.round(avgPy).toLocaleString() + "만";
-            document.getElementById('appraisalWeight').innerText = "x " + weight.toFixed(2);
+            // [1. 시장 평균] 해당 구역/대로변/층의 상권 평균
+            let marketAvg = 0;
+            try { marketAvg = state.zoneStats[zone][roadside][tier].avgPy; } catch(e) { marketAvg = 0; }
+        
+            // [2. 건물 평균] 해당 건물 자체의 안분 완료된 평균
+            let buildingAvg = 0;
+            const bUnits = state.allData.filter(d => d.building === u.building && getFloorTier(d.floor) === tier && d.learned_py > 0);
+            if (bUnits.length > 0) {
+                buildingAvg = bUnits.reduce((a, c) => a + c.learned_py, 0) / bUnits.length;
+            } else {
+                buildingAvg = marketAvg || (u.learned_py > 0 ? u.learned_py : 0);
+            }
+        
+            if (marketAvg === 0) marketAvg = buildingAvg;
+        
+            // [3. 상호 보정] 시장가(40%) vs 건물 자체 프리미엄(60%)
+            const reconciledBase = (marketAvg * 0.4) + (buildingAvg * 0.6);
+        
+            // [4. 위치 가중치] 전면, 후면 등 세부 입지 반영
+            let posWeight = 1.0;
+            try { posWeight = state.zoneStats[zone][roadside][tier].posWeights[u.pos] || 1.0; } catch(e) {}
+            
+            const finalPy = reconciledBase * posWeight;
+            const marketRent = Math.round(finalPy * u.area_p);
+            const marketDeposit = marketRent * 12; // 보증금 12개월치 기준
+        
+            // UI 출력부
+            document.getElementById('appraisalSubject').innerText = `${u.building} ${u.unit}호 (전용 ${u.area_p.toFixed(1)}평 / ${u.pos || '일반'} / ${tier})`;
+            document.getElementById('appraisalDate').innerText = `[${zone}] ${roadside} ${tier} 기준`;
+            
+            document.getElementById('appraisalZoneAvg').innerHTML = 
+                `<span class="text-xs text-slate-400">상권 평균: ${Math.round(marketAvg).toLocaleString()}만<br>건물 평균: ${Math.round(buildingAvg).toLocaleString()}만</span><br>
+                 <span class="text-indigo-600 font-extrabold text-lg">보정 기준: ${Math.round(reconciledBase).toLocaleString()}만</span>`;
+                 
+            document.getElementById('appraisalWeight').innerText = "x " + posWeight.toFixed(2);
             document.getElementById('appraisalFinalResult').innerText = `보 ${Math.round(marketDeposit).toLocaleString()} / 월 ${marketRent.toLocaleString()}`;
-
+        
             const diff = u.rent - marketRent;
-            const diffPercent = ((diff / marketRent) * 100).toFixed(1);
+            const diffPercent = marketRent > 0 ? ((diff / marketRent) * 100).toFixed(1) : 0;
             const compDiv = document.getElementById('appraisalComparison');
             
-            let html = `
-                <div class="flex justify-between p-2 border-b"><span>현재 등록 호가</span> <span class="font-bold">${u.deposit}/${u.rent}</span></div>
-                <div class="flex justify-between p-2 border-b"><span>시장 적정가</span> <span class="text-emerald-600 font-bold">${Math.round(marketDeposit)}/${marketRent}</span></div>
-            `;
-
+            let html = `<div class="flex justify-between p-2 border-b"><span>현재 등록 호가</span> <span class="font-bold">${u.deposit.toLocaleString()} / ${u.rent.toLocaleString()}</span></div>
+                        <div class="flex justify-between p-2 border-b"><span>시장 적정가</span> <span class="text-emerald-600 font-bold">${Math.round(marketDeposit).toLocaleString()} / ${marketRent.toLocaleString()}</span></div>`;
+        
             if (diff > 0) {
-                html += `<div class="p-3 bg-red-50 text-red-700 rounded-lg mt-2 text-xs font-bold">⚠️ 호가가 시장가 대비 ${diffPercent}% 높습니다. 공실 장기화 위험이 있어 조정 권고가 필요합니다.</div>`;
+                html += `<div class="p-3 bg-red-50 text-red-700 rounded-lg mt-2 text-xs font-bold leading-relaxed">⚠️ 호가가 시장가 대비 <span class="text-lg underline">${diffPercent}%</span> 높습니다.</div>`;
             } else {
-                html += `<div class="p-3 bg-emerald-50 text-emerald-700 rounded-lg mt-2 text-xs font-bold">✅ 합리적인 가격대이거나 시장가보다 저렴하여 경쟁력이 높습니다.</div>`;
+                html += `<div class="p-3 bg-emerald-50 text-emerald-700 rounded-lg mt-2 text-xs font-bold leading-relaxed">✅ 시장 적정가 범위 내에 있습니다.</div>`;
             }
             compDiv.innerHTML = html;
             document.getElementById('rentAppraisalModal').classList.remove('hidden');
-        }
-
-        function closeRentAppraisal() {
-            document.getElementById('rentAppraisalModal').classList.add('hidden');
         }
         
     </script>
