@@ -1843,6 +1843,7 @@
         function toggleBuilding(b) { if (state.checkedBuildings.has(b)) state.checkedBuildings.delete(b); else state.checkedBuildings.add(b); renderList(); renderStacking(); }
         function toggleAllBuildings(chk) { state.checkedBuildings = chk ? new Set(state.buildings) : new Set(); renderList(); renderStacking(); }
 
+        // [V2.0 최종 픽스] 스태킹 맵 & 건물 분석 모달 통계 산출기
         function calcGroupedStats(units, type) {
             let processedGroups = new Set(); let sumPrice = 0; let sumArea = 0;
             units.forEach(u => {
@@ -1850,7 +1851,18 @@
                 if (processedGroups.has(gid)) return; processedGroups.add(gid);
                 let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
                 let groupPrice = 0; let groupArea = 0;
-                members.forEach(m => { const area = m.area_p || 0; if (type === 'sell') groupPrice += m.price_sell; else groupPrice += m.rent; groupArea += area; });
+                members.forEach(m => { 
+                    const area = m.area_p || 0; 
+                    if (type === 'sell') {
+                        groupPrice += m.price_sell; 
+                    } else {
+                        // ★ 기존 오류(groupPrice += m.rent;) 해결
+                        // 단순 월세가 아닌 엔진이 안분해둔 진짜 평단가(learned_py)를 면적에 곱해 실질 월세로 합산
+                        let effectiveRent = m.learned_py ? (m.learned_py * area) : (m.rent_norm || m.rent || 0);
+                        groupPrice += effectiveRent; 
+                    }
+                    groupArea += area; 
+                });
                 if (groupPrice > 0 && groupArea >= 1) { sumPrice += groupPrice; sumArea += groupArea; }
             });
             return sumArea > 0 ? sumPrice / sumArea : 0;
