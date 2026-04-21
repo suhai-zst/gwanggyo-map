@@ -847,7 +847,7 @@
         </div>
     </div>
     
-    <script>
+<script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
@@ -866,8 +866,21 @@
             { id: '100over', label: '100평 ↑', min: 100, max: 9999 } 
         ];
         const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
-        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
-
+        
+        const ROADSIDE_LIST = [
+            '스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 
+            'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', 
+            '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', 
+            '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', 
+            '푸르지오C', '희성빌딩', '광교티타워', 'T타워'
+        ];
+        const BACKROAD_LIST = [
+            'SB타워', '푸르지오2단지', '푸르지오 2단지', '푸르지오3단지', '푸르지오 3단지', 
+            '광교리치안', '골든풍산', '어드밴스힐', '더블유스퀘어', 'W스퀘어', 
+            '푸르지오B동', '푸르지오 B동', '프리미어타워', '푸르지오1단지', '푸르지오 1단지',
+            '푸르지오 A동', '푸르지오A동'
+        ];
+        
         const STATUS_ACTIVE = ['매매', '임대', '매매/임대', '작업필요', '타부동산', '미정'];
         const STATUS_HISTORY = ['매매완료', '임대완료', '전광교마을', '작업불가'];
         const COLOR_MAP = { '매매': '#fca5a5', '임대': '#6ee7b7', '매매/임대': '#93c5fd', '타부동산': '#fdba74', '매매완료': '#e2e8f0', '임대완료': '#e2e8f0', '전광교마을': '#d8b4fe', '작업필요': '#fcd34d', '작업불가': '#e5e7eb', '미정': '#ffffff' };
@@ -875,18 +888,32 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-
-        // ==========================================
-        // [V2.0] 1. 기초 분류 및 보증금 정규화 모듈
-        // ==========================================
-        
-        // 대로변 판별 (명단 기준)
-        function getRoadsideType(buildingName) {
-            if (!buildingName) return '이면도로';
-            return ROADSIDE_TARGETS.some(name => buildingName.includes(name)) ? '대로변' : '이면도로';
+        // [복원] 로그인 엔진
+        function checkPin() {
+            const inputField = document.getElementById('pinInput');
+            if (!inputField) return;
+            if (inputField.value === MASTER_PIN) {
+                sessionAuth = true;
+                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
+                document.getElementById('loginOverlay')?.classList.add('hidden');
+                document.getElementById('pinError')?.classList.add('hidden');
+            } else {
+                document.getElementById('pinError')?.classList.remove('hidden');
+                inputField.value = '';
+                inputField.focus();
+            }
         }
-        
-        // 층별 티어(계급) 판별
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('pinInput')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPin(); });
+        });
+
+        function getRoadsideType(buildingName) {
+            if (!buildingName) return '기타구역';
+            if (ROADSIDE_LIST.some(name => buildingName.includes(name))) return '대로변';
+            if (BACKROAD_LIST.some(name => buildingName.includes(name))) return '이면도로';
+            return '기타구역';
+        }
+
         function getFloorTier(f) {
             if (!f) return '기타';
             const floor = String(f).trim();
@@ -897,7 +924,7 @@
             return fn >= 3 ? '3층이상' : '기타';
         }
         
-        // 보증금 정규화 (12개월 초과분 연 5% 월세 환산)
+        // [수정] 단일화된 보증금 정규화 함수
         function getNormalizedRent(deposit, rent) {
             const dep = parseFloat(deposit) || 0;
             const rnt = parseFloat(rent) || 0;
@@ -906,27 +933,12 @@
             }
             return rnt;
         }
-        
-        // 1. 보안 엔진 (보증금 정규화 및 구역 시세 학습)
-        function getNormalizedRent(u) {
-            const deposit = parseFloat(u.deposit) || 0;
-            const rent = parseFloat(u.rent) || 0;
-            if (deposit > rent * 18 && rent > 0) {
-                const excessDeposit = deposit - (rent * 12);
-                return Math.round(rent + (excessDeposit * 0.05 / 12));
-            }
-            return rent;
-        }
 
-        // ==========================================
-        // [V2.0] 2. 지능형 상권 학습 엔진 (데이터 두뇌)
-        // ==========================================
         function updateZoneIntelligence() {
             if (!state || !state.allData) return;
             
-            // 1단계. 전역 데이터 보증금 정규화
             state.allData.forEach(u => u.rent_norm = getNormalizedRent(u.deposit, u.rent));
-        
+
             const groupMap = {};
             state.allData.forEach(u => {
                 if (u.unique_group_id) {
@@ -934,20 +946,18 @@
                     groupMap[u.unique_group_id].push(u);
                 }
             });
-        
-            // 2단계. [시장 연동 배수 추출] 상호명 '은행'을 배제한 순수 시장 비율 도출
+
             let p1FSum = 0, p1FCnt = 0, p2FSum = 0, p2FCnt = 0;
             const processedGroups = new Set();
-        
+
             state.allData.forEach(u => {
                 const storeName = u.store_name || "";
                 
                 if (getRoadsideType(u.building) === '대로변' && u.rent_norm > 0 && u.area_p > 0 && !storeName.includes('은행')) {
                     let py = 0;
                     let tier = getFloorTier(u.floor);
-        
+
                     if (u.unique_group_id) {
-                        // 단층 통매물 정상 합산
                         if (!processedGroups.has(u.unique_group_id)) {
                             const units = groupMap[u.unique_group_id];
                             const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
@@ -960,19 +970,16 @@
                             if (tier === '2층') { p2FSum += py; p2FCnt++; }
                         }
                     } else {
-                        // 일반 단일 호실 정상 합산
                         py = u.rent_norm / u.area_p;
                         if (tier === '1층') { p1FSum += py; p1FCnt++; }
                         if (tier === '2층') { p2FSum += py; p2FCnt++; }
                     }
                 }
             });
-        
-            // 시장 비율 확정
+
             const dynRatio = (p1FCnt > 0 && p2FCnt > 0) ? ((p1FSum/p1FCnt) / (p2FSum/p2FCnt)) : 2.6;
             const TIER_WEIGHTS = { '1층': dynRatio, '2층': 1.0, '3층이상': 0.8, '지하': 0.5, '기타': 0.7 };
-        
-            // 3단계. 안분 적용 및 데이터 학습
+
             const stats = {}; 
             state.allData.forEach(u => {
                 const zone = u.zone || u.exit || "미지정";
@@ -980,15 +987,14 @@
                 const tier = getFloorTier(u.floor);
                 const storeName = u.store_name || "";
                 let learnedPy = 0;
-        
+
                 if (u.unique_group_id) {
                     const units = groupMap[u.unique_group_id];
                     const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
                     const tRnt = units.reduce((a,c)=>a+(c.rent||0),0);
                     const tRentNorm = getNormalizedRent(tDep, tRnt);
                     const tArea = units.reduce((a,c)=>a+c.area_p,0);
-        
-                    // '은행'이거나 다층 매물인 경우만 가중치 쪼개기(안분) 실행
+
                     const isMultiTier = new Set(units.map(x => getFloorTier(x.floor))).size > 1;
                     if (isMultiTier || storeName.includes('은행')) {
                         const wSum = units.reduce((a,c)=>a+(c.area_p * TIER_WEIGHTS[getFloorTier(c.floor)]), 0);
@@ -999,11 +1005,9 @@
                 } else {
                     learnedPy = u.rent_norm / u.area_p;
                 }
-        
-                // ★ 건물 통계에서 사용될 진짜 평단가 (객체에 저장)
+
                 u.learned_py = learnedPy;
-        
-                // 서랍(stats)에 데이터 분류 보관
+
                 if (learnedPy > 0) {
                     if (!stats[zone]) stats[zone] = {};
                     if (!stats[zone][roadside]) stats[zone][roadside] = {};
@@ -1014,8 +1018,7 @@
                     s.posMap[u.pos].push(learnedPy);
                 }
             });
-        
-            // 4단계. 그룹별 최종 평균 및 위치(전/후/코너) 가중치 산출
+
             for(let z in stats) for(let r in stats[z]) for(let t in stats[z][r]) {
                 const s = stats[z][r][t];
                 s.avgPy = s.units.reduce((a,b)=>a+b,0)/s.units.length;
@@ -1025,22 +1028,6 @@
             state.zoneStats = stats;
         }
 
-        // 2. 로그인 함수 (HTML 버튼과 정확히 연결됨)
-        function checkPin() {
-            const input = document.getElementById('pinInput').value;
-            if (input === MASTER_PIN) {
-                sessionAuth = true;
-                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('pinError').classList.add('hidden');
-            } else {
-                document.getElementById('pinError').classList.remove('hidden');
-                document.getElementById('pinInput').value = '';
-                document.getElementById('pinInput').focus();
-            }
-        }
-
-        // 3. 상태 관리 객체 (정확한 괄호 마감 적용)
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
@@ -1304,20 +1291,6 @@
                 }
             }
             return '';
-        }
-
-        function checkPin() {
-            const input = document.getElementById('pinInput').value;
-            if (input === MASTER_PIN) {
-                sessionAuth = true;
-                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('pinError').classList.add('hidden');
-            } else {
-                document.getElementById('pinError').classList.remove('hidden');
-                document.getElementById('pinInput').value = '';
-                document.getElementById('pinInput').focus();
-            }
         }
 
         function toggleMobileMenu() {
@@ -1847,21 +1820,25 @@
             units.forEach(u => {
                 let gid = u.unique_group_id || `single_${u.id}`; 
                 if (processedGroups.has(gid)) return; processedGroups.add(gid);
+                
                 let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
                 let groupPrice = 0; let groupArea = 0;
+
                 members.forEach(m => { 
-                    const area = m.area_p || 0; 
+                    const area = parseFloat(m.area_p) || 0; 
                     if (type === 'sell') {
-                        groupPrice += m.price_sell; 
+                        groupPrice += (parseFloat(m.price_sell) || 0); 
                     } else {
-                        // ★ 기존 오류(groupPrice += m.rent;) 해결
-                        // 단순 월세가 아닌 엔진이 안분해둔 진짜 평단가(learned_py)를 면적에 곱해 실질 월세로 합산
-                        let effectiveRent = m.learned_py ? (m.learned_py * area) : (m.rent_norm || m.rent || 0);
+                        // 기존 단순 합산에서 엔진 산출 평단가(learned_py) 기반 합산으로 교체
+                        let effectiveRent = m.learned_py ? (m.learned_py * area) : (parseFloat(m.rent_norm) || parseFloat(m.rent) || 0);
                         groupPrice += effectiveRent; 
                     }
                     groupArea += area; 
                 });
-                if (groupPrice > 0 && groupArea >= 1) { sumPrice += groupPrice; sumArea += groupArea; }
+                
+                if (groupPrice > 0 && groupArea >= 1) { 
+                    sumPrice += groupPrice; sumArea += groupArea; 
+                }
             });
             return sumArea > 0 ? sumPrice / sumArea : 0;
         }
