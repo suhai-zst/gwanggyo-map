@@ -251,13 +251,6 @@
                 display: block !important; padding: 16px 24px !important; page-break-inside: avoid !important; 
                 z-index: 1000 !important; background-color: #065f46 !important; border-top: 4px solid #064e3b !important;
             }
-                        /* [모드4] 적정 임대료 분석 팝업 단독 인쇄 모드 */
-            body.is-appraisal-print-mode > *:not(#rentAppraisalModal) { display: none !important; }
-            body.is-appraisal-print-mode #rentAppraisalModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; }
-            body.is-appraisal-print-mode .modal-backdrop { background: none !important; align-items: start !important; justify-content: center !important; }
-            body.is-appraisal-print-mode #rentAppraisalModal > div { max-width: 100% !important; max-height: none !important; box-shadow: none !important; border: none !important; height: auto !important; margin: 0 !important; overflow: visible !important; }
-            body.is-appraisal-print-mode .no-print-appraisal { display: none !important; }
-            body.is-appraisal-print-mode #appraisalPrintArea { padding: 0 !important; overflow: visible !important; }
         }
     </style>
 </head>
@@ -792,62 +785,7 @@
         </div>
     </div>
 
-    <div id="rentAppraisalModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
-                <div>
-                    <h3 class="text-xl font-bold flex items-center gap-2">
-                        <i class="ph ph-chart-line-up"></i> 시장 적정 임대료 분석
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-1" id="appraisalSubject"></p>
-                </div>
-                <button onclick="closeRentAppraisal()" class="text-white/70 hover:text-white text-2xl"><i class="ph ph-x"></i></button>
-            </div>
-            
-            <div class="p-6 overflow-y-auto space-y-6" id="appraisalPrintArea">
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
-                    <div class="flex justify-between items-end border-b border-slate-200 pb-3">
-                        <span class="text-slate-500 font-bold text-sm">시장 적정 가치 산출</span>
-                        <span class="text-xs text-slate-400">분석 시점: <span id="appraisalDate"></span></span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-[11px] text-slate-400 mb-1">구역 평균 시세(평당)</p>
-                            <p class="text-lg font-bold text-slate-700" id="appraisalZoneAvg">-</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] text-slate-400 mb-1">위치 가중치</p>
-                            <p class="text-lg font-bold text-emerald-600" id="appraisalWeight">-</p>
-                        </div>
-                    </div>
-                    <div class="bg-white border border-emerald-100 rounded-lg p-4 text-center">
-                        <p class="text-xs text-emerald-600 font-bold mb-2">AI 추정 적정 임대료</p>
-                        <p class="text-2xl font-extrabold text-slate-900" id="appraisalFinalResult">보 - / 월 -</p>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                        <i class="ph ph-scales text-blue-500"></i> 현재 호가 대비 분석
-                    </h4>
-                    <div id="appraisalComparison" class="text-sm space-y-2"></div>
-                </div>
-                <div class="text-[11px] text-slate-400 leading-relaxed bg-slate-50 p-3 rounded italic">
-                    ※ 주변 실거래 및 구역/위치별 가중치를 자동 계산한 결과입니다. 세부 조건에 따라 변동될 수 있습니다.
-                </div>
-            </div>
-    
-            <div class="p-4 bg-slate-50 border-t flex gap-2">
-                <button onclick="window.print()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700">
-                    <i class="ph ph-printer"></i> 리포트 출력
-                </button>
-                <button onclick="closeRentAppraisal()" class="flex-1 bg-white border border-slate-300 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-100">
-                    닫기
-                </button>
-            </div>
-        </div>
-    </div>
-    
-<script>
+    <script>
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
@@ -866,21 +804,8 @@
             { id: '100over', label: '100평 ↑', min: 100, max: 9999 } 
         ];
         const SALE_RANGES = [ { id: '4under', label: '4억 ↓', min: 0, max: 40000 }, { id: '4-7', label: '4~7억', min: 40000, max: 70000 }, { id: '7-10', label: '7~10억', min: 70000, max: 100000 }, { id: '10-15', label: '10~15억', min: 100000, max: 150000 }, { id: '15-20', label: '15~20억', min: 150000, max: 200000 }, { id: '20-50', label: '20~50억', min: 200000, max: 500000 }, { id: '50over', label: '50억 ↑', min: 500000, max: 99999999 } ];
-        
-        const ROADSIDE_LIST = [
-            '스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 
-            'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', 
-            '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', 
-            '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', 
-            '푸르지오C', '희성빌딩', '광교티타워', 'T타워'
-        ];
-        const BACKROAD_LIST = [
-            'SB타워', '푸르지오2단지', '푸르지오 2단지', '푸르지오3단지', '푸르지오 3단지', 
-            '광교리치안', '골든풍산', '어드밴스힐', '더블유스퀘어', 'W스퀘어', 
-            '푸르지오B동', '푸르지오 B동', '프리미어타워', '푸르지오1단지', '푸르지오 1단지',
-            '푸르지오 A동', '푸르지오A동'
-        ];
-        
+        const ROADSIDE_TARGETS = ['스타천', '스타지', '씨티하임', '시티하임', '세현빌딩', '신명프라자', 'S타워', '에스타워', '미주프라자', '블루스퀘어', '블루스퀴어', '드림타워2', '엘리치안', '광교유타워', 'U타워', '푸르지오 시티 D동', '푸르지오시티 D동', '푸르지오D', '드림타워1', '푸르지오 시티 C동', '푸르지오시티 C동', '푸르지오C', '희성빌딩', '프리미어타워', '광교티타워', 'T타워', '신대프라자'];
+
         const STATUS_ACTIVE = ['매매', '임대', '매매/임대', '작업필요', '타부동산', '미정'];
         const STATUS_HISTORY = ['매매완료', '임대완료', '전광교마을', '작업불가'];
         const COLOR_MAP = { '매매': '#fca5a5', '임대': '#6ee7b7', '매매/임대': '#93c5fd', '타부동산': '#fdba74', '매매완료': '#e2e8f0', '임대완료': '#e2e8f0', '전광교마을': '#d8b4fe', '작업필요': '#fcd34d', '작업불가': '#e5e7eb', '미정': '#ffffff' };
@@ -888,157 +813,14 @@
         const BORDER_COLOR_MAP = { '매매': '#991b1b', '임대': '#047857', '매매/임대': '#1e40af', '타부동산': '#ea580c', '매매완료': '#475569', '임대완료': '#475569', '전광교마을': '#6b21a8', '작업필요': '#854d0e', '작업불가': '#3f3f46', '미정': '#94a3b8' };
         const STATUS_CLASS_MAP = { '매매': 'bg-st-매매', '임대': 'bg-st-임대', '매매/임대': 'bg-st-매매임대', '타부동산': 'bg-st-타부동산', '매매완료': 'bg-st-완료', '임대완료': 'bg-st-완료', '작업필요': 'bg-st-작업필요', '작업불가': 'bg-st-작업불가', '전광교마을': 'bg-st-전광교마을', '미정': 'bg-st-미정' };
 
-        // [복원] 로그인 엔진
-        function checkPin() {
-            const inputField = document.getElementById('pinInput');
-            if (!inputField) return;
-            if (inputField.value === MASTER_PIN) {
-                sessionAuth = true;
-                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
-                document.getElementById('loginOverlay')?.classList.add('hidden');
-                document.getElementById('pinError')?.classList.add('hidden');
-            } else {
-                document.getElementById('pinError')?.classList.remove('hidden');
-                inputField.value = '';
-                inputField.focus();
-            }
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('pinInput')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPin(); });
-        });
-
-        function getRoadsideType(buildingName) {
-            if (!buildingName) return '기타구역';
-            if (ROADSIDE_LIST.some(name => buildingName.includes(name))) return '대로변';
-            if (BACKROAD_LIST.some(name => buildingName.includes(name))) return '이면도로';
-            return '기타구역';
-        }
-
-        function getFloorTier(f) {
-            if (!f) return '기타';
-            const floor = String(f).trim();
-            if (floor === '1') return '1층';
-            if (floor === '2') return '2층';
-            if (floor.toUpperCase().includes('B')) return '지하';
-            const fn = parseInt(floor.replace(/\D/g, ''));
-            return fn >= 3 ? '3층이상' : '기타';
-        }
-        
-        // [수정] 단일화된 보증금 정규화 함수
-        function getNormalizedRent(deposit, rent) {
-            const dep = parseFloat(deposit) || 0;
-            const rnt = parseFloat(rent) || 0;
-            if (dep > rnt * 12 && rnt > 0) {
-                return rnt + ((dep - (rnt * 12)) * 0.05 / 12);
-            }
-            return rnt;
-        }
-
-        function updateZoneIntelligence() {
-            if (!state || !state.allData) return;
-            
-            state.allData.forEach(u => u.rent_norm = getNormalizedRent(u.deposit, u.rent));
-
-            const groupMap = {};
-            state.allData.forEach(u => {
-                if (u.unique_group_id) {
-                    if (!groupMap[u.unique_group_id]) groupMap[u.unique_group_id] = [];
-                    groupMap[u.unique_group_id].push(u);
-                }
-            });
-
-            let p1FSum = 0, p1FCnt = 0, p2FSum = 0, p2FCnt = 0;
-            const processedGroups = new Set();
-
-            state.allData.forEach(u => {
-                const storeName = u.store_name || "";
-                
-                if (getRoadsideType(u.building) === '대로변' && u.rent_norm > 0 && u.area_p > 0 && !storeName.includes('은행')) {
-                    let py = 0;
-                    let tier = getFloorTier(u.floor);
-
-                    if (u.unique_group_id) {
-                        if (!processedGroups.has(u.unique_group_id)) {
-                            const units = groupMap[u.unique_group_id];
-                            const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
-                            const tRnt = units.reduce((a,c)=>a+(c.rent||0),0);
-                            const tArea = units.reduce((a,c)=>a+c.area_p,0);
-                            py = getNormalizedRent(tDep, tRnt) / tArea;
-                            processedGroups.add(u.unique_group_id);
-                            
-                            if (tier === '1층') { p1FSum += py; p1FCnt++; }
-                            if (tier === '2층') { p2FSum += py; p2FCnt++; }
-                        }
-                    } else {
-                        py = u.rent_norm / u.area_p;
-                        if (tier === '1층') { p1FSum += py; p1FCnt++; }
-                        if (tier === '2층') { p2FSum += py; p2FCnt++; }
-                    }
-                }
-            });
-
-            const dynRatio = (p1FCnt > 0 && p2FCnt > 0) ? ((p1FSum/p1FCnt) / (p2FSum/p2FCnt)) : 2.6;
-            const TIER_WEIGHTS = { '1층': dynRatio, '2층': 1.0, '3층이상': 0.8, '지하': 0.5, '기타': 0.7 };
-
-            const stats = {}; 
-            state.allData.forEach(u => {
-                const zone = u.zone || u.exit || "미지정";
-                const roadside = getRoadsideType(u.building);
-                const tier = getFloorTier(u.floor);
-                const storeName = u.store_name || "";
-                let learnedPy = 0;
-
-                if (u.unique_group_id) {
-                    const units = groupMap[u.unique_group_id];
-                    const tDep = units.reduce((a,c)=>a+(c.deposit||0),0);
-                    const tRnt = units.reduce((a,c)=>a+(c.rent||0),0);
-                    const tRentNorm = getNormalizedRent(tDep, tRnt);
-                    const tArea = units.reduce((a,c)=>a+c.area_p,0);
-
-                    const isMultiTier = new Set(units.map(x => getFloorTier(x.floor))).size > 1;
-                    if (isMultiTier || storeName.includes('은행')) {
-                        const wSum = units.reduce((a,c)=>a+(c.area_p * TIER_WEIGHTS[getFloorTier(c.floor)]), 0);
-                        learnedPy = (tRentNorm * (u.area_p * TIER_WEIGHTS[tier] / wSum)) / u.area_p;
-                    } else {
-                        learnedPy = tRentNorm / tArea;
-                    }
-                } else {
-                    learnedPy = u.rent_norm / u.area_p;
-                }
-
-                u.learned_py = learnedPy;
-
-                if (learnedPy > 0) {
-                    if (!stats[zone]) stats[zone] = {};
-                    if (!stats[zone][roadside]) stats[zone][roadside] = {};
-                    if (!stats[zone][roadside][tier]) stats[zone][roadside][tier] = { units: [], posMap: {} };
-                    const s = stats[zone][roadside][tier];
-                    s.units.push(learnedPy);
-                    if (!s.posMap[u.pos]) s.posMap[u.pos] = [];
-                    s.posMap[u.pos].push(learnedPy);
-                }
-            });
-
-            for(let z in stats) for(let r in stats[z]) for(let t in stats[z][r]) {
-                const s = stats[z][r][t];
-                s.avgPy = s.units.reduce((a,b)=>a+b,0)/s.units.length;
-                s.posWeights = {};
-                for(let p in s.posMap) s.posWeights[p] = (s.posMap[p].reduce((a,b)=>a+b,0)/s.posMap[p].length)/s.avgPy;
-            }
-            state.zoneStats = stats;
-        }
-
         let state = { 
             allData: [], buildingInfoMap: {}, buildings: [], checkedBuildings: new Set(), 
             search: '', filterExit: 'all', checkedRentRanges: new Set(), checkedSaleRanges: new Set(), checkedAreaRanges: new Set(), 
             activeStatus: new Set([...STATUS_ACTIVE]), historyStatus: new Set([...STATUS_HISTORY]), filterStatusGroup: 'all', 
             isSummaryMode: false, isImportantMode: false, isRoadsideMode: false, isPrivacyMode: true, comparisonList: new Set(), compareMode: 'rent', splitGroups: new Set(), isSqm: false,
             realEstateData: null, managementData: null, otherContactsData: null, passwordMap: null,
-            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0,
-            zoneStats: {} 
+            isDashboardMode: false, simTarget: null, simOrigPrice: 0, simOrigDep: 0, simOrigRent: 0
         };
-
-        // --- 이 아래부터 window.addEventListener('DOMContentLoaded', ... 가 오면 됩니다 ---
 
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
@@ -1293,6 +1075,20 @@
             return '';
         }
 
+        function checkPin() {
+            const input = document.getElementById('pinInput').value;
+            if (input === MASTER_PIN) {
+                sessionAuth = true;
+                try { sessionStorage.setItem('isAuthorized', 'true'); } catch(e){}
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('pinError').classList.add('hidden');
+            } else {
+                document.getElementById('pinError').classList.remove('hidden');
+                document.getElementById('pinInput').value = '';
+                document.getElementById('pinInput').focus();
+            }
+        }
+
         function toggleMobileMenu() {
             const menu = document.getElementById('mainFilters');
             const backdrop = document.getElementById('mobileMenuBackdrop');
@@ -1506,141 +1302,101 @@
 
         function parseNum(val) { if (!val) return 0; if (typeof val === 'number') return val; return parseFloat(val.toString().replace(/,/g, '')) || 0; }
 
-       function processData(data) {
-            const today = new Date();
-            // 1. 데이터 가공 및 정규화 월세 산출
-            const processed = data.map((r, i) => {
-                if (!r['건물'] && !r['건물명']) return null;
-                const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
-                const f = String(r['층'] || '').replace('층','').trim(); 
-                const u = String(r['호수'] || r['호'] || '').trim(); 
-                const storeName = String(r['업체명'] || r['상호'] || '').trim();
+        function processData(data) {
+    const today = new Date();
+    state.allData = data.map((r, i) => {
+        if (!r['건물'] && !r['건물명']) return null;
+        const b = String(r['건물'] || r['건물명'] || '기타').trim(); 
+        const f = String(r['층'] || '').replace('층','').trim(); 
+        const u = String(r['호수'] || r['호'] || '').trim(); 
+        const storeName = String(r['업체명'] || r['상호'] || '').trim();
 
-                if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
-                
-                const rawSt = (r['상태'] || '').trim(); 
-                const rawHist = (r['거래내역'] || '').trim();
+        if (b.toLowerCase() === 'end' || u.toLowerCase() === 'end' || storeName.toLowerCase() === 'end') return null;
+        
+        const rawSt = (r['상태'] || '').trim(); const rawHist = (r['거래내역'] || '').trim();
 
-                // 삭제 매물 필터링
-                if (rawSt.includes('삭제') || rawHist.includes('삭제')) return null;
+        // [신규 기능 픽스] 상태나 거래내역에 '삭제'가 포함되어 있으면 시스템에 아예 적재하지 않고 버림
+        if (rawSt.includes('삭제') || rawHist.includes('삭제')) return null;
 
-                let finalSt = '미정'; 
-                let displaySt = rawSt || rawHist || '미정';
-                if (rawSt) finalSt = normalizeStatus(rawSt); 
-                else if (rawHist) finalSt = normalizeStatus(rawHist);
-                
-                const rent = parseNum(r['월세']); 
-                const price = parseNum(r['매매가']); 
-                const deposit = parseNum(r['보증금']); 
-                const premium = parseNum(r['권리금']);
-                
-                let areaP = 0; 
-                if (r['전용평수']) areaP = parseNum(r['전용평수']); 
-                else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
-                
-                let areaS = 0; 
-                if (r['분양평수']) areaS = parseNum(r['분양평수']); 
-                else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
-                
-                let ppSell = parseNum(r['매매평단가']); 
-                let ppRent = parseNum(r['임대평단가']);
-                let yieldRate = 0; 
-                if (price > 0 && rent > 0) { 
-                    const cost = price - deposit; 
-                    if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); 
-                }
-                
-                let rawImp = ''; 
-                Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
-                let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
-                let isQuestion = (rawImp||'').toString().trim() === '??';
+        let finalSt = '미정'; let displaySt = rawSt || rawHist || '미정';
+        if (rawSt) finalSt = normalizeStatus(rawSt); else if (rawHist) finalSt = normalizeStatus(rawHist);
+        
+        const rent = parseNum(r['월세']); const price = parseNum(r['매매가']); const deposit = parseNum(r['보증금']); 
+        const premium = parseNum(r['권리금']);
+        let areaP = 0; if (r['전용평수']) areaP = parseNum(r['전용평수']); else if (r['전용면적']) areaP = parseNum(r['전용면적']) / 3.3058;
+        let areaS = 0; if (r['분양평수']) areaS = parseNum(r['분양평수']); else if (r['분양면적']) areaS = parseNum(r['분양면적']) / 3.3058;
+        let ppSell = parseNum(r['매매평단가']); let ppRent = parseNum(r['임대평단가']);
+        let yieldRate = 0; if (price > 0 && rent > 0) { const cost = price - deposit; if (cost > 0) yieldRate = ((rent * 12) / cost * 100).toFixed(2); }
+        
+        let rawImp = ''; Object.keys(r).forEach(k => { if(k.includes('중요')||k.includes('매물')) rawImp = r[k]; });
+        let isImp = (rawImp||'').toString().trim().toUpperCase() === 'Y';
+        let isQuestion = (rawImp||'').toString().trim() === '??';
 
-                let adDateStr = (r['광고일'] || '').toString().trim(); 
-                let isAdWarn = false;
-                if (adDateStr && adDateStr.match(/\d/)) { 
-                    let d = new Date(adDateStr); 
-                    if(!isNaN(d.getTime())) { 
-                        const expiry = new Date(d); 
-                        expiry.setDate(d.getDate() + 30); 
-                        const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); 
-                        if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; 
-                    } 
-                }
-                
-                const gId = (r['통합'] || '').trim();
-                const tenantReal = String(r['임차인'] || '').trim(); 
-                const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
-                const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
+        let adDateStr = (r['광고일'] || '').toString().trim(); let isAdWarn = false;
+        if (adDateStr && adDateStr.match(/\d/)) { let d = new Date(adDateStr); if(!isNaN(d.getTime())) { const expiry = new Date(d); expiry.setDate(d.getDate() + 30); const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)); if(diffDays <= 3 && diffDays >= 0) isAdWarn = true; } }
+        
+        const gId = (r['통합'] || '').trim();
+        const tenantReal = String(r['임차인'] || '').trim(); 
+        const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
+        const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
 
-                // 최종 객체 반환
-                return { 
-                    id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
-                    area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), zone: String(r['구역'] || r['출구'] || ''),
-                    tenant: tenantReal, store_name: storeName, 
-                    memo: String(r['협의내용'] || r['메모'] || '').trim(), 
-                    price_sell: price, deposit: deposit, rent: rent, premium: premium, 
-                    owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
-                    pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
-                    pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
-                    rent_norm: getNormalizedRent({ deposit: deposit, rent: rent }),
-                    group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
-                    _match: false, _isPartOfMerge: false, _mergeStartArea: 0
-                };
-            }).filter(x => x);
+        return { 
+            id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
+            area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), 
+            tenant: tenantReal, store_name: storeName, 
+            memo: String(r['협의내용'] || r['메모'] || '').trim(), 
+            price_sell: price, deposit: deposit, rent: rent, premium: premium, 
+            owner: String(r['임대인'] || '').trim(), owner_tel: String(r['임대인연락처'] || '').trim(), tenant_tel: tTel, 
+            pp_sell: ppSell, pp_rent: ppRent, is_imp: isImp, is_question: isQuestion, is_ad_warn: isAdWarn, ad_date: adDateStr, 
+            pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
+            group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
+            _match: false, _isPartOfMerge: false, _mergeStartArea: 0
+        };
+    }).filter(x => x);
 
-            // 2. 가공된 데이터를 전역 변수에 저장
-            state.allData = processed;
-
-            // 3. [통합 엔진 작동] 데이터 로딩 즉시 지능형 시세 산출 가동!
-            updateZoneIntelligence();
-
-            // --- [핵심 픽스] 여기서 끊기지 않도록 중간에 있던 } 를 제거했습니다 ---
-
-            const groupAreaMap = {}; const groupPriceMap = {};
-            const groupDepMap = {}; const groupRentMap = {}; const groupPremMap = {};
-            
-            state.allData.forEach(d => {
-                if(d.unique_group_id) {
-                    if(!groupAreaMap[d.unique_group_id]) { 
-                        groupAreaMap[d.unique_group_id] = 0; groupPriceMap[d.unique_group_id] = 0; 
-                        groupDepMap[d.unique_group_id] = 0; groupRentMap[d.unique_group_id] = 0; groupPremMap[d.unique_group_id] = 0;
-                    }
-                    groupAreaMap[d.unique_group_id] += d.area_p; 
-                    groupPriceMap[d.unique_group_id] += (d.price_sell || 0);
-                    groupDepMap[d.unique_group_id] += (d.deposit || 0);
-                    groupRentMap[d.unique_group_id] += (d.rent || 0);
-                    groupPremMap[d.unique_group_id] += (d.premium || 0);
-                }
-            });
-            
-            state.allData.forEach(d => {
-                if(d.unique_group_id) { 
-                    d.total_area_p = groupAreaMap[d.unique_group_id]; d.total_price_sell = groupPriceMap[d.unique_group_id]; 
-                    d.total_deposit = groupDepMap[d.unique_group_id]; d.total_rent = groupRentMap[d.unique_group_id]; d.total_premium = groupPremMap[d.unique_group_id];
-                } else { 
-                    d.total_area_p = d.area_p; d.total_price_sell = d.price_sell; 
-                    d.total_deposit = d.deposit; d.total_rent = d.rent; d.total_premium = d.premium;
-                }
-            });
-            
-            if (!state.allData.length) { alert('유효 데이터 없음 (헤더를 확인해주세요)'); return; }
-            
-            state.buildings = [...new Set(state.allData.map(d => d.building))].sort(); 
-            state.buildings.sort((a,b) => {
-                const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
-                const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
-                if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
-            });
-            
-            state.checkedBuildings = new Set(state.buildings);
-            updateExits(); 
-            document.getElementById('statusToggleBar').classList.remove('hidden'); 
-            document.getElementById('emptyState').classList.add('hidden'); 
-            document.getElementById('stackingContainer').classList.remove('hidden'); 
-            
-            // [버그 픽스] 초기 화면 렌더링 시 스마트 선택 엔진을 가동하여 비선택(흐림) 현상 해결
-            applySmartSelection();
-        } // <--- 여기가 진짜 함수의 끝입니다.
+    const groupAreaMap = {}; const groupPriceMap = {};
+    const groupDepMap = {}; const groupRentMap = {}; const groupPremMap = {};
+    
+    state.allData.forEach(d => {
+        if(d.unique_group_id) {
+            if(!groupAreaMap[d.unique_group_id]) { 
+                groupAreaMap[d.unique_group_id] = 0; groupPriceMap[d.unique_group_id] = 0; 
+                groupDepMap[d.unique_group_id] = 0; groupRentMap[d.unique_group_id] = 0; groupPremMap[d.unique_group_id] = 0;
+            }
+            groupAreaMap[d.unique_group_id] += d.area_p; 
+            groupPriceMap[d.unique_group_id] += (d.price_sell || 0);
+            groupDepMap[d.unique_group_id] += (d.deposit || 0);
+            groupRentMap[d.unique_group_id] += (d.rent || 0);
+            groupPremMap[d.unique_group_id] += (d.premium || 0);
+        }
+    });
+    state.allData.forEach(d => {
+        if(d.unique_group_id) { 
+            d.total_area_p = groupAreaMap[d.unique_group_id]; d.total_price_sell = groupPriceMap[d.unique_group_id]; 
+            d.total_deposit = groupDepMap[d.unique_group_id]; d.total_rent = groupRentMap[d.unique_group_id]; d.total_premium = groupPremMap[d.unique_group_id];
+        } else { 
+            d.total_area_p = d.area_p; d.total_price_sell = d.price_sell; 
+            d.total_deposit = d.deposit; d.total_rent = d.rent; d.total_premium = d.premium;
+        }
+    });
+    
+    if (!state.allData.length) { alert('유효 데이터 없음 (헤더를 확인해주세요)'); return; }
+    state.buildings = [...new Set(state.allData.map(d => d.building))].sort(); 
+    state.buildings.sort((a,b) => {
+        const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
+        const exitA = parseInt(dA.exit.replace('번','')) || 99; const exitB = parseInt(dB.exit.replace('번','')) || 99;
+        if(exitA !== exitB) return exitA - exitB; return a.localeCompare(b);
+    });
+    
+    state.checkedBuildings = new Set(state.buildings);
+    updateExits(); 
+    document.getElementById('statusToggleBar').classList.remove('hidden'); 
+    document.getElementById('emptyState').classList.add('hidden'); 
+    document.getElementById('stackingContainer').classList.remove('hidden'); 
+    
+    // [버그 픽스] 초기 화면 렌더링 시 스마트 선택 엔진을 가동하여 비선택(흐림) 현상 해결
+    applySmartSelection();
+}
 
         function normalizeStatus(st) {
             const s = st.replace(/\s+/g,'');
@@ -1814,31 +1570,15 @@
         function toggleBuilding(b) { if (state.checkedBuildings.has(b)) state.checkedBuildings.delete(b); else state.checkedBuildings.add(b); renderList(); renderStacking(); }
         function toggleAllBuildings(chk) { state.checkedBuildings = chk ? new Set(state.buildings) : new Set(); renderList(); renderStacking(); }
 
-        // [V2.0 최종 픽스] 스태킹 맵 & 건물 분석 모달 통계 산출기
         function calcGroupedStats(units, type) {
             let processedGroups = new Set(); let sumPrice = 0; let sumArea = 0;
             units.forEach(u => {
                 let gid = u.unique_group_id || `single_${u.id}`; 
                 if (processedGroups.has(gid)) return; processedGroups.add(gid);
-                
                 let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
                 let groupPrice = 0; let groupArea = 0;
-
-                members.forEach(m => { 
-                    const area = parseFloat(m.area_p) || 0; 
-                    if (type === 'sell') {
-                        groupPrice += (parseFloat(m.price_sell) || 0); 
-                    } else {
-                        // 기존 단순 합산에서 엔진 산출 평단가(learned_py) 기반 합산으로 교체
-                        let effectiveRent = m.learned_py ? (m.learned_py * area) : (parseFloat(m.rent_norm) || parseFloat(m.rent) || 0);
-                        groupPrice += effectiveRent; 
-                    }
-                    groupArea += area; 
-                });
-                
-                if (groupPrice > 0 && groupArea >= 1) { 
-                    sumPrice += groupPrice; sumArea += groupArea; 
-                }
+                members.forEach(m => { const area = m.area_p || 0; if (type === 'sell') groupPrice += m.price_sell; else groupPrice += m.rent; groupArea += area; });
+                if (groupPrice > 0 && groupArea >= 1) { sumPrice += groupPrice; sumArea += groupArea; }
             });
             return sumArea > 0 ? sumPrice / sumArea : 0;
         }
@@ -2412,7 +2152,7 @@
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><div class="flex items-center gap-2 mb-0.5"><span class="text-slate-400 text-[10px] md:text-xs font-bold">보증금/월세</span> <button onclick="openRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] md:text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition"><i class="ph-bold ph-chart-line-up"></i> 적정가</button></div> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
@@ -2945,80 +2685,30 @@ function applyAvmToSimulator() {
 
         function openUnitSimulator(id) {
             const t = state.allData.find(d => d.id === id);
-            if(!t) return;
-
-            // 1. 통합 매물 여부 확인 및 데이터 합산
             let units = t.unique_group_id ? state.allData.filter(d => d.unique_group_id === t.unique_group_id) : [t];
-            const sA = units.reduce((a, c) => a + (parseFloat(c.area_p) || 0), 0);
-            const sP = units.reduce((a, c) => a + (parseInt(c.price_sell) || 0), 0);
-            const sD = units.reduce((a, c) => a + (parseInt(c.deposit) || 0), 0);
-            const sR = units.reduce((a, c) => a + (parseInt(c.rent) || 0), 0);
+            const sA = units.reduce((a, c) => a + c.area_p, 0), sP = units.reduce((a, c) => a + (c.price_sell || 0), 0), sD = units.reduce((a, c) => a + (c.deposit || 0), 0), sR = units.reduce((a, c) => a + (c.rent || 0), 0);
             
-            // 2. 제목 렌더링
-            const title = cleanBuildingName(t.building) + " " + units.map(u => u.unit).join(',') + "호";
-            document.getElementById('usimTitle').innerText = document.getElementById('usimTitlePrint').innerText = title;
-
-            // 3. 엔진용 전역 변수 업데이트
-            state.unitSimOrigPrice = sP;
-            state.unitSimOrigDep = sD;
-            state.unitSimOrigRent = sR;
-            state.unitSimArea = sA;
-
-            // --- [통합 엔진 핵심: 적정 월세 및 시장가치 추정] ---
+            document.getElementById('usimTitle').innerText = document.getElementById('usimTitlePrint').innerText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호";
+            state.unitSimOrigPrice = sP; state.unitSimOrigDep = sD; state.unitSimOrigRent = sR; state.unitSimArea = sA;
             
-            // A. 구역 기반 정규화 시세 추출
-            const zoneData = state.zoneStats[t.zone || t.exit];
-            let basePy = 0;
-            let weight = 1.0;
-            let calcMethod = "";
-
-            if (zoneData) {
-                basePy = zoneData.avgPy; // 해당 구역의 정규화 평단가 평균
-                weight = zoneData.posWeights[t.pos] || 1.0; // 전면/후면/코너 가중치
-                calcMethod = `[${t.zone || t.exit}] 구역 위치가중치(${weight.toFixed(2)}) 반영`;
-            } else {
-                // 구역 데이터 부족 시 해당 빌딩 내 정규화 평단가 활용
-                const bUnits = state.allData.filter(d => d.building === t.building && d.rent_norm > 0);
-                basePy = bUnits.length > 0 ? (bUnits.reduce((a, c) => a + (c.rent_norm / c.area_p), 0) / bUnits.length) : (t.rent_norm / t.area_p);
-                calcMethod = "해당 빌딩 평균 시세 기준";
-            }
-
-            // B. 시장 적정 월세 도출 (정규화 기준)
-            const marketRent = Math.round(basePy * weight * sA);
-            const marketDeposit = marketRent * 12; // 대표님 기준: 보증금은 월세의 12개월분
-
-            // C. 시장가치 산출을 위한 평단가 설정 (수익률 역산용 매매 평단가)
-            // 건물 전체 평단가 데이터 활용
-            let bS = getAvgPP(state.allData.filter(d => d.building === t.building && d.floor === t.floor && d.price_sell > 0), 'sell') || 
-                     getAvgPP(state.allData.filter(d => d.building === t.building && d.price_sell > 0), 'sell');
-            state.unitMarketAvg = bS || 4000; // 데이터 없으면 기본 4,000만 원 적용
-
-            // ------------------------------------------------
-
-            // 4. UI 업데이트
+            const b = t.building, f = t.floor, z = ROADSIDE_TARGETS.some(x => b.includes(x)) ? '대로변' : t.exit;
+            let bS = getAvgPP(state.allData.filter(d => d.building === b && d.floor === f && d.price_sell > 0), 'sell') || getAvgPP(state.allData.filter(d => d.building === b && d.price_sell > 0), 'sell');
+            state.unitMarketAvg = bS || 4000;
+            
             document.getElementById('usimInputRent').value = (sR || 150).toLocaleString();
-            
-            // 시장가치 산출근거 상세 메시지
-            document.getElementById('usimMarketBasis').innerHTML = `
-                <div class="flex flex-col gap-1">
-                    <div>💡 <b>시장가치 산출근거:</b> ${calcMethod}</div>
-                    <div class="text-blue-600 text-[11px]">→ 시장 적정 임대료 제안: <b>보 ${fmtNum(marketDeposit)} / 월 ${fmtNum(marketRent)}</b></div>
-                </div>
-            `;
-            
+            document.getElementById('usimMarketBasis').innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
             document.getElementById('usimOrigState').innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
 
-            // 5. 시뮬레이터 기본값 셋팅
             document.getElementById('usimCapRate').value = 4.0; document.getElementById('lblUsimCapRate').innerText = "4.0";
             document.getElementById('usimWeight').value = 50; document.getElementById('lblUsimWeight').innerText = "50";
-            document.getElementById('usimDepMult').value = 12; document.getElementById('lblUsimDepMult').innerText = "12"; // 15에서 12로 하향 조정(대표님 기준)
+            document.getElementById('usimDepMult').value = 15; document.getElementById('lblUsimDepMult').innerText = "15";
             document.getElementById('usimLtv').value = 30; document.getElementById('lblUsimLtv').innerText = "30%";
             document.getElementById('usimRate').value = 4.5; document.getElementById('lblUsimRate').innerText = "4.5%";
 
-            // 6. 모달 표시 및 계산 실행
             document.getElementById('unitSimulatorModal').classList.remove('hidden');
             calcUnitSimulator();
         }
+
         function calcUnitSimulator() {
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const cap = parseFloat(document.getElementById('usimCapRate').value), w = parseFloat(document.getElementById('usimWeight').value)/100, mult = parseInt(document.getElementById('usimDepMult').value), ltv = parseFloat(document.getElementById('usimLtv').value)/100;
@@ -3137,71 +2827,6 @@ function applyAvmToSimulator() {
                 alert('에러 발생: ' + e.message);
             }
         }
-
-        // ==========================================
-        // [V2.0] 3. 전문가용 적정가 산출 팝업 (상호 보정)
-        // ==========================================
-        function openRentAppraisal(id) {
-            const u = state.allData.find(x => x.id == id);
-            if (!u) return;
-        
-            const zone = u.zone || u.exit || "미지정";
-            const roadside = getRoadsideType(u.building);
-            const tier = getFloorTier(u.floor);
-            
-            // [1. 시장 평균] 해당 구역/대로변/층의 상권 평균
-            let marketAvg = 0;
-            try { marketAvg = state.zoneStats[zone][roadside][tier].avgPy; } catch(e) { marketAvg = 0; }
-        
-            // [2. 건물 평균] 해당 건물 자체의 안분 완료된 평균
-            let buildingAvg = 0;
-            const bUnits = state.allData.filter(d => d.building === u.building && getFloorTier(d.floor) === tier && d.learned_py > 0);
-            if (bUnits.length > 0) {
-                buildingAvg = bUnits.reduce((a, c) => a + c.learned_py, 0) / bUnits.length;
-            } else {
-                buildingAvg = marketAvg || (u.learned_py > 0 ? u.learned_py : 0);
-            }
-        
-            if (marketAvg === 0) marketAvg = buildingAvg;
-        
-            // [3. 상호 보정] 시장가(40%) vs 건물 자체 프리미엄(60%)
-            const reconciledBase = (marketAvg * 0.4) + (buildingAvg * 0.6);
-        
-            // [4. 위치 가중치] 전면, 후면 등 세부 입지 반영
-            let posWeight = 1.0;
-            try { posWeight = state.zoneStats[zone][roadside][tier].posWeights[u.pos] || 1.0; } catch(e) {}
-            
-            const finalPy = reconciledBase * posWeight;
-            const marketRent = Math.round(finalPy * u.area_p);
-            const marketDeposit = marketRent * 12; // 보증금 12개월치 기준
-        
-            // UI 출력부
-            document.getElementById('appraisalSubject').innerText = `${u.building} ${u.unit}호 (전용 ${u.area_p.toFixed(1)}평 / ${u.pos || '일반'} / ${tier})`;
-            document.getElementById('appraisalDate').innerText = `[${zone}] ${roadside} ${tier} 기준`;
-            
-            document.getElementById('appraisalZoneAvg').innerHTML = 
-                `<span class="text-xs text-slate-400">상권 평균: ${Math.round(marketAvg).toLocaleString()}만<br>건물 평균: ${Math.round(buildingAvg).toLocaleString()}만</span><br>
-                 <span class="text-indigo-600 font-extrabold text-lg">보정 기준: ${Math.round(reconciledBase).toLocaleString()}만</span>`;
-                 
-            document.getElementById('appraisalWeight').innerText = "x " + posWeight.toFixed(2);
-            document.getElementById('appraisalFinalResult').innerText = `보 ${Math.round(marketDeposit).toLocaleString()} / 월 ${marketRent.toLocaleString()}`;
-        
-            const diff = u.rent - marketRent;
-            const diffPercent = marketRent > 0 ? ((diff / marketRent) * 100).toFixed(1) : 0;
-            const compDiv = document.getElementById('appraisalComparison');
-            
-            let html = `<div class="flex justify-between p-2 border-b"><span>현재 등록 호가</span> <span class="font-bold">${u.deposit.toLocaleString()} / ${u.rent.toLocaleString()}</span></div>
-                        <div class="flex justify-between p-2 border-b"><span>시장 적정가</span> <span class="text-emerald-600 font-bold">${Math.round(marketDeposit).toLocaleString()} / ${marketRent.toLocaleString()}</span></div>`;
-        
-            if (diff > 0) {
-                html += `<div class="p-3 bg-red-50 text-red-700 rounded-lg mt-2 text-xs font-bold leading-relaxed">⚠️ 호가가 시장가 대비 <span class="text-lg underline">${diffPercent}%</span> 높습니다.</div>`;
-            } else {
-                html += `<div class="p-3 bg-emerald-50 text-emerald-700 rounded-lg mt-2 text-xs font-bold leading-relaxed">✅ 시장 적정가 범위 내에 있습니다.</div>`;
-            }
-            compDiv.innerHTML = html;
-            document.getElementById('rentAppraisalModal').classList.remove('hidden');
-        }
-        
     </script>
 </body>
 </html>
