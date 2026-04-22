@@ -176,7 +176,7 @@
 
             /* [모드1] 일반 맵/비교견적서 명시적 인쇄 모드 */
             body.is-compare-print-mode > *:not(#compareModal) { display: none !important; }
-            body.is-compare-print-mode #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 5mm !important; box-sizing: border-box !important; } /* 여백 5mm 최적화 및 오버플로우 방지 */
+            body.is-compare-print-mode #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } /* padding 0으로 롤백 (공백 페이지 방지) */
             body.is-compare-print-mode .modal-backdrop { background: none !important; align-items: start !important; }
             body.is-compare-print-mode .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
             body.is-compare-print-mode #compareContent { padding: 0 !important; display: block !important; width: 100% !important; overflow: visible !important; height: auto !important; }
@@ -196,7 +196,7 @@
             
             /* [모드2] 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
             body.is-dashboard-mode > *:not(#dashboardContainer) { display: none !important; }
-            body.is-dashboard-mode #dashboardContainer { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; padding: 5mm !important; box-sizing: border-box !important; overflow: visible !important; }
+            body.is-dashboard-mode #dashboardContainer { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; padding: 0 !important; overflow: visible !important; } /* padding 0으로 롤백 */
             body.is-dashboard-mode .no-print-dash { display: none !important; }
             body.is-dashboard-mode .print-dash-only { display: block !important; margin-bottom: 10px !important; padding-bottom: 0 !important; }
             body.is-dashboard-mode .print-dash-only h1 { font-size: 1.25rem !important; }
@@ -253,7 +253,7 @@
 
             /* [모드4] 호실 가치평가 (Unit Simulator) 단독 인쇄 모드 */
             body.is-usim-print-mode > *:not(#unitSimulatorModal) { display: none !important; }
-            body.is-usim-print-mode #unitSimulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 5mm !important; box-sizing: border-box !important; }
+            body.is-usim-print-mode #unitSimulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } /* padding 0으로 롤백 */
             body.is-usim-print-mode .modal-backdrop { background: none !important; align-items: flex-start !important; justify-content: center !important; }
             body.is-usim-print-mode #unitSimulatorModal > div { max-width: 100% !important; width: 100% !important; height: auto !important; max-height: none !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
             body.is-usim-print-mode .no-print-sim { display: none !important; }
@@ -907,18 +907,15 @@
             style.innerHTML = `@media print { @page { size: ${orientation}; margin: 5mm; } }`;
         }
 
-        window.addEventListener('beforeprint', () => {
-            if (document.body.classList.contains('is-sim-print-mode')) { 
-                setPrintStyle('portrait'); 
-            } 
-            else if (!document.getElementById('compareModal').classList.contains('hidden')) { 
-                if(state.comparisonList.size >= 2) { setPrintStyle('landscape'); } 
-                else { setPrintStyle('portrait'); }
-            } 
-            else if (document.body.classList.contains('is-dashboard-mode')) { 
+       window.addEventListener('beforeprint', () => {
+            // 시뮬레이터(모드4), 대시보드(모드2), 또는 비교견적(2개 이상)일 경우 강제 가로 모드
+            if (document.body.classList.contains('is-usim-print-mode') || 
+                document.body.classList.contains('is-dashboard-mode') || 
+                (document.body.classList.contains('is-compare-print-mode') && state.comparisonList.size >= 2)) { 
                 setPrintStyle('landscape'); 
-            } 
-            else { setPrintStyle('portrait'); }
+            } else { 
+                setPrintStyle('portrait'); 
+            }
         });
 
         function printDashboard() { setPrintStyle('landscape'); setTimeout(() => window.print(), 100); }
@@ -2719,19 +2716,16 @@ function openUnitSimulator(id) {
             const sumPrice = groupUnits.reduce((a,c)=>a+(c.price_sell||0), 0);
             const sumRent = groupUnits.reduce((a,c)=>a+(c.rent||0), 0);
 
-            // [1] 분류 정보
             const zone = u.exit || "미지정";
             const roadside = getRoadsideType(u.building);
             const tier = getFloorTier(u.floor);
 
-            // [2] 평단가 계산 헬퍼 함수 (안전한 온더플라이 계산)
             const getPyPrice = items => {
                 let tArea = 0; let tRent = 0;
                 items.forEach(item => {
                     if (item.rent > 0 && item.area_p > 0) {
                         tArea += item.area_p; 
                         tRent += item.rent;
-                        // 보증금 환산(5%) 적용
                         if (item.deposit > item.rent * 12) {
                             tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
                         }
@@ -2740,34 +2734,30 @@ function openUnitSimulator(id) {
                 return tArea > 0 ? (tRent / tArea) : 0;
             };
 
-            // [3] 해당 건물 & 해당 층 평균
             const bUnits = state.allData.filter(d => d.building === u.building && getFloorTier(d.floor) === tier);
             let buildingAvg = getPyPrice(bUnits);
 
-            // [4] 해당 구역(출구) & 같은 입지(대로변/이면) & 해당 층 평균
             const zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && getRoadsideType(d.building) === roadside && getFloorTier(d.floor) === tier);
             let zoneAvg = getPyPrice(zUnits);
 
             if (zoneAvg === 0) zoneAvg = buildingAvg;
             if (buildingAvg === 0) buildingAvg = zoneAvg;
 
-            // [5] 70:30 가중치 적용
             let reconciledPy = (zoneAvg * 0.7) + (buildingAvg * 0.3);
-            if (reconciledPy === 0) reconciledPy = u.rent > 0 ? (u.rent / u.area_p) : 0; // 최후의 보루
+            if (reconciledPy === 0) reconciledPy = u.rent > 0 ? (u.rent / u.area_p) : 0;
             
-            // ★ 계산 로직에서 쓰기 위해 state에 임시 저장
             state.simReconciledPy = reconciledPy; 
 
-            // UI 출력
+            // ★ 텍스트 명확화 (매매가 환산용 기준임을 명시)
             if(zoneAvg > 0) {
                 document.getElementById('usimMarketBasis').innerHTML = 
                     `<div class="flex flex-col gap-1">
                         <div>💡 시장가치 산출 근거 (70:30 가중치)</div>
                         <div class="text-blue-600 font-bold">
-                            [${zone} ${roadside}] 평균(${Math.round(zoneAvg).toLocaleString()}만 × 70%)<br>+ 해당건물 평균(${Math.round(buildingAvg).toLocaleString()}만 × 30%)
+                            [${zone} ${roadside}] 임대평균(${Math.round(zoneAvg)}만 × 70%)<br>+ 해당건물 임대평균(${Math.round(buildingAvg)}만 × 30%)
                         </div>
                         <div class="text-indigo-600 font-black border-t border-indigo-100 pt-1">
-                            👉 보정 임대 평단가: ${Math.round(reconciledPy).toLocaleString()}만원 적용
+                            👉 기준 임대 평단가: ${Math.round(reconciledPy).toLocaleString()}만원 (매매가 환산용)
                         </div>
                     </div>`;
             } else {
@@ -2780,7 +2770,7 @@ function openUnitSimulator(id) {
             calcUnitSimulator();
         }
 
-function calcUnitSimulator() {
+        function calcUnitSimulator() {
             const u = state.simTarget; if(!u) return;
             const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
             const sumPrice = groupUnits.reduce((a,c)=>a+(c.price_sell||0), 0);
@@ -2788,29 +2778,28 @@ function calcUnitSimulator() {
             
             const rent = parseFloat(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             document.getElementById('usimInputRent').value = rent ? rent.toLocaleString() : '';
-            document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent * 10000);
+            
+            // ★ 모든 fmtKoreanMoney 함수에서 잘못된 * 10000 연산 제거 완료
+            document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent); 
             
             const mult = parseInt(document.getElementById('usimDepMult').value) || 12;
             const dep = rent * mult;
-            document.getElementById('usimTopDeposit').innerText = fmtKoreanMoney(dep * 10000);
+            document.getElementById('usimTopDeposit').innerText = fmtKoreanMoney(dep);
             
             const capRate = parseFloat(document.getElementById('usimCapRate').value) / 100;
             const weightMkt = parseFloat(document.getElementById('usimWeight').value) / 100;
             const ltv = parseFloat(document.getElementById('usimLtv').value) / 100;
             const rate = parseFloat(document.getElementById('usimRate').value) / 100;
             
-            // 수익가치 산출
             const valYield = capRate > 0 ? (rent * 12 / capRate) + dep : 0;
             
-            // ★ 시장가치 산출 (70:30 보정 평단가 활용)
             const reconciledPy = state.simReconciledPy || 0;
             let valMarket = 0;
             
             if(reconciledPy > 0) {
-                let p2pRatio = 200; // 매매가/임대료 기본 배수
+                let p2pRatio = 200; 
                 try { 
                     const tier = getFloorTier(u.floor);
-                    // 현재 건물의 매매 평단가 구하기
                     let bArea = 0, bPrice = 0;
                     state.allData.forEach(d => {
                         if(d.building === u.building && getFloorTier(d.floor) === tier && d.price_sell > 0) {
@@ -2828,7 +2817,6 @@ function calcUnitSimulator() {
             
             const finalPrice = Math.round((valMarket * weightMkt) + (valYield * (1 - weightMkt)));
             
-            // 막대 그래프 업데이트
             const maxBar = Math.max(sumPrice, valYield, valMarket, finalPrice) * 1.1;
             const setBar = (id, val, text) => {
                 const el = document.getElementById(id);
@@ -2836,12 +2824,12 @@ function calcUnitSimulator() {
                 el.innerText = text;
             };
             
-            setBar('barOrig', sumPrice, fmtKoreanMoney(sumPrice * 10000));
-            setBar('barYield', valYield, fmtKoreanMoney(valYield * 10000));
-            setBar('barMarket', valMarket, fmtKoreanMoney(valMarket * 10000));
-            setBar('barFinal', finalPrice, fmtKoreanMoney(finalPrice * 10000));
+            setBar('barOrig', sumPrice, fmtKoreanMoney(sumPrice));
+            setBar('barYield', valYield, fmtKoreanMoney(valYield));
+            setBar('barMarket', valMarket, fmtKoreanMoney(valMarket));
+            setBar('barFinal', finalPrice, fmtKoreanMoney(finalPrice));
             
-            document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice * 10000);
+            document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice);
             
             const nominalCap = finalPrice > dep ? (rent * 12) / (finalPrice - dep) * 100 : 0;
             document.getElementById('resUsimCapRate').innerText = nominalCap.toFixed(2) + '%';
@@ -2851,15 +2839,15 @@ function calcUnitSimulator() {
             const loan = finalPrice * ltv;
             const reqCash = totalCost - loan - dep;
             
-            document.getElementById('ldgTaxFee').innerText = fmtKoreanMoney(taxFee * 10000);
-            document.getElementById('ldgLoan').innerText = fmtKoreanMoney(loan * 10000);
-            document.getElementById('resUsimCash').innerText = fmtKoreanMoney(reqCash * 10000);
+            document.getElementById('ldgTaxFee').innerText = fmtKoreanMoney(taxFee);
+            document.getElementById('ldgLoan').innerText = fmtKoreanMoney(loan);
+            document.getElementById('resUsimCash').innerText = fmtKoreanMoney(reqCash);
             
             const moInt = (loan * rate) / 12;
             const moNet = rent - moInt;
             
-            document.getElementById('ldgInterest').innerText = fmtKoreanMoney(moInt * 10000);
-            document.getElementById('ldgNet').innerText = fmtKoreanMoney(moNet * 10000);
+            document.getElementById('ldgInterest').innerText = fmtKoreanMoney(moInt);
+            document.getElementById('ldgNet').innerText = fmtKoreanMoney(moNet);
             
             const roe = reqCash > 0 ? (moNet * 12) / reqCash * 100 : 0;
             document.getElementById('resUsimRoe').innerText = roe.toFixed(2) + '%';
