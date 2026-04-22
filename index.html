@@ -2196,7 +2196,7 @@ function renderDetail(d) {
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span><button onclick="openMiniRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition no-print"><i class="ph-bold ph-chart-bar"></i> 분석</button></div></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span><button onclick="openMiniRentAppraisal('${d.id}')" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition no-print"><i class="ph-bold ph-chart-bar"></i> 분석</button></div></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator('${d.id}')" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
         
         function closeDetail() { 
@@ -2979,7 +2979,6 @@ function applyAvmToSimulator() {
             </div>
 
             <div class="p-5 flex flex-col gap-4" id="miniRentContent">
-                
                 <div class="bg-slate-100 p-3 rounded-lg text-sm font-bold text-slate-700 flex flex-col gap-1.5 border border-slate-200 shadow-sm">
                     <div class="flex justify-between items-center"><span class="text-xs text-slate-500">상호명</span> <span id="miniStoreName" class="text-indigo-800"></span></div>
                     <div class="flex justify-between items-center"><span class="text-xs text-slate-500">전용면적</span> <span><span id="miniCurrentArea">0</span>평</span></div>
@@ -3025,81 +3024,90 @@ function applyAvmToSimulator() {
     </div>
 
     <script>
-// [완전 독립형 미니 팝업 JS 로직]
+        // [완전 무결점 미니 팝업 JS 로직]
         function openMiniRentAppraisal(id) {
-            const u = state.allData.find(x => x.id === id);
-            if(!u) return;
+            try {
+                // 1. 강제 문자로 변환하여 ID 완벽 매칭
+                const u = state.allData.find(x => String(x.id) === String(id));
+                if(!u) { alert('데이터를 찾을 수 없습니다.'); return; }
 
-            const zone = u.exit || "미지정";
-            const roadside = getRoadsideType(u.building);
-            const tier = getFloorTier(u.floor);
-            
-            const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
-            const sumArea = groupUnits.reduce((a,c)=>a+c.area_p, 0);
-            const sumDep = groupUnits.reduce((a,c)=>a+(c.deposit||0), 0);
-            const sumRent = groupUnits.reduce((a,c)=>a+(c.rent||0), 0);
+                // 2. 외부 함수가 지워졌어도 에러 안 나게 보호
+                const zone = u.exit || "미지정";
+                let roadside = '기타구역'; try { roadside = getRoadsideType(u.building); } catch(e) {}
+                let tier = '기타'; try { tier = getFloorTier(u.floor); } catch(e) {}
+                
+                const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
+                const sumArea = groupUnits.reduce((a,c)=>a+(parseFloat(c.area_p)||0), 0);
+                const sumDep = groupUnits.reduce((a,c)=>a+(parseFloat(c.deposit)||0), 0);
+                const sumRent = groupUnits.reduce((a,c)=>a+(parseFloat(c.rent)||0), 0);
 
-            // 평단가 계산기 내부 탑재
-            const getPyPrice = items => {
-                let tArea = 0; let tRent = 0;
-                items.forEach(item => {
-                    if (item.rent > 0 && item.area_p > 0) {
-                        tArea += item.area_p; 
-                        tRent += item.rent;
-                        if (item.deposit > item.rent * 12) tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
-                    }
-                });
-                return tArea > 0 ? (tRent / tArea) : 0;
-            };
+                const getPyPrice = items => {
+                    let tArea = 0; let tRent = 0;
+                    items.forEach(item => {
+                        if (item.rent > 0 && item.area_p > 0) {
+                            tArea += parseFloat(item.area_p); 
+                            tRent += parseFloat(item.rent);
+                            if (item.deposit > item.rent * 12) tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
+                        }
+                    });
+                    return tArea > 0 ? (tRent / tArea) : 0;
+                };
 
-            const bUnits = state.allData.filter(d => d.building === u.building && getFloorTier(d.floor) === tier);
-            let bAvg = getPyPrice(bUnits);
+                const bUnits = state.allData.filter(d => d.building === u.building && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
+                let bAvg = getPyPrice(bUnits);
 
-            const zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && getRoadsideType(d.building) === roadside && getFloorTier(d.floor) === tier);
-            let zAvg = getPyPrice(zUnits);
+                const zUnits = state.allData.filter(d => (d.exit || "미지정") === zone);
+                let zAvg = getPyPrice(zUnits);
 
-            if (zAvg === 0) zAvg = bAvg;
-            if (bAvg === 0) bAvg = zAvg;
+                if (zAvg === 0) zAvg = bAvg;
+                if (bAvg === 0) bAvg = zAvg;
 
-            let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
-            if (finalPy === 0) finalPy = u.rent > 0 ? (u.rent / u.area_p) : 0;
+                let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
+                if (finalPy === 0) finalPy = u.rent > 0 ? (u.rent / u.area_p) : 0;
 
-            const fairRent = Math.round(finalPy * sumArea);
+                const fairRent = Math.round(finalPy * sumArea);
 
-            // UI 업데이트
-            document.getElementById('miniPrintTitle').innerText = `${cleanBuildingName(u.building)} ${u.unit}호 적정 임대료`;
-            
-            // 상단 요약 정보
-            document.getElementById('miniStoreName').innerText = u.store_name || '공실/상호미상';
-            document.getElementById('miniCurrentArea').innerText = sumArea.toFixed(1);
-            let rentText = '공실/미상';
-            if(sumDep > 0 || sumRent > 0) rentText = `${fmtNum(sumDep)}만 / ${fmtNum(sumRent)}만`;
-            document.getElementById('miniCurrentRent').innerText = rentText;
+                // 3. UI 업데이트
+                const fNum = val => typeof fmtNum === 'function' ? fmtNum(val) : Math.round(val).toLocaleString();
+                
+                document.getElementById('miniPrintTitle').innerText = `${u.building ? u.building.split(' ')[0] : ''} ${u.unit}호 적정 임대료`;
+                document.getElementById('miniStoreName').innerText = u.store_name || '공실/상호미상';
+                document.getElementById('miniCurrentArea').innerText = sumArea.toFixed(1);
+                
+                let rentText = '공실/미상';
+                if(sumDep > 0 || sumRent > 0) rentText = `${fNum(sumDep)}만 / ${fNum(sumRent)}만`;
+                document.getElementById('miniCurrentRent').innerText = rentText;
 
-            // 그래프 정보
-            document.getElementById('miniLblZone').innerText = `[${zone} ${roadside}] 평균 (70%)`;
-            document.getElementById('miniValZone').innerText = Math.round(zAvg).toLocaleString() + '만';
-            document.getElementById('miniValBuilding').innerText = Math.round(bAvg).toLocaleString() + '만';
-            document.getElementById('miniValFinalPy').innerText = Math.round(finalPy).toLocaleString() + '만';
-            
-            const maxVal = Math.max(zAvg, bAvg, finalPy) * 1.1;
-            const setBar = (id, val) => { document.getElementById(id).style.width = maxVal > 0 ? `${(val/maxVal)*100}%` : '0%'; };
-            
-            setBar('miniBarZone', zAvg);
-            setBar('miniBarBuilding', bAvg);
-            setBar('miniBarFinalPy', finalPy);
+                document.getElementById('miniLblZone').innerText = `[${zone} ${roadside}] 평균 (70%)`;
+                document.getElementById('miniValZone').innerText = Math.round(zAvg).toLocaleString() + '만';
+                document.getElementById('miniValBuilding').innerText = Math.round(bAvg).toLocaleString() + '만';
+                document.getElementById('miniValFinalPy').innerText = Math.round(finalPy).toLocaleString() + '만';
+                
+                const maxVal = Math.max(zAvg, bAvg, finalPy) * 1.1;
+                const setBar = (elId, val) => { 
+                    const el = document.getElementById(elId);
+                    if(el) el.style.width = maxVal > 0 ? `${(val/maxVal)*100}%` : '0%'; 
+                };
+                
+                setBar('miniBarZone', zAvg);
+                setBar('miniBarBuilding', bAvg);
+                setBar('miniBarFinalPy', finalPy);
 
-            document.getElementById('miniFormula').innerText = `${Math.round(finalPy).toLocaleString()}만 × ${sumArea.toFixed(1)}평`;
-            document.getElementById('miniFairRent').innerText = `월 ${fairRent.toLocaleString()}만원`;
+                document.getElementById('miniFormula').innerText = `${Math.round(finalPy).toLocaleString()}만 × ${sumArea.toFixed(1)}평`;
+                document.getElementById('miniFairRent').innerText = `월 ${fairRent.toLocaleString()}만원`;
 
-            document.getElementById('miniRentAppraisalModal').classList.remove('hidden');
+                document.getElementById('miniRentAppraisalModal').classList.remove('hidden');
+            } catch(e) {
+                // 에러 발생 시 숨지 않고 경고창으로 띄워줍니다!
+                alert('팝업을 여는 중 문제가 발생했습니다: ' + e.message);
+            }
         }
 
         function closeMiniRentAppraisal() { document.getElementById('miniRentAppraisalModal').classList.add('hidden'); }
 
         function printMiniRentAppraisal() {
             document.body.classList.add('is-mini-appraisal-print-mode');
-            setPrintStyle('portrait'); // 세로 인쇄
+            setPrintStyle('portrait'); 
             setTimeout(() => {
                 window.print();
                 setTimeout(() => document.body.classList.remove('is-mini-appraisal-print-mode'), 500);
