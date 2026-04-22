@@ -167,18 +167,19 @@
         .slider-range { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; outline: none; }
         .slider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #059669; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
-/* ==================================================== */
-        /* 🖨️ 스마트 인쇄 엔진 (여백/빈페이지 및 가로모드 픽스) */
+        /* ==================================================== */
+        /* 🖨️ 스마트 인쇄 엔진 (여백 0 롤백 및 사이즈 강제 보정) */
         /* ==================================================== */
         @media print {
             @page { margin: 5mm; } 
-            body { height: auto !important; overflow: visible !important; display: block !important; margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { height: auto !important; overflow: visible !important; display: block !important; margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box !important; }
+            * { box-sizing: border-box !important; } /* 모든 요소가 테두리를 넘지 않도록 강제 */
 
             /* [모드1] 일반 맵/비교견적서 명시적 인쇄 모드 */
             body.is-compare-print-mode > *:not(#compareModal) { display: none !important; }
-            body.is-compare-print-mode #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } /* padding 0으로 롤백 (공백 페이지 방지) */
+            body.is-compare-print-mode #compareModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } 
             body.is-compare-print-mode .modal-backdrop { background: none !important; align-items: start !important; }
-            body.is-compare-print-mode .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+            body.is-compare-print-mode .modal-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; max-height: none !important; display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; }
             body.is-compare-print-mode #compareContent { padding: 0 !important; display: block !important; width: 100% !important; overflow: visible !important; height: auto !important; }
             body.is-compare-print-mode .no-print { display: none !important; }
             body.is-compare-print-mode #compareModal .print-only { display: block !important; }
@@ -187,7 +188,7 @@
             body.is-compare-print-mode th { background-color: #f3f4f6 !important; }
             
             body.is-compare-print-mode .page-break:not(.hidden) { page-break-before: always !important; padding-top: 20px !important; display: block !important; }
-            body.is-compare-print-mode .page-break.hidden { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; } /* 숨긴 페이지의 여백 완벽 제거 */
+            body.is-compare-print-mode .page-break.hidden { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; } 
             
             body.is-compare-print-mode #page2DynamicContent { display: flex !important; gap: 15px !important; width: 100% !important; align-items: stretch !important; flex-wrap: nowrap !important; }
             body.is-compare-print-mode #page2DynamicContent > div { flex: 1 !important; width: 100% !important; page-break-inside: avoid !important; break-inside: avoid !important; }
@@ -196,7 +197,7 @@
             
             /* [모드2] 대시보드(병렬 비교표) 전용 동적 인쇄 모드 */
             body.is-dashboard-mode > *:not(#dashboardContainer) { display: none !important; }
-            body.is-dashboard-mode #dashboardContainer { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; padding: 0 !important; overflow: visible !important; } /* padding 0으로 롤백 */
+            body.is-dashboard-mode #dashboardContainer { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; padding: 0 !important; overflow: visible !important; } 
             body.is-dashboard-mode .no-print-dash { display: none !important; }
             body.is-dashboard-mode .print-dash-only { display: block !important; margin-bottom: 10px !important; padding-bottom: 0 !important; }
             body.is-dashboard-mode .print-dash-only h1 { font-size: 1.25rem !important; }
@@ -215,7 +216,7 @@
 
             /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 */
             body.is-sim-print-mode > *:not(#simulatorModal) { display: none !important; }
-            body.is-sim-print-mode #simulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 5mm !important; box-sizing: border-box !important; }
+            body.is-sim-print-mode #simulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } 
             body.is-sim-print-mode .modal-backdrop { background: none !important; align-items: start !important; justify-content: center !important; }
             body.is-sim-print-mode #simulatorModal > div { max-width: 100% !important; max-height: none !important; box-shadow: none !important; border: none !important; height: auto !important; margin: 0 !important; overflow: visible !important; }
             body.is-sim-print-mode #simPrintContentBody { padding-bottom: 160px !important; background-color: white !important; overflow: visible !important; }
@@ -253,7 +254,7 @@
 
             /* [모드4] 호실 가치평가 (Unit Simulator) 단독 인쇄 모드 */
             body.is-usim-print-mode > *:not(#unitSimulatorModal) { display: none !important; }
-            body.is-usim-print-mode #unitSimulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } /* padding 0으로 롤백 */
+            body.is-usim-print-mode #unitSimulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; } 
             body.is-usim-print-mode .modal-backdrop { background: none !important; align-items: flex-start !important; justify-content: center !important; }
             body.is-usim-print-mode #unitSimulatorModal > div { max-width: 100% !important; width: 100% !important; height: auto !important; max-height: none !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
             body.is-usim-print-mode .no-print-sim { display: none !important; }
@@ -907,14 +908,22 @@
             style.innerHTML = `@media print { @page { size: ${orientation}; margin: 5mm; } }`;
         }
 
-       window.addEventListener('beforeprint', () => {
-            // 시뮬레이터(모드4), 대시보드(모드2), 또는 비교견적(2개 이상)일 경우 강제 가로 모드
-            if (document.body.classList.contains('is-usim-print-mode') || 
-                document.body.classList.contains('is-dashboard-mode') || 
-                (document.body.classList.contains('is-compare-print-mode') && state.comparisonList.size >= 2)) { 
-                setPrintStyle('landscape'); 
-            } else { 
+        window.addEventListener('beforeprint', () => {
+            if (document.body.classList.contains('is-sim-print-mode')) {
+                // 1. 통매각 시뮬레이터는 무조건 세로 (Portrait)
                 setPrintStyle('portrait'); 
+            } else if (document.body.classList.contains('is-usim-print-mode')) {
+                // 2. 호실 가치평가는 무조건 가로 (Landscape)
+                setPrintStyle('landscape'); 
+            } else if (document.body.classList.contains('is-dashboard-mode')) {
+                // 3. 투자 분석 대시보드는 무조건 가로 (Landscape)
+                setPrintStyle('landscape'); 
+            } else if (document.body.classList.contains('is-compare-print-mode')) {
+                // 4. 비교 견적서는 2개 이상일 때만 가로, 1개면 세로
+                if (state.comparisonList.size >= 2) setPrintStyle('landscape');
+                else setPrintStyle('portrait');
+            } else {
+                setPrintStyle('portrait'); // 기본값 세로
             }
         });
 
@@ -2764,7 +2773,12 @@ function openUnitSimulator(id) {
                 document.getElementById('usimMarketBasis').innerText = '데이터 부족으로 해당 호실 기본값 적용';
             }
             
-            document.getElementById('usimOrigState').innerText = `호가: ${fmtNum(sumPrice)}만`;
+            const sumDep = groupUnits.reduce((a,c)=>a+(c.deposit||0), 0);
+            let rentText = '공실/미상';
+            if (sumDep > 0 || sumRent > 0) {
+                rentText = `${fmtNum(sumDep)}만 / ${fmtNum(sumRent)}만`;
+            }
+            document.getElementById('usimOrigState').innerText = `전용 ${sumArea.toFixed(1)}평 | 현 ${rentText} | 호가: ${fmtNum(sumPrice)}만`;
             document.getElementById('usimInputRent').value = sumRent > 0 ? sumRent : Math.round(reconciledPy * sumArea);
             
             calcUnitSimulator();
