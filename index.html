@@ -3080,7 +3080,6 @@ function applyAvmToSimulator() {
                 }
 
                 const fairRent = Math.round(finalPy * sumArea);
-
                 const fNum = val => typeof fmtNum === 'function' ? fmtNum(val) : Math.round(val).toLocaleString();
                 
                 document.getElementById('miniPrintTitle').innerText = `${u.building ? u.building.split(' ')[0] : ''} ${u.unit}호 적정 임대료`;
@@ -3093,13 +3092,12 @@ function applyAvmToSimulator() {
 
                 document.getElementById('miniLblZone').innerText = `[${zone} ${roadside}] 평균 (70%)`;
                 
-                // ★ 소수점 1자리 적용 (toFixed(1))
+                // ★ 3. 소수점 1자리 적용 완료
                 document.getElementById('miniValZone').innerText = zAvg.toFixed(1) + '만';
                 document.getElementById('miniValBuilding').innerText = bAvg.toFixed(1) + '만';
                 document.getElementById('miniValCurrent').innerText = currentPy > 0 ? currentPy.toFixed(1) + '만' : '데이터없음';
                 document.getElementById('miniValFinalPy').innerText = finalPy.toFixed(1) + '만';
                 
-                // ★ 막대그래프 최대값 계산에 currentPy 추가
                 const maxVal = Math.max(zAvg, bAvg, finalPy, currentPy) * 1.1;
                 const setBar = (elId, val) => { 
                     const el = document.getElementById(elId);
