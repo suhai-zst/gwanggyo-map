@@ -2906,6 +2906,7 @@ function calcUnitSimulator() {
             if (zAvg === 0) zAvg = bAvg;
             if (bAvg === 0) bAvg = zAvg;
 
+            // [첫 번째 finalPy 선언 - 정상]
             let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
             if (finalPy === 0) finalPy = rent > 0 ? (rent / sumArea) : 0;
 
@@ -2935,7 +2936,9 @@ function calcUnitSimulator() {
                 finalPrice = Math.round(valMarket); 
                 finalDesc = '👉 공실/수익 미상 상태로 AI 시장가치 100% 단독 반영';
             }
-            const finalPy = sumArea > 0 ? finalPrice / sumArea : 0;
+            
+            // ★ [에러 수정 완료] 두 번째 finalPy를 resultPy로 변경하여 충돌 해결!
+            const resultPy = sumArea > 0 ? finalPrice / sumArea : 0;
 
             // -----------------------------------------------------------------
             // 4. [신규] UI 텍스트 업데이트 (4단 카드 연동)
@@ -2951,7 +2954,8 @@ function calcUnitSimulator() {
                 document.getElementById('simPyMarket').innerText = marketPy > 0 ? `평당 ${Math.round(marketPy).toLocaleString()}만` : '-';
 
                 document.getElementById('simValFinal').innerText = finalPrice > 0 ? fmtKoreanMoney(finalPrice) : '분석 불가';
-                document.getElementById('simPyFinal').innerText = finalPy > 0 ? `평당 ${Math.round(finalPy).toLocaleString()}만` : '-';
+                // ★ 여기도 resultPy로 연결
+                document.getElementById('simPyFinal').innerText = resultPy > 0 ? `평당 ${Math.round(resultPy).toLocaleString()}만` : '-';
 
                 document.getElementById('lblSimYield1').innerText = targetYield.toFixed(1);
                 document.getElementById('lblSimYield2').innerText = targetYield.toFixed(1);
