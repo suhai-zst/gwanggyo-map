@@ -2869,14 +2869,14 @@ function calcUnitSimulator() {
             const rate = parseFloat(document.getElementById('usimRate').value) / 100;
 
             // -----------------------------------------------------------------
-            // 2. [신규] 4중 필터 (전후면 포함) 적용하여 AI 보정 임대료 산출
+            // 2. 4중 필터 (전후면 포함) 적용하여 AI 보정 임대료 산출
             const zone = u.exit || "미지정";
             let roadside = '기타구역'; try { roadside = getRoadsideType(u.building); } catch(e) {}
             let tier = '기타'; try { tier = getFloorTier(u.floor); } catch(e) {}
             
-            // ★ 전/후면 데이터 추출 및 4중 필터 발동 조건 [1층 + 대로변]
+            // ★ 수정됨: '대로변' 텍스트가 포함(includes)되어 있으면 필터 발동
             const targetDir = u.dir || u.pos || u['전후면'] || "";
-            const applyDirFilter = (tier === '1층' && roadside === '대로변' && targetDir !== "");
+            const applyDirFilter = (tier === '1층' && roadside.includes('대로변') && targetDir !== "");
 
             const getPyPrice = items => {
                 let tArea = 0; let tRent = 0;
@@ -2893,7 +2893,7 @@ function calcUnitSimulator() {
             let bUnits = state.allData.filter(d => d.building === u.building && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
             let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && (function(){ try{return getRoadsideType(d.building);}catch(e){return roadside;} })() === roadside && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
 
-            // ★ 1층 대로변 전후면 필터 적용
+            // 1층 대로변 전후면 필터 적용
             if (applyDirFilter) {
                 const strictB = bUnits.filter(d => (d.dir === targetDir || d.pos === targetDir || d['전후면'] === targetDir));
                 if (strictB.length > 0) bUnits = strictB; 
@@ -2906,7 +2906,6 @@ function calcUnitSimulator() {
             if (zAvg === 0) zAvg = bAvg;
             if (bAvg === 0) bAvg = zAvg;
 
-            // [첫 번째 finalPy 선언 - 정상]
             let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
             if (finalPy === 0) finalPy = rent > 0 ? (rent / sumArea) : 0;
 
@@ -2914,7 +2913,7 @@ function calcUnitSimulator() {
             const aiDep = dep > 0 ? dep : (aiRent * mult); 
 
             // -----------------------------------------------------------------
-            // 3. [신규] 4단계 가치평가 수학적 도출 (호가 독립 모델)
+            // 3. 4단계 가치평가 수학적 도출 (호가 독립 모델)
             const askingPrice = sumPrice;
             const askingPy = sumArea > 0 ? askingPrice / sumArea : 0;
 
@@ -2937,11 +2936,11 @@ function calcUnitSimulator() {
                 finalDesc = '👉 공실/수익 미상 상태로 AI 시장가치 100% 단독 반영';
             }
             
-            // ★ [에러 수정 완료] 두 번째 finalPy를 resultPy로 변경하여 충돌 해결!
+            // ★ 수정됨: 변수명 중복 에러 해결 (finalPy -> resultPy)
             const resultPy = sumArea > 0 ? finalPrice / sumArea : 0;
 
             // -----------------------------------------------------------------
-            // 4. [신규] UI 텍스트 업데이트 (4단 카드 연동)
+            // 4. UI 텍스트 업데이트 (4단 카드 연동)
             const elSimValAsking = document.getElementById('simValAsking');
             if(elSimValAsking) {
                 elSimValAsking.innerText = askingPrice > 0 ? fmtKoreanMoney(askingPrice) : '호가 없음';
@@ -2954,7 +2953,8 @@ function calcUnitSimulator() {
                 document.getElementById('simPyMarket').innerText = marketPy > 0 ? `평당 ${Math.round(marketPy).toLocaleString()}만` : '-';
 
                 document.getElementById('simValFinal').innerText = finalPrice > 0 ? fmtKoreanMoney(finalPrice) : '분석 불가';
-                // ★ 여기도 resultPy로 연결
+                
+                // ★ 수정됨: resultPy 연동
                 document.getElementById('simPyFinal').innerText = resultPy > 0 ? `평당 ${Math.round(resultPy).toLocaleString()}만` : '-';
 
                 document.getElementById('lblSimYield1').innerText = targetYield.toFixed(1);
@@ -2964,7 +2964,7 @@ function calcUnitSimulator() {
             }
 
             // -----------------------------------------------------------------
-            // 5. [기존 유지] 하단 투자 및 대출 수익률 패널 업데이트
+            // 5. 하단 투자 및 대출 수익률 패널 업데이트 (기존 유지)
             document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice);
             
             const nominalCap = finalPrice > dep ? (rent * 12) / (finalPrice - dep) * 100 : 0;
