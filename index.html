@@ -752,9 +752,10 @@
                             <h4 class="text-xs font-extrabold text-slate-800">AI 가치평가 산출 엔진</h4>
                             <div class="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">분석 완료</div>
                         </div>
-                        <div class="space-y-3" id="simResultsArea">
+                        
+                        <div class="space-y-2.5" id="simResultsArea">
                             
-                            <div class="bg-white p-3 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
                                 <div>
                                     <div class="text-[11px] text-slate-500 font-bold mb-0.5">현 희망 매도가 (호가)</div>
                                     <div class="text-xs font-bold text-slate-400" id="simPyAsking">평당 0만원</div>
@@ -762,44 +763,45 @@
                                 <div class="text-lg font-black text-slate-800" id="simValAsking">0만원</div>
                             </div>
 
-                            <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 shadow-sm">
+                            <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 shadow-sm">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <div class="text-[11px] text-emerald-700 font-bold mb-0.5">수익가치 (투자 관점)</div>
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[11px] text-emerald-700 font-bold">수익가치 (투자 관점)</span>
+                                            <span class="text-[10px] text-emerald-600 font-bold" id="lblSimYield1_desc">👉 수익률 4.0% 역산</span>
+                                        </div>
                                         <div class="text-xs font-bold text-emerald-500" id="simPyYield">평당 0만원</div>
                                     </div>
                                     <div class="text-lg font-black text-emerald-800" id="simValYield">0만원</div>
                                 </div>
-                                <div class="text-[10px] text-emerald-600 mt-2 font-bold bg-emerald-100/60 p-1.5 rounded">
-                                    👉 현 보증금/월세 및 목표 수익률(<span id="lblSimYield1">4.0</span>%) 역산
-                                </div>
                             </div>
 
-                            <div class="bg-orange-50 p-3 rounded-lg border border-orange-200 shadow-sm">
+                            <div class="bg-orange-50 p-2.5 rounded-lg border border-orange-200 shadow-sm">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <div class="text-[11px] text-orange-700 font-bold mb-0.5">시장가치 (시세 관점)</div>
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[11px] text-orange-700 font-bold">시장가치 (시세 관점)</span>
+                                            <span class="text-[10px] text-orange-600 font-bold" id="lblSimAiRent_desc">👉 AI시세 0만 기준</span>
+                                        </div>
                                         <div class="text-xs font-bold text-orange-500" id="simPyMarket">평당 0만원</div>
                                     </div>
                                     <div class="text-lg font-black text-orange-800" id="simValMarket">0만원</div>
                                 </div>
-                                <div class="text-[10px] text-orange-600 mt-2 font-bold bg-orange-100/60 p-1.5 rounded">
-                                    👉 AI 보정 시세(<span id="lblSimAiRent">0</span>만) 및 목표 수익률(<span id="lblSimYield2">4.0</span>%) 역산
-                                </div>
                             </div>
 
-                            <div class="bg-blue-50 p-3 rounded-xl border-2 border-blue-200 shadow-sm mt-2">
+                            <div class="bg-blue-50 p-3 rounded-xl border-2 border-blue-200 shadow-sm mt-1">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <div class="text-[11px] text-blue-700 font-black mb-0.5">최종 도출 적정가</div>
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[12px] text-blue-700 font-black">최종 도출 적정가</span>
+                                            <span class="text-[10px] text-blue-500 font-bold" id="lblSimFinalDesc">👉 수익+시장 혼합</span>
+                                        </div>
                                         <div class="text-xs font-black text-blue-500" id="simPyFinal">평당 0만원</div>
                                     </div>
                                     <div class="text-2xl font-black text-blue-700" id="simValFinal">0만원</div>
                                 </div>
-                                <div class="text-[10px] text-blue-600 mt-2 font-bold" id="lblSimFinalDesc">
-                                    👉 수익가치와 시장가치 혼합 반영
-                                </div>
                             </div>
+                            
                         </div>
                     </div>
 
@@ -2848,146 +2850,155 @@ function applyAvmToSimulator() {
         }
 
 function calcUnitSimulator() {
-            const u = state.simTarget; if(!u) return;
-            const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
-            const sumPrice = groupUnits.reduce((a,c)=>a+(c.price_sell||0), 0);
-            const sumArea = groupUnits.reduce((a,c)=>a+c.area_p, 0);
-            
-            // 1. 사용자 입력값 (월세, 보증금, 슬라이더) 가져오기
-            const rent = parseFloat(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
-            document.getElementById('usimInputRent').value = rent ? rent.toLocaleString() : '';
-            document.getElementById('lblUsimRentKo').innerText = fmtKoreanMoney(rent); 
-            
-            const mult = parseInt(document.getElementById('usimDepMult').value) || 12;
-            const dep = rent * mult;
-            document.getElementById('usimTopDeposit').innerText = fmtKoreanMoney(dep);
-            
-            const targetYield = parseFloat(document.getElementById('usimCapRate').value) || 4.0;
-            const weightMkt = parseFloat(document.getElementById('usimWeight').value) || 50;
-            const weightYield = 100 - weightMkt;
-            const ltv = parseFloat(document.getElementById('usimLtv').value) / 100;
-            const rate = parseFloat(document.getElementById('usimRate').value) / 100;
+    try {
+        const u = state.simTarget; if(!u) return;
+        const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
+        const sumPrice = groupUnits.reduce((a,c)=>a+(c.price_sell||0), 0);
+        const sumArea = groupUnits.reduce((a,c)=>a+(parseFloat(c.area_p)||0), 0);
+        
+        // 1. 사용자 입력값 (월세, 보증금, 슬라이더) 가져오기
+        const elRent = document.getElementById('usimInputRent');
+        const rent = elRent ? (parseFloat(elRent.value.replace(/,/g,'')) || 0) : 0;
+        if(elRent) elRent.value = rent ? rent.toLocaleString() : '';
+        
+        const elRentKo = document.getElementById('lblUsimRentKo');
+        if(elRentKo) elRentKo.innerText = typeof fmtKoreanMoney === 'function' ? fmtKoreanMoney(rent) : rent.toLocaleString(); 
+        
+        const mult = parseInt(document.getElementById('usimDepMult')?.value) || 12;
+        const dep = rent * mult;
+        const elDep = document.getElementById('usimTopDeposit');
+        if(elDep) elDep.innerText = typeof fmtKoreanMoney === 'function' ? fmtKoreanMoney(dep) : dep.toLocaleString();
+        
+        const targetYield = parseFloat(document.getElementById('usimCapRate')?.value) || 4.0;
+        const weightMkt = parseFloat(document.getElementById('usimWeight')?.value) || 50;
+        const weightYield = 100 - weightMkt;
+        const ltv = parseFloat(document.getElementById('usimLtv')?.value) / 100 || 0;
+        const rate = parseFloat(document.getElementById('usimRate')?.value) / 100 || 0;
 
-            // -----------------------------------------------------------------
-            // 2. 4중 필터 (전후면 포함) 적용하여 AI 보정 임대료 산출
-            const zone = u.exit || "미지정";
-            let roadside = '기타구역'; try { roadside = getRoadsideType(u.building); } catch(e) {}
-            let tier = '기타'; try { tier = getFloorTier(u.floor); } catch(e) {}
-            
-            // ★ 수정됨: '대로변' 텍스트가 포함(includes)되어 있으면 필터 발동
-            const targetDir = u.dir || u.pos || u['전후면'] || "";
-            const applyDirFilter = (tier === '1층' && roadside.includes('대로변') && targetDir !== "");
+        // -----------------------------------------------------------------
+        // 2. 4중 필터 (전후면 포함) 적용하여 AI 보정 임대료 산출
+        const zone = u.exit || "미지정";
+        let roadside = '기타구역'; try { roadside = getRoadsideType(u.building) || ""; } catch(e) {}
+        let tier = '기타'; try { tier = getFloorTier(u.floor); } catch(e) {}
+        
+        const targetDir = u.dir || u.pos || u['전후면'] || "";
+        const applyDirFilter = (tier === '1층' && roadside.includes('대로변') && targetDir !== "");
 
-            const getPyPrice = items => {
-                let tArea = 0; let tRent = 0;
-                items.forEach(item => {
-                    if (item.rent > 0 && item.area_p > 0) {
-                        tArea += parseFloat(item.area_p); 
-                        tRent += parseFloat(item.rent);
-                        if (item.deposit > item.rent * 12) tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
-                    }
-                });
-                return tArea > 0 ? (tRent / tArea) : 0;
-            };
+        const getPyPrice = items => {
+            let tArea = 0; let tRent = 0;
+            items.forEach(item => {
+                if (item.rent > 0 && item.area_p > 0) {
+                    tArea += parseFloat(item.area_p); 
+                    tRent += parseFloat(item.rent);
+                    if (item.deposit > item.rent * 12) tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
+                }
+            });
+            return tArea > 0 ? (tRent / tArea) : 0;
+        };
 
-            let bUnits = state.allData.filter(d => d.building === u.building && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
-            let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && (function(){ try{return getRoadsideType(d.building);}catch(e){return roadside;} })() === roadside && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
+        let bUnits = state.allData.filter(d => d.building === u.building && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier);
+        
+        // 역대로변 해결 로직 적용
+        let zUnits = state.allData.filter(d => {
+            let rSide = ""; try { rSide = getRoadsideType(d.building) || ""; } catch(e){}
+            return (d.exit || "미지정") === zone && rSide.includes('대로변') === roadside.includes('대로변') && (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier;
+        });
 
-            // 1층 대로변 전후면 필터 적용
-            if (applyDirFilter) {
-                const strictB = bUnits.filter(d => (d.dir === targetDir || d.pos === targetDir || d['전후면'] === targetDir));
-                if (strictB.length > 0) bUnits = strictB; 
-                const strictZ = zUnits.filter(d => (d.dir === targetDir || d.pos === targetDir || d['전후면'] === targetDir));
-                if (strictZ.length > 0) zUnits = strictZ; 
-            }
-
-            let bAvg = getPyPrice(bUnits);
-            let zAvg = getPyPrice(zUnits);
-            if (zAvg === 0) zAvg = bAvg;
-            if (bAvg === 0) bAvg = zAvg;
-
-            let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
-            if (finalPy === 0) finalPy = rent > 0 ? (rent / sumArea) : 0;
-
-            const aiRent = Math.round(finalPy * sumArea);
-            const aiDep = dep > 0 ? dep : (aiRent * mult); 
-
-            // -----------------------------------------------------------------
-            // 3. 4단계 가치평가 수학적 도출 (호가 독립 모델)
-            const askingPrice = sumPrice;
-            const askingPy = sumArea > 0 ? askingPrice / sumArea : 0;
-
-            let valYield = 0;
-            if (rent > 0 || dep > 0) {
-                valYield = dep + ((rent * 12) / (targetYield / 100));
-            }
-            const yieldPy = sumArea > 0 ? valYield / sumArea : 0;
-
-            const valMarket = aiDep + ((aiRent * 12) / (targetYield / 100));
-            const marketPy = sumArea > 0 ? valMarket / sumArea : 0;
-
-            let finalPrice = 0;
-            let finalDesc = '';
-            if (valYield > 0) {
-                finalPrice = Math.round((valYield * (weightYield/100)) + (valMarket * (weightMkt/100)));
-                finalDesc = `👉 수익가치(${weightYield}%)와 시장가치(${weightMkt}%) 평균 반영`;
-            } else {
-                finalPrice = Math.round(valMarket); 
-                finalDesc = '👉 공실/수익 미상 상태로 AI 시장가치 100% 단독 반영';
-            }
-            
-            // ★ 수정됨: 변수명 중복 에러 해결 (finalPy -> resultPy)
-            const resultPy = sumArea > 0 ? finalPrice / sumArea : 0;
-
-            // -----------------------------------------------------------------
-            // 4. UI 텍스트 업데이트 (4단 카드 연동)
-            const elSimValAsking = document.getElementById('simValAsking');
-            if(elSimValAsking) {
-                elSimValAsking.innerText = askingPrice > 0 ? fmtKoreanMoney(askingPrice) : '호가 없음';
-                document.getElementById('simPyAsking').innerText = askingPy > 0 ? `평당 ${Math.round(askingPy).toLocaleString()}만` : '-';
-
-                document.getElementById('simValYield').innerText = valYield > 0 ? fmtKoreanMoney(valYield) : '계산 불가';
-                document.getElementById('simPyYield').innerText = yieldPy > 0 ? `평당 ${Math.round(yieldPy).toLocaleString()}만` : '-';
-                
-                document.getElementById('simValMarket').innerText = valMarket > 0 ? fmtKoreanMoney(valMarket) : '계산 불가';
-                document.getElementById('simPyMarket').innerText = marketPy > 0 ? `평당 ${Math.round(marketPy).toLocaleString()}만` : '-';
-
-                document.getElementById('simValFinal').innerText = finalPrice > 0 ? fmtKoreanMoney(finalPrice) : '분석 불가';
-                
-                // ★ 수정됨: resultPy 연동
-                document.getElementById('simPyFinal').innerText = resultPy > 0 ? `평당 ${Math.round(resultPy).toLocaleString()}만` : '-';
-
-                document.getElementById('lblSimYield1').innerText = targetYield.toFixed(1);
-                document.getElementById('lblSimYield2').innerText = targetYield.toFixed(1);
-                document.getElementById('lblSimAiRent').innerText = Math.round(finalPy).toLocaleString();
-                document.getElementById('lblSimFinalDesc').innerText = finalDesc;
-            }
-
-            // -----------------------------------------------------------------
-            // 5. 하단 투자 및 대출 수익률 패널 업데이트 (기존 유지)
-            document.getElementById('resUsimFinalPrice').innerText = fmtKoreanMoney(finalPrice);
-            
-            const nominalCap = finalPrice > dep ? (rent * 12) / (finalPrice - dep) * 100 : 0;
-            document.getElementById('resUsimCapRate').innerText = nominalCap.toFixed(2) + '%';
-            
-            const taxFee = finalPrice * 0.055; 
-            const totalCost = finalPrice + taxFee;
-            const loan = finalPrice * ltv;
-            const reqCash = totalCost - loan - dep;
-            
-            document.getElementById('ldgTaxFee').innerText = fmtKoreanMoney(taxFee);
-            document.getElementById('ldgLoan').innerText = fmtKoreanMoney(loan);
-            document.getElementById('resUsimCash').innerText = fmtKoreanMoney(reqCash);
-            
-            const moInt = (loan * rate) / 12;
-            const moNet = rent - moInt;
-            
-            document.getElementById('ldgInterest').innerText = fmtKoreanMoney(moInt);
-            document.getElementById('ldgNet').innerText = fmtKoreanMoney(moNet);
-            
-            const roe = reqCash > 0 ? (moNet * 12) / reqCash * 100 : 0;
-            document.getElementById('resUsimRoe').innerText = roe.toFixed(2) + '%';
+        // 1층 대로변 전후면 필터 적용
+        if (applyDirFilter) {
+            const strictB = bUnits.filter(d => (d.dir === targetDir || d.pos === targetDir || d['전후면'] === targetDir));
+            if (strictB.length > 0) bUnits = strictB; 
+            const strictZ = zUnits.filter(d => (d.dir === targetDir || d.pos === targetDir || d['전후면'] === targetDir));
+            if (strictZ.length > 0) zUnits = strictZ; 
         }
+
+        let bAvg = getPyPrice(bUnits);
+        let zAvg = getPyPrice(zUnits);
+        if (zAvg === 0) zAvg = bAvg;
+        if (bAvg === 0) bAvg = zAvg;
+
+        let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
+        if (finalPy === 0) finalPy = (rent > 0 && sumArea > 0) ? (rent / sumArea) : 0;
+
+        const aiRent = Math.round(finalPy * sumArea);
+        const aiDep = dep > 0 ? dep : (aiRent * mult); 
+
+        // -----------------------------------------------------------------
+        // 3. 4단계 가치평가 수학적 도출 (호가 독립 모델)
+        const askingPrice = sumPrice;
+        const askingPy = sumArea > 0 ? askingPrice / sumArea : 0;
+
+        let valYield = 0;
+        if (rent > 0 || dep > 0) {
+            valYield = dep + ((rent * 12) / (targetYield / 100));
+        }
+        const yieldPy = sumArea > 0 ? valYield / sumArea : 0;
+
+        const valMarket = aiDep + ((aiRent * 12) / (targetYield / 100));
+        const marketPy = sumArea > 0 ? valMarket / sumArea : 0;
+
+        let finalPrice = 0;
+        let finalDesc = '';
+        if (valYield > 0) {
+            finalPrice = Math.round((valYield * (weightYield/100)) + (valMarket * (weightMkt/100)));
+            finalDesc = `👉 수익${weightYield}:시장${weightMkt} 혼합`;
+        } else {
+            finalPrice = Math.round(valMarket); 
+            finalDesc = '👉 AI시장가치 단독 반영';
+        }
+        
+        const resultPy = sumArea > 0 ? finalPrice / sumArea : 0;
+
+        // -----------------------------------------------------------------
+        // 4. UI 텍스트 업데이트 (새로운 압축 UI용 ID 완벽 연동)
+        const fK = (v) => typeof fmtKoreanMoney === 'function' ? fmtKoreanMoney(v) : Math.round(v).toLocaleString() + '만원';
+        const fN = (v) => Math.round(v).toLocaleString();
+        const setUI = (id, txt) => { const e = document.getElementById(id); if(e) e.innerText = txt; };
+
+        setUI('simValAsking', askingPrice > 0 ? fK(askingPrice) : '호가 없음');
+        setUI('simPyAsking', askingPrice > 0 ? `평당 ${fN(askingPy)}만` : '-');
+
+        setUI('simValYield', valYield > 0 ? fK(valYield) : '계산 불가');
+        setUI('simPyYield', valYield > 0 ? `평당 ${fN(yieldPy)}만` : '-');
+        setUI('lblSimYield1_desc', `👉 수익률 ${targetYield.toFixed(1)}% 역산`);
+        
+        setUI('simValMarket', valMarket > 0 ? fK(valMarket) : '계산 불가');
+        setUI('simPyMarket', valMarket > 0 ? `평당 ${fN(marketPy)}만` : '-');
+        setUI('lblSimAiRent_desc', `👉 AI시세 ${fN(finalPy)}만 기준`);
+
+        setUI('simValFinal', finalPrice > 0 ? fK(finalPrice) : '분석 불가');
+        setUI('simPyFinal', resultPy > 0 ? `평당 ${fN(resultPy)}만` : '-');
+        setUI('lblSimFinalDesc', finalDesc);
+
+        // -----------------------------------------------------------------
+        // 5. 하단 투자 및 대출 수익률 패널 업데이트
+        setUI('resUsimFinalPrice', fK(finalPrice));
+        
+        const nominalCap = finalPrice > dep ? (rent * 12) / (finalPrice - dep) * 100 : 0;
+        setUI('resUsimCapRate', nominalCap.toFixed(2) + '%');
+        
+        const taxFee = finalPrice * 0.055; 
+        const totalCost = finalPrice + taxFee;
+        const loan = finalPrice * ltv;
+        const reqCash = totalCost - loan - dep;
+        
+        setUI('ldgTaxFee', fK(taxFee));
+        setUI('ldgLoan', fK(loan));
+        setUI('resUsimCash', fK(reqCash));
+        
+        const moInt = (loan * rate) / 12;
+        const moNet = rent - moInt;
+        
+        setUI('ldgInterest', fK(moInt));
+        setUI('ldgNet', fK(moNet));
+        
+        const roe = reqCash > 0 ? (moNet * 12) / reqCash * 100 : 0;
+        setUI('resUsimRoe', roe.toFixed(2) + '%');
+
+    } catch (error) {
+        console.error("calcUnitSimulator 에러:", error);
+    }
+}
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
         
