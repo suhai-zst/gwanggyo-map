@@ -2952,7 +2952,7 @@ function calcUnitSimulator() {
 
             const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
 
-            // [수정 1] 좌측 적용월세 산출근거: 엉뚱한 클래스 찾지 않고, 입력창 바로 밑에 앵커 고정
+            // [좌측] 적용월세 산출근거 고정
             let leftReasonBox = document.getElementById('dynamicLeftReasonBox');
             if (!leftReasonBox) {
                 const rentInput = document.getElementById('usimInputRent');
@@ -2960,7 +2960,6 @@ function calcUnitSimulator() {
                     leftReasonBox = document.createElement('div');
                     leftReasonBox.id = 'dynamicLeftReasonBox';
                     leftReasonBox.className = "bg-slate-50 p-3 rounded-lg border border-slate-200 mt-4";
-                    // 입력창 컨테이너 제일 아래에 안전하게 부착
                     const targetContainer = rentInput.closest('.space-y-4') || rentInput.closest('.bg-white');
                     if(targetContainer) targetContainer.appendChild(leftReasonBox);
                 }
@@ -2980,7 +2979,7 @@ function calcUnitSimulator() {
                 `;
             }
 
-            // [수정 2] 상단 헤더: 1억 미만은 '만' 단위로 출력하는 스마트 포맷터 적용
+            // [상단] 스마트 금액 포맷터 적용 (1억 이상만 '억' 표기)
             const topState = document.getElementById('usimOrigState');
             if (topState) {
                 const fmtTop = (v) => {
@@ -3032,7 +3031,7 @@ function calcUnitSimulator() {
             setTxt('ldgInterest', fmtSmartMoney(mI));
             setTxt('ldgNet', fmtSmartMoney(net));
 
-            // [수정 3] 부대비용 분할: 레이아웃 파괴 없이 텍스트 영역 내부만 2줄로 분리
+            // [부대비용] 텍스트만 분할하여 레이아웃 붕괴 방지
             const taxFeeEl = document.getElementById('ldgTaxFee');
             if (taxFeeEl) {
                 taxFeeEl.innerHTML = `
@@ -3063,6 +3062,35 @@ function calcUnitSimulator() {
             updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV/area : 0), `NOI / 기대수익률 ${cap}%`);
             updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
             updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
+
+            // ==========================================
+            // [핵심 픽스] 3분할 붕괴를 막는 레이아웃 멱살잡기 로직
+            // ==========================================
+            const fixLayout = () => {
+                // 1. 우측 패널 전체를 무조건 세로로 쌓기 (flex-col)
+                const rightPanel = document.querySelector('.md\\:w-\\[62\\%\\]') || document.getElementById('usimOrigState')?.closest('.bg-white.p-5');
+                if (rightPanel) {
+                    rightPanel.style.display = 'flex';
+                    rightPanel.style.flexDirection = 'column';
+                    rightPanel.style.width = '100%';
+                }
+
+                // 2. 4개의 결과 박스를 2x2 그리드로 예쁘게 배치
+                const finalPriceBox = document.getElementById('resUsimFinalPrice');
+                if (finalPriceBox) {
+                    const gridContainer = finalPriceBox.closest('.grid') || finalPriceBox.parentElement.parentElement;
+                    if (gridContainer) {
+                        gridContainer.style.display = 'grid';
+                        gridContainer.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+                        gridContainer.style.gap = '0.75rem'; // 간격 정상화
+                        gridContainer.style.width = '100%';
+                    }
+                }
+            };
+            
+            fixLayout();
+            // 렌더링 타이밍 엇갈림 방지를 위해 한 번 더 꽉 잡아줌
+            setTimeout(fixLayout, 50); 
         }
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
