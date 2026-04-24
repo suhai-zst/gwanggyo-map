@@ -2952,34 +2952,48 @@ function calcUnitSimulator() {
 
             const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
 
-            // [요청 1] 좌측 적용월세 상세근거 포맷 변경 (3번 이미지 완벽 구현)
-            const leftReasonBox = document.getElementById('usimMarketReason') || document.querySelector('.bg-blue-50 .text-blue-800');
-            if(leftReasonBox) {
-                leftReasonBox.className = "bg-slate-50 p-3 rounded-lg border border-slate-200 mt-2";
+            // [수정 1] 좌측 적용월세 산출근거: 엉뚱한 클래스 찾지 않고, 입력창 바로 밑에 앵커 고정
+            let leftReasonBox = document.getElementById('dynamicLeftReasonBox');
+            if (!leftReasonBox) {
+                const rentInput = document.getElementById('usimInputRent');
+                if (rentInput && rentInput.parentElement) {
+                    leftReasonBox = document.createElement('div');
+                    leftReasonBox.id = 'dynamicLeftReasonBox';
+                    leftReasonBox.className = "bg-slate-50 p-3 rounded-lg border border-slate-200 mt-4";
+                    // 입력창 컨테이너 제일 아래에 안전하게 부착
+                    const targetContainer = rentInput.closest('.space-y-4') || rentInput.closest('.bg-white');
+                    if(targetContainer) targetContainer.appendChild(leftReasonBox);
+                }
+            }
+            if (leftReasonBox) {
                 leftReasonBox.innerHTML = `
                     <div class="text-[11px] text-slate-600 space-y-1">
-                        <div class="font-bold text-amber-600 mb-1"><i class="ph-fill ph-lightbulb"></i> 시장가치 산출 근거 (70:30 가중치)</div>
+                        <div class="font-bold text-amber-600 mb-1"><i class="ph-fill ph-lightbulb"></i> 적정임대료 산출 (70:30)</div>
                         <div class="text-slate-500 pl-1 leading-relaxed">
-                            [${zone}] 임대평균 (${zRentPy.toFixed(1)}만 × 70%)<br>
-                            + 해당건물 임대평균 (${bRentPy.toFixed(1)}만 × 30%)
+                            [${zone}] 평균 (${zRentPy.toFixed(1)}만 × 70%)<br>
+                            + 건물 평균 (${bRentPy.toFixed(1)}만 × 30%)
                         </div>
                         <div class="font-bold text-blue-700 pl-1 mt-1.5 pt-1.5 border-t border-slate-200">
-                            👉 기준 임대 평단가: ${finalRentPy.toFixed(1)}만원 <span class="text-slate-400 font-normal">(매매가 환산용)</span>
+                            👉 기준 평단가: ${finalRentPy.toFixed(1)}만원 <span class="text-slate-400 font-normal">(매매가 환산용)</span>
                         </div>
                     </div>
                 `;
             }
 
-            // [요청 4] 상단 우측 헤더 텍스트 변경
+            // [수정 2] 상단 헤더: 1억 미만은 '만' 단위로 출력하는 스마트 포맷터 적용
             const topState = document.getElementById('usimOrigState');
             if (topState) {
-                const sellTxt = u.price_sell > 0 ? (u.price_sell/10000).toFixed(1) + '억' : '미정';
-                const rTxt = u.rent > 0 ? u.rent + '만' : '0';
-                const dTxt = u.deposit > 0 ? (u.deposit/10000).toFixed(1) + '억' : '0';
-                topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b> , 임대료: ${dTxt} / ${rTxt}</span>`;
+                const fmtTop = (v) => {
+                    if (v >= 10000) return (v / 10000).toFixed(1).replace('.0', '') + '억';
+                    if (v > 0) return Math.round(v).toLocaleString() + '만';
+                    return '0';
+                };
+                const sellTxt = u.price_sell > 0 ? fmtTop(u.price_sell) : '미정';
+                const rTxt = u.rent > 0 ? fmtTop(u.rent) : '0';
+                const dTxt = u.deposit > 0 ? fmtTop(u.deposit) : '0';
+                topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
             }
 
-            // 우측 매매가 로직
             let mPy = 0; let mReason = "";
             let mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true) && d.price_sell > 0);
             mReason = `[1순위] 동일층(${u.floor}) 매매 적용`;
@@ -3008,7 +3022,6 @@ function calcUnitSimulator() {
             const mI = Math.round((loan * rate) / 12);
             const net = rent - mI;
 
-            // 값 채우기
             const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
             setTxt('usimTopDeposit', fmtSmartMoney(dep));
             setTxt('resUsimFinalPrice', fmtSmartMoney(fP));
@@ -3019,40 +3032,28 @@ function calcUnitSimulator() {
             setTxt('ldgInterest', fmtSmartMoney(mI));
             setTxt('ldgNet', fmtSmartMoney(net));
 
-            // [요청 5] 부대비용 상세 2칸 분할 적용
-            let taxFeeContainer = document.getElementById('dynamicTaxFeeContainer');
-            if (!taxFeeContainer) {
-                const oldTaxFee = document.getElementById('ldgTaxFee');
-                if(oldTaxFee && oldTaxFee.parentElement) {
-                    oldTaxFee.parentElement.id = 'dynamicTaxFeeContainer';
-                    taxFeeContainer = oldTaxFee.parentElement;
-                }
-            }
-            if (taxFeeContainer) {
-                taxFeeContainer.className = 'col-span-full pt-3 border-t border-slate-200 mt-2';
-                taxFeeContainer.innerHTML = `
-                    <div class="flex flex-col w-full gap-1.5">
-                        <div class="flex justify-between items-center w-full text-[13px] font-bold text-slate-700">
-                            <span>부대비용 합계</span>
-                            <span class="text-slate-900">${fmtSmartMoney(tF)}</span>
-                        </div>
-                        <div class="flex justify-between items-center w-full text-[11px] text-slate-500 bg-slate-100/80 px-2 py-1.5 rounded">
-                            <span>취득세(4.6%): <b class="text-slate-600">${fmtSmartMoney(tax)}</b></span>
-                            <span>수수료(0.9%): <b class="text-slate-600">${fmtSmartMoney(fee)}</b></span>
-                        </div>
+            // [수정 3] 부대비용 분할: 레이아웃 파괴 없이 텍스트 영역 내부만 2줄로 분리
+            const taxFeeEl = document.getElementById('ldgTaxFee');
+            if (taxFeeEl) {
+                taxFeeEl.innerHTML = `
+                    <div class="flex flex-col items-end text-right">
+                        <span class="text-slate-900 font-bold">${fmtSmartMoney(tF)}</span>
+                        <span class="text-[10px] text-slate-500 font-normal mt-0.5 whitespace-nowrap">
+                            취득세 4.6% ${fmtSmartMoney(tax)} / 수수료 0.9% ${fmtSmartMoney(fee)}
+                        </span>
                     </div>
                 `;
+                if(taxFeeEl.parentElement) taxFeeEl.parentElement.style.alignItems = 'center';
             }
 
-            // [요청 3] 슬라이드 변경 시 막대 점프 현상 픽스 (변하지 않는 상수 기반으로 max값 고정)
             const origPrice = state.unitSimOrigPrice || u.price_sell || 0;
-            const mx = Math.max(origPrice, mV) * 1.3 || 1; 
+            const mx = Math.max(origPrice, mV) * 1.3 || 1;
 
             const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
                 const b = document.getElementById(barId);
                 const r = document.getElementById(reasonId);
                 if(b) {
-                    b.style.width = Math.min(100, (val/mx*100)) + '%'; // 100% 초과 방지
+                    b.style.width = Math.min(100, (val/mx*100)) + '%';
                     b.innerText = val > 0 ? `${fmtSmartMoney(val)} (평당 ${Math.round(pyVal).toLocaleString()}만)` : '데이터 없음';
                 }
                 if(r) r.innerText = reasonTxt;
@@ -3062,21 +3063,6 @@ function calcUnitSimulator() {
             updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV/area : 0), `NOI / 기대수익률 ${cap}%`);
             updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
             updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
-
-            // [요청 2] 화면 3분할 레이아웃 깨짐 강제 복구 로직
-            setTimeout(() => {
-                const rightPanel = document.querySelector('.md\\:w-\\[62\\%\\]');
-                if(rightPanel && rightPanel.parentElement) {
-                    rightPanel.parentElement.style.display = 'flex';
-                    rightPanel.parentElement.style.flexWrap = 'wrap';
-                }
-                const gridBoxes = document.getElementById('resUsimFinalPrice')?.closest('.grid');
-                if (gridBoxes) {
-                    gridBoxes.style.display = 'grid';
-                    gridBoxes.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
-                    gridBoxes.style.width = '100%';
-                }
-            }, 50);
         }
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
