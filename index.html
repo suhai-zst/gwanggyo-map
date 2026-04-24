@@ -2942,76 +2942,97 @@ function applyAvmToSimulator() {
                 alert('에러 발생: ' + e.message);
             }
         }
+
+        // [모드4] 미니 팝업 스마트 인쇄 트리거 함수
+        function printMiniAppraisal() {
+            // 1. body에 모드4 클래스 부착 (다른 구역 숨김)
+            document.body.classList.add('is-mini-print-mode');
+            
+            // 2. 브라우저 인쇄 창 호출
+            window.print();
+            
+            // 3. 인쇄 창이 닫히면(또는 취소하면) 클래스 제거하여 원래 화면 복구
+            setTimeout(() => {
+                document.body.classList.remove('is-mini-print-mode');
+            }, 500);
+        }
+        
+        
     </script>
     
-    <div id="miniRentAppraisalModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="px-5 py-4 flex justify-between items-center border-b border-slate-100 bg-emerald-50/50">
-                <h3 id="miniPrintTitle" class="font-extrabold text-lg text-emerald-800">적정 임대료 분석</h3>
-                <button onclick="document.getElementById('miniRentAppraisalModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
-                    <i class="ph-bold ph-x text-xl"></i>
-                </button>
+    <div id="miniRentAppraisalModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:bg-white print:p-0">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] print:max-h-full print:shadow-none print:rounded-none">
+            <div class="px-5 py-4 flex justify-between items-center border-b border-slate-100 bg-emerald-50/50 print:bg-transparent print:border-b-2 print:border-black">
+                <h3 id="miniPrintTitle" class="font-extrabold text-xl text-emerald-800 print:text-black">적정 임대료 분석</h3>
+                <div class="flex items-center gap-2 no-print">
+                    <button onclick="printMiniAppraisal()" class="flex items-center gap-1 px-3 py-1.5 bg-white border border-emerald-200 text-emerald-700 text-xs font-bold rounded-md hover:bg-emerald-50 shadow-sm transition">
+                        <i class="ph-bold ph-printer"></i> 인쇄
+                    </button>
+                    <button onclick="document.getElementById('miniRentAppraisalModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="ph-bold ph-x text-xl"></i>
+                    </button>
+                </div>
             </div>
             
-            <div class="p-5 overflow-y-auto space-y-6">
-                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between items-center">
+            <div class="p-5 overflow-y-auto space-y-6 print:p-0 print:pt-6 print:overflow-visible">
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between items-center print:bg-white print:border-2 print:border-slate-800">
                     <div>
-                        <div class="text-xs font-bold text-slate-400 mb-1">현재 상태</div>
-                        <div id="miniStoreName" class="font-bold text-slate-800">상호명</div>
+                        <div class="text-xs font-bold text-slate-400 mb-1 print:text-slate-600">현재 상태</div>
+                        <div id="miniStoreName" class="font-bold text-slate-800 text-lg">상호명</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-xs font-bold text-slate-400 mb-1"><span id="miniCurrentArea">0</span>평</div>
-                        <div id="miniCurrentRent" class="font-bold text-slate-800">0만 / 0만</div>
+                        <div class="text-xs font-bold text-slate-400 mb-1 print:text-slate-600"><span id="miniCurrentArea">0</span>평</div>
+                        <div id="miniCurrentRent" class="font-bold text-slate-800 text-lg">0만 / 0만</div>
                     </div>
                 </div>
 
                 <div>
-                    <h4 class="text-xs font-extrabold text-slate-500 mb-3 uppercase tracking-wider">평단가 비교 (단위: 만원)</h4>
+                    <h4 class="text-xs font-extrabold text-slate-500 mb-3 uppercase tracking-wider print:text-slate-800">평단가 비교 (단위: 만원)</h4>
                     <div class="space-y-4">
                         <div>
-                            <div class="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
+                            <div class="flex justify-between text-[11px] font-bold text-slate-500 mb-1 print:text-slate-800">
                                 <span id="miniLblZone">[구역] 평균 (70%)</span>
                                 <span id="miniValZone">0만</span>
                             </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3">
-                                <div id="miniBarZone" class="h-full bg-emerald-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 print:bg-slate-200 print:border print:border-slate-300">
+                                <div id="miniBarZone" class="h-full bg-emerald-400 rounded-full print:bg-emerald-600" style="width: 0%"></div>
                             </div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
+                            <div class="flex justify-between text-[11px] font-bold text-slate-500 mb-1 print:text-slate-800">
                                 <span>해당 건물 평균 (30%)</span>
                                 <span id="miniValBuilding">0만</span>
                             </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3">
-                                <div id="miniBarBuilding" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 print:bg-slate-200 print:border print:border-slate-300">
+                                <div id="miniBarBuilding" class="h-full bg-emerald-500 rounded-full print:bg-emerald-600" style="width: 0%"></div>
                             </div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-[11px] font-bold text-blue-500 mb-1">
+                            <div class="flex justify-between text-[11px] font-bold text-blue-500 mb-1 print:text-slate-800">
                                 <span>현재 호실 단가</span>
                                 <span id="miniValCurrent">0만</span>
                             </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3">
-                                <div id="miniBarCurrent" class="h-full bg-blue-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 print:bg-slate-200 print:border print:border-slate-300">
+                                <div id="miniBarCurrent" class="h-full bg-blue-400 rounded-full print:bg-blue-600" style="width: 0%"></div>
                             </div>
                         </div>
-                        <div class="pt-2 border-t border-dashed border-slate-200">
-                            <div class="flex justify-between text-xs font-black text-indigo-600 mb-1">
+                        <div class="pt-2 border-t border-dashed border-slate-200 print:border-slate-400">
+                            <div class="flex justify-between text-xs font-black text-indigo-600 mb-1 print:text-slate-800">
                                 <span>도출된 기준 평단가</span>
                                 <span id="miniValFinalPy">0만</span>
                             </div>
-                            <div class="w-full bg-indigo-50 rounded-full h-4 border border-indigo-100">
-                                <div id="miniBarFinalPy" class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="w-full bg-indigo-50 rounded-full h-4 border border-indigo-100 print:bg-slate-200 print:border-slate-400">
+                                <div id="miniBarFinalPy" class="h-full bg-indigo-500 rounded-full print:bg-slate-800" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-indigo-50 rounded-xl p-5 border-2 border-indigo-100 text-center">
-                    <div class="text-xs font-bold text-indigo-400 mb-1">기준 평단가 × 전용면적</div>
-                    <div id="miniFormula" class="text-sm font-medium text-indigo-600 mb-2">0만 × 0평</div>
-                    <div class="text-xs font-extrabold text-indigo-800 mb-1">최종 적정 임대료</div>
-                    <div id="miniFairRent" class="text-3xl font-black text-indigo-700 tracking-tight">월 0만원</div>
+                <div class="bg-indigo-50 rounded-xl p-5 border-2 border-indigo-100 text-center print:bg-white print:border-2 print:border-slate-800">
+                    <div class="text-xs font-bold text-indigo-400 mb-1 print:text-slate-600">기준 평단가 × 전용면적</div>
+                    <div id="miniFormula" class="text-sm font-medium text-indigo-600 mb-2 print:text-slate-800">0만 × 0평</div>
+                    <div class="text-xs font-extrabold text-indigo-800 mb-1 print:text-black">최종 적정 임대료</div>
+                    <div id="miniFairRent" class="text-3xl font-black text-indigo-700 tracking-tight print:text-black">월 0만원</div>
                 </div>
             </div>
         </div>
