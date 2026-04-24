@@ -2184,15 +2184,27 @@ function renderDetail(d) {
             document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span><button onclick="openMiniRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition no-print"><i class="ph-bold ph-chart-bar"></i> 분석</button></div></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
 
-        function openMiniRentAppraisal(id) {
+function openMiniRentAppraisal(id) {
             try {
-                // ID 타입을 유연하게 처리하기 위해 String으로 강제 변환 후 비교
                 const u = state.allData.find(x => String(x.id) === String(id));
                 if(!u) { alert('데이터를 찾을 수 없습니다.'); return; }
 
                 const zone = u.exit || "미지정";
                 let roadside = '기타구역'; try { roadside = getRoadsideType(u.building); } catch(e) {}
-                let tier = '기타'; try { tier = getFloorTier(u.floor); } catch(e) {}
+                
+                // 1. 층급(Tier) 엄격 분류 (1층, 2층, 3층이상)
+                const getTier = (flr) => {
+                    const f = parseInt(flr);
+                    if (isNaN(f)) return '기타';
+                    if (f === 1) return '1층';
+                    if (f === 2) return '2층';
+                    return '3층이상';
+                };
+                const uTier = getTier(u.floor);
+                
+                // 2. 대로변 전/후면 판별
+                let isMainRoad = false; try { isMainRoad = roadside === '대로변'; } catch(e) {}
+                const uPos = u.pos || '';
                 
                 const groupUnits = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
                 const sumArea = groupUnits.reduce((a,c)=>a+(parseFloat(c.area_p)||0), 0);
@@ -2211,28 +2223,51 @@ function renderDetail(d) {
                     return tArea > 0 ? (tRent / tArea) : 0;
                 };
 
-                // 해당 건물 + 같은 층급 필터
-                const bUnits = state.allData.filter(d => 
-                    d.building === u.building && 
-                    (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier
-                );
+                // [1순위] 완벽히 동일한 층 (대로변은 전/후면까지 일치)
+                let bUnits = state.allData.filter(d => {
+                    let match = (d.building === u.building) && (d.floor === u.floor);
+                    if (isMainRoad) match = match && (d.pos === uPos);
+                    return match;
+                });
+                let bLabel = isMainRoad ? `해당 건물 [${u.floor}/${uPos||'미상'}] 평균 (30%)` : `해당 건물 [${u.floor}] 평균 (30%)`;
+                
+                // [2순위] 표본 1건 이하시 층급(1/2/3층이상)으로 확대
+                if (bUnits.length <= 1) { 
+                    bUnits = state.allData.filter(d => {
+                        let match = (d.building === u.building) && (getTier(d.floor) === uTier);
+                        if (isMainRoad) match = match && (d.pos === uPos);
+                        return match;
+                    });
+                    bLabel = isMainRoad ? `해당 건물 [${uTier}/${uPos||'미상'}] 평균 (30%)` : `해당 건물 [${uTier}] 평균 (30%)`;
+                }
                 let bAvg = getPyPrice(bUnits);
 
-                // 해당 구역 + 같은 입지(대로/이면) + 같은 층급 필터 (3중 필터 완벽 적용)
-                const zUnits = state.allData.filter(d => 
-                    (d.exit || "미지정") === zone && 
-                    (function(){ try{return getRoadsideType(d.building);}catch(e){return roadside;} })() === roadside &&
-                    (function(){ try{return getFloorTier(d.floor);}catch(e){return tier;} })() === tier
-                );
+                // 구역(Zone) 평균도 동일한 로직 적용
+                let zUnits = state.allData.filter(d => {
+                    let match = (d.exit || "미지정") === zone && (function(){ try{return getRoadsideType(d.building);}catch(e){return roadside;} })() === roadside && d.floor === u.floor;
+                    if (isMainRoad) match = match && (d.pos === uPos);
+                    return match;
+                });
+                let zLabel = isMainRoad ? `[${zone} ${roadside}] ${u.floor}/${uPos||'미상'} 평균 (70%)` : `[${zone} ${roadside}] ${u.floor} 평균 (70%)`;
+                
+                if (zUnits.length <= 1) {
+                    zUnits = state.allData.filter(d => {
+                        let match = (d.exit || "미지정") === zone && (function(){ try{return getRoadsideType(d.building);}catch(e){return roadside;} })() === roadside && getTier(d.floor) === uTier;
+                        if (isMainRoad) match = match && (d.pos === uPos);
+                        return match;
+                    });
+                    zLabel = isMainRoad ? `[${zone} ${roadside}] ${uTier}/${uPos||'미상'} 평균 (70%)` : `[${zone} ${roadside}] ${uTier} 평균 (70%)`;
+                }
                 let zAvg = getPyPrice(zUnits);
 
                 if (zAvg === 0) zAvg = bAvg;
                 if (bAvg === 0) bAvg = zAvg;
 
                 let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
+                
+                // [표본부족/왜곡차단] 범위를 넓혀도 데이터가 아예 없다면 본인 호실 임대료로 역산
                 if (finalPy === 0) finalPy = u.rent > 0 ? (u.rent / u.area_p) : 0;
 
-                // 현 호실 평단가 계산
                 let currentPy = 0;
                 if (sumArea > 0 && sumRent > 0) {
                     let tRent = sumRent;
@@ -2251,7 +2286,9 @@ function renderDetail(d) {
                 if(sumDep > 0 || sumRent > 0) rentText = `${fNum(sumDep)}만 / ${fNum(sumRent)}만`;
                 document.getElementById('miniCurrentRent').innerText = rentText;
 
-                document.getElementById('miniLblZone').innerText = `[${zone} ${roadside}] 평균 (70%)`;
+                // UI에 어떤 기준으로 평균을 냈는지 라벨에 명시
+                document.getElementById('miniLblZone').innerText = zLabel;
+                document.getElementById('miniLblBuilding').innerText = bLabel;
                 
                 document.getElementById('miniValZone').innerText = zAvg.toFixed(1) + '만';
                 document.getElementById('miniValBuilding').innerText = bAvg.toFixed(1) + '만';
@@ -2275,8 +2312,6 @@ function renderDetail(d) {
                 const modal = document.getElementById('miniRentAppraisalModal');
                 if (modal) {
                     modal.classList.remove('hidden');
-                } else {
-                    alert('팝업창 HTML을 찾을 수 없습니다. (화면단 작업 필요)');
                 }
             } catch(e) {
                 alert('팝업을 여는 중 문제가 발생했습니다: ' + e.message);
@@ -2837,14 +2872,92 @@ function applyAvmToSimulator() {
             calcUnitSimulator();
         }
 
-        function calcUnitSimulator() {
+function calcUnitSimulator() {
             const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const cap = parseFloat(document.getElementById('usimCapRate').value), w = parseFloat(document.getElementById('usimWeight').value)/100, mult = parseInt(document.getElementById('usimDepMult').value), ltv = parseFloat(document.getElementById('usimLtv').value)/100;
             const rate = parseFloat(document.getElementById('usimRate').value)/100;
             
             const dep = Math.round((rent * mult)/100)*100;
             let yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
-            const mV = Math.round((state.unitSimArea * state.unitMarketAvg)/100)*100;
+
+            // --- 🎯 [스마트 시장가치(시세) 도출 엔진] ---
+            let avgPy = 0;
+            let marketReason = "";
+            try {
+                const currentId = document.getElementById('detailPanel').dataset.currentId;
+                const u = state.allData.find(x => String(x.id) === String(currentId));
+
+                if (u) {
+                    // 1. 층급(Tier) 엄격 분류 (1층, 2층, 3층이상)
+                    const getTier = (flr) => {
+                        const f = parseInt(flr);
+                        if (isNaN(f)) return '기타';
+                        if (f === 1) return '1층';
+                        if (f === 2) return '2층';
+                        return '3층이상';
+                    };
+                    const uTier = getTier(u.floor);
+                    
+                    // 2. 대로변 전/후면 판별
+                    let isMainRoad = false;
+                    try { isMainRoad = getRoadsideType(u.building) === '대로변'; } catch(e) {}
+                    const uPos = u.pos || '';
+
+                    // 평단가 계산 헬퍼 (매매가)
+                    const calcAvgPy = (items) => {
+                        let tA = 0, tP = 0;
+                        items.forEach(x => {
+                            if (x.price_sell > 0 && x.area_p > 0) {
+                                tA += parseFloat(x.area_p); tP += parseFloat(x.price_sell);
+                            }
+                        });
+                        return tA > 0 ? (tP / tA) : 0;
+                    };
+
+                    // [1순위] 완벽히 동일한 층 (대로변은 전/후면 위치까지 일치)
+                    let targets = state.allData.filter(d => {
+                        let match = (d.building === u.building) && (d.floor === u.floor);
+                        if (isMainRoad) match = match && (d.pos === uPos);
+                        return match;
+                    });
+                    marketReason = isMainRoad ? `[1순위] 동일층(${u.floor}) & 위치(${uPos||'미상'})` : `[1순위] 동일층(${u.floor})`;
+
+                    // [2순위] 1순위 매매사례가 1건 이하일 때 층급(1층/2층/3층이상)으로 확대
+                    if (targets.filter(x => x.price_sell > 0).length <= 1) {
+                        targets = state.allData.filter(d => {
+                            let match = (d.building === u.building) && (getTier(d.floor) === uTier);
+                            if (isMainRoad) match = match && (d.pos === uPos);
+                            return match;
+                        });
+                        marketReason = isMainRoad ? `[2순위] 층급(${uTier}) & 위치(${uPos||'미상'})` : `[2순위] 층급(${uTier})`;
+                    }
+
+                    let calcPy = calcAvgPy(targets);
+
+                    // [3순위] 호가 왜곡 차단: 범위를 넓혀도 1건 이하면 [기준 임대 평단가 * 200배] 강제 전환
+                    if (targets.filter(x => x.price_sell > 0).length <= 1) {
+                        let rentPy = 0;
+                        if (u.rent > 0 && u.area_p > 0) {
+                            let totalRent = parseFloat(u.rent);
+                            if (u.deposit > totalRent * 12) totalRent += (u.deposit - (totalRent * 12)) * 0.05 / 12;
+                            rentPy = totalRent / parseFloat(u.area_p);
+                        }
+                        calcPy = rentPy * 200; 
+                        marketReason = `[표본부족/왜곡차단] 임대단가 × 200배 적용`;
+                    }
+
+                    avgPy = calcPy;
+                } else {
+                    avgPy = state.unitMarketAvg || 0; 
+                }
+            } catch(e) {
+                console.error(e);
+                avgPy = state.unitMarketAvg || 0;
+            }
+
+            const mV = Math.round((state.unitSimArea * avgPy)/100)*100;
+            // -----------------------------------------
+
             const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100;
 
             const tF = Math.round(fP * 0.055), loan = Math.round(fP * ltv), cash = fP + tF - loan - dep;
@@ -2863,11 +2976,37 @@ function applyAvmToSimulator() {
             document.getElementById('ldgNet').innerText = fmtSmartMoney(net);
 
             const mx = Math.max(state.unitSimOrigPrice, yV, mV, fP)*1.1 || 1;
-            const upd = (id, v, t) => { const b = document.getElementById(id); b.style.width = (v/mx*100)+'%'; b.innerText = t; };
+            
+            // UI 자동 업데이트 (HTML 수정 불필요)
+            const updWithDetail = (id, val, py, reasonLabel) => {
+                const b = document.getElementById(id);
+                if(b) {
+                    b.style.width = (val/mx*100)+'%';
+                    b.innerText = `${fmtSmartMoney(val)} ${py > 0 ? '(평당 ' + Math.round(py).toLocaleString() + '만)' : ''}`;
+                    
+                    if (reasonLabel) {
+                        let reasonSpan = b.parentElement.querySelector('.dynamic-reason');
+                        if (!reasonSpan) {
+                            reasonSpan = document.createElement('div');
+                            reasonSpan.className = 'dynamic-reason text-[10px] text-slate-400 font-bold mt-1 w-full text-right';
+                            b.parentElement.appendChild(reasonSpan);
+                        }
+                        reasonSpan.innerText = `* ${reasonLabel}`;
+                    }
+                }
+            };
+
+            const upd = (id, v, t) => { const b = document.getElementById(id); if(b){ b.style.width = (v/mx*100)+'%'; b.innerText = t; } };
+
             upd('barOrig', state.unitSimOrigPrice, state.unitSimOrigPrice > 0 ? fmtSmartMoney(state.unitSimOrigPrice) : '미정');
-            upd('barYield', yV, fmtSmartMoney(yV));
-            upd('barMarket', mV, fmtSmartMoney(mV));
-            upd('barFinal', fP, fmtSmartMoney(fP));
+            
+            const yieldPy = state.unitSimArea > 0 ? yV / state.unitSimArea : 0;
+            updWithDetail('barYield', yV, yieldPy, '수익환원법 (NOI / 기대수익률)');
+            
+            updWithDetail('barMarket', mV, avgPy, marketReason);
+            
+            const finalPy = state.unitSimArea > 0 ? fP / state.unitSimArea : 0;
+            updWithDetail('barFinal', fP, finalPy, '수익가치와 시장가치 가중평균');
         }
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
@@ -2973,7 +3112,7 @@ function applyAvmToSimulator() {
         
     </script>
     
-    <div id="miniRentAppraisalModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:bg-white print:p-0">
+    <div id="miniRentAppraisalModal" onclick="if(event.target === this) this.classList.add('hidden')" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:bg-white print:p-0">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] print:max-h-full print:shadow-none print:rounded-none">
             <div class="px-5 py-4 flex justify-between items-center border-b border-slate-100 bg-emerald-50/50 print:bg-transparent print:border-b-2 print:border-black">
                 <h3 id="miniPrintTitle" class="font-extrabold text-xl text-emerald-800 print:text-black">적정 임대료 분석</h3>
@@ -3013,7 +3152,7 @@ function applyAvmToSimulator() {
                         </div>
                         <div>
                             <div class="flex justify-between text-[11px] font-bold text-slate-500 mb-1 print:text-slate-800">
-                                <span>해당 건물 평균 (30%)</span>
+                                <span id="miniLblBuilding">해당 건물 평균 (30%)</span>
                                 <span id="miniValBuilding">0만</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-3 print:bg-slate-200 print:border print:border-slate-300">
