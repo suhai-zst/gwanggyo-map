@@ -1926,9 +1926,26 @@
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
-        async function shareCompare() {
+async function shareCompare() {
             const btn = document.getElementById('shareBtn');
             const originalText = btn.innerHTML;
+
+            // [추가됨] 파일명 동적 생성 로직
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}${mm}${dd}`;
+            const prefix = state.compareMode === 'rent' ? '임대견적' : '매매견적';
+            
+            // 장바구니 호실들의 상호명 추출 (공백 및 중복 제거)
+            const storeNames = [...new Set(Array.from(state.comparisonList).map(id => {
+                const d = state.allData.find(x => x.id === id);
+                return (d && d.store_name) ? d.store_name.replace(/\s/g, '') : '상호미상';
+            }))].join('_');
+            
+            const fileName = `${prefix}_${dateStr}_${storeNames}`;
+
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
             
@@ -1985,13 +2002,15 @@
                 btn.disabled = false;
                 
                 canvas.toBlob(async (blob) => {
-                    const file = new File([blob], '비교견적서.jpg', { type: 'image/jpeg' });
+                    // [수정됨] 하드코딩 제거 및 동적 파일명 주입
+                    const file = new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' });
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                     
                     if (!isMobile) {
                         const imgUrl = URL.createObjectURL(blob);
                         const link = document.createElement('a');
-                        link.download = '상가_비교견적서.jpg';
+                        // [수정됨] 다운로드 파일명 동적 주입
+                        link.download = `${fileName}.jpg`;
                         link.href = imgUrl;
                         link.click();
                         
@@ -2873,29 +2892,62 @@ function applyAvmToSimulator() {
             return sumA > 0 ? (sumP / sumA) : 0;
         }
 
-        function openUnitSimulator(id) {
+function openUnitSimulator(id) {
             const t = state.allData.find(d => d.id === id);
+            if (!t) return; // 데이터가 없을 경우 1차 방어
+
             let units = t.unique_group_id ? state.allData.filter(d => d.unique_group_id === t.unique_group_id) : [t];
-            const sA = units.reduce((a, c) => a + c.area_p, 0), sP = units.reduce((a, c) => a + (c.price_sell || 0), 0), sD = units.reduce((a, c) => a + (c.deposit || 0), 0), sR = units.reduce((a, c) => a + (c.rent || 0), 0);
+            const sA = units.reduce((a, c) => a + c.area_p, 0), 
+                  sP = units.reduce((a, c) => a + (c.price_sell || 0), 0), 
+                  sD = units.reduce((a, c) => a + (c.deposit || 0), 0), 
+                  sR = units.reduce((a, c) => a + (c.rent || 0), 0);
             
-            document.getElementById('usimTitle').innerText = document.getElementById('usimTitlePrint').innerText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호";
+            const titleText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호";
+            
+            // [수정됨] 타이틀 주입 방어 로직 (기존 체인 할당 분리)
+            const titleEl = document.getElementById('usimTitle');
+            if (titleEl) titleEl.innerText = titleText;
+            
+            const titlePrintEl = document.getElementById('usimTitlePrint');
+            if (titlePrintEl) titlePrintEl.innerText = titleText;
+
             state.unitSimOrigPrice = sP; state.unitSimOrigDep = sD; state.unitSimOrigRent = sR; state.unitSimArea = sA;
             
             const b = t.building, f = t.floor, z = ROADSIDE_TARGETS.some(x => b.includes(x)) ? '대로변' : t.exit;
             let bS = getAvgPP(state.allData.filter(d => d.building === b && d.floor === f && d.price_sell > 0), 'sell') || getAvgPP(state.allData.filter(d => d.building === b && d.price_sell > 0), 'sell');
             state.unitMarketAvg = bS || 4000;
             
-            document.getElementById('usimInputRent').value = (sR || 150).toLocaleString();
-            document.getElementById('usimMarketBasis').innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
-            document.getElementById('usimOrigState').innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
+            const inputRentEl = document.getElementById('usimInputRent');
+            if (inputRentEl) inputRentEl.value = (sR || 150).toLocaleString();
 
-            document.getElementById('usimCapRate').value = 4.0; document.getElementById('lblUsimCapRate').innerText = "4.0";
-            document.getElementById('usimWeight').value = 50; document.getElementById('lblUsimWeight').innerText = "50";
-            document.getElementById('usimDepMult').value = 15; document.getElementById('lblUsimDepMult').innerText = "15";
-            document.getElementById('usimLtv').value = 30; document.getElementById('lblUsimLtv').innerText = "30%";
-            document.getElementById('usimRate').value = 4.5; document.getElementById('lblUsimRate').innerText = "4.5%";
+            // [수정됨] 에러의 진원지였던 시장가치 산출근거 방어 로직
+            const basisEl = document.getElementById('usimMarketBasis');
+            if (basisEl) {
+                basisEl.innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
+            }
 
-            document.getElementById('unitSimulatorModal').classList.remove('hidden');
+            const origStateEl = document.getElementById('usimOrigState');
+            if (origStateEl) {
+                origStateEl.innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
+            }
+
+            // [수정됨] 슬라이더 및 라벨 값 셋팅 안전 함수
+            const setVal = (id, val, textId, textVal) => {
+                const el = document.getElementById(id);
+                const txtEl = document.getElementById(textId);
+                if (el) el.value = val;
+                if (txtEl) txtEl.innerText = textVal;
+            };
+
+            setVal('usimCapRate', 4.0, 'lblUsimCapRate', "4.0");
+            setVal('usimWeight', 50, 'lblUsimWeight', "50");
+            setVal('usimDepMult', 15, 'lblUsimDepMult', "15");
+            setVal('usimLtv', 30, 'lblUsimLtv', "30%");
+            setVal('usimRate', 4.5, 'lblUsimRate', "4.5%");
+
+            const modalEl = document.getElementById('unitSimulatorModal');
+            if (modalEl) modalEl.classList.remove('hidden');
+            
             calcUnitSimulator();
         }
 
