@@ -2275,16 +2275,41 @@ function openMiniRentAppraisal(id) {
                 const sumDep = groupUnits.reduce((a,c)=>a+(parseFloat(c.deposit)||0), 0);
                 const sumRent = groupUnits.reduce((a,c)=>a+(parseFloat(c.rent)||0), 0);
 
+                // [핵심 픽스] 통합 호실(unique_group_id) 면적 누락 방지 로직
                 const getPyPrice = items => {
-                    let tArea = 0; let tRent = 0;
+                    let sumArea = 0, sumRent = 0;
+                    let processed = new Set();
                     items.forEach(item => {
-                        if (item.rent > 0 && item.area_p > 0) {
-                            tArea += parseFloat(item.area_p); 
-                            tRent += parseFloat(item.rent);
-                            if (item.deposit > item.rent * 12) tRent += (item.deposit - (item.rent * 12)) * 0.05 / 12;
+                        // 1. 그룹 ID가 없으면 자기 자신의 ID를 그룹 ID처럼 사용
+                        let gid = item.unique_group_id || `single_${item.id}`;
+                        
+                        // 2. 이미 계산한 그룹이면 패스 (중복 합산 방지)
+                        if (processed.has(gid)) return;
+                        processed.add(gid);
+
+                        // 3. 해당 그룹에 속한 모든 호실 데이터를 배열로 가져옴
+                        let members = item.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [item];
+                        
+                        // 4. 그룹 전체의 면적, 월세, 보증금을 100% 합산
+                        let groupArea = 0, gRent = 0, gDep = 0;
+                        members.forEach(m => {
+                            groupArea += (parseFloat(m.area_p) || 0);
+                            gRent += (parseFloat(m.rent) || 0);
+                            gDep += (parseFloat(m.deposit) || 0);
+                        });
+
+                        // 5. 합산된 그룹 월세가 있을 때만 최종 통계에 반영
+                        if (gRent > 0 && groupArea > 0) {
+                            let finalVal = gRent;
+                            // 보증금이 월세의 12배보다 크면 초과분에 5% 환산율 적용
+                            if (gDep > gRent * 12) {
+                                finalVal += (gDep - (gRent * 12)) * 0.05 / 12;
+                            }
+                            sumArea += groupArea;
+                            sumRent += finalVal;
                         }
                     });
-                    return tArea > 0 ? (tRent / tArea) : 0;
+                    return sumArea > 0 ? (sumRent / sumArea) : 0;
                 };
 
                 // [1순위] 완벽히 동일한 층 (대로변은 전/후면까지 일치)
