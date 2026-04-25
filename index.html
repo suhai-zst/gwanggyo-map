@@ -2996,43 +2996,69 @@ function calcUnitSimulator() {
             try { isMainRoad = getRoadsideType(u.building) === '대로변'; } catch(e) {}
             const uPos = u.pos || '';
 
+            // [핵심 수정됨] 통합 호실(unique_group_id)을 누락 없이 안전하게 묶어서 면적을 계산하는 로직으로 전면 교체
             const getAvgPy = (items, type) => {
-                let tA = 0, tV = 0;
-                items.forEach(x => {
-                    const val = type === 'rent' ? parseFloat(x.rent) : parseFloat(x.price_sell);
-                    if (val > 0 && parseFloat(x.area_p) > 0) {
+                let sumArea = 0, sumVal = 0;
+                let processed = new Set();
+                items.forEach(item => {
+                    let gid = item.unique_group_id || `single_${item.id}`;
+                    if (processed.has(gid)) return;
+                    processed.add(gid);
+
+                    let members = item.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [item];
+                    
+                    let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
+                    members.forEach(m => {
+                        groupArea += (parseFloat(m.area_p) || 0);
+                        groupRent += (parseFloat(m.rent) || 0);
+                        groupSell += (parseFloat(m.price_sell) || 0);
+                        groupDep += (parseFloat(m.deposit) || 0);
+                    });
+
+                    const val = type === 'rent' ? groupRent : groupSell;
+                    if (val > 0 && groupArea > 0) {
                         let finalVal = val;
-                        if (type === 'rent' && x.deposit > val * 12) {
-                            finalVal += (x.deposit - (val * 12)) * 0.05 / 12;
+                        // 보증금이 월세의 12배를 초과하면 5% 전환율로 월세에 합산
+                        if (type === 'rent' && groupDep > val * 12) {
+                            finalVal += (groupDep - (val * 12)) * 0.05 / 12;
                         }
-                        tA += parseFloat(x.area_p); 
-                        tV += finalVal;
+                        sumArea += groupArea;
+                        sumVal += finalVal;
                     }
                 });
-                return tA > 0 ? (tV / tA) : 0;
+                return sumArea > 0 ? (sumVal / sumArea) : 0;
             };
 
             const zone = u.exit || "미지정";
             
+            // [이전 수정사항 적용] 층/층급 텍스트 변수(bL, zL) 추가
+            let bL = `${u.floor}층`;
             let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-            if(bUnits.length <= 1) bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
+            if(bUnits.length <= 1) {
+                bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
+                bL = uTier;
+            }
             const bRentPy = getAvgPy(bUnits, 'rent');
 
+            let zL = `${u.floor}층`;
             let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-            if(zUnits.length <= 1) zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
+            if(zUnits.length <= 1) {
+                zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
+                zL = uTier;
+            }
             const zRentPy = getAvgPy(zUnits, 'rent');
 
             const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
 
-            // [수정됨] 안전한 좌측 박스 주입 (텍스트 UI 개선 및 최종 월세 산출)
+            // [이전 수정사항 적용] 안전한 좌측 박스 주입 (파란색 굵은 텍스트 추가)
             const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
             if (leftReasonBox) {
-                const fairRent = Math.round(finalRentPy * area); // 적정 월세 산출
+                const fairRent = Math.round(finalRentPy * area);
                 leftReasonBox.innerHTML = `
                     <div class="text-[11px] text-slate-600 space-y-1">
                         <div class="font-bold text-amber-600 mb-1"><i class="ph-fill ph-lightbulb"></i> 적정임대료 산출 (70:30)</div>
-                        <div class="text-slate-500 pl-1 leading-relaxed">
-                            [${zone}] 평균 (${zRentPy.toFixed(1)}만 × 70%) + 건물 평균 (${bRentPy.toFixed(1)}만 × 30%)
+                        <div class="text-slate-500 pl-1 leading-relaxed tracking-tight">
+                            [${zone} ${zL}] 평균 (${zRentPy.toFixed(1)}만 × 70%) + 건물 ${bL} 평균 (${bRentPy.toFixed(1)}만 × 30%)
                         </div>
                         <div class="font-bold text-blue-700 pl-1 mt-1.5 pt-1.5 border-t border-slate-200">
                             👉 기준 평단가: ${finalRentPy.toFixed(1)}만원 <span class="text-slate-400 font-normal">(매매가 환산용)</span> × ${area.toFixed(1)}평 = <span class="text-blue-700 font-black text-[13px] tracking-tight">월 ${fairRent.toLocaleString()}만원</span>
@@ -3041,7 +3067,6 @@ function calcUnitSimulator() {
                 `;
             }
 
-            // [상단 헤더 스마트 텍스트]
             const topState = document.getElementById('usimOrigState');
             if (topState) {
                 const fmtTop = (v) => {
