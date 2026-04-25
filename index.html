@@ -3103,8 +3103,10 @@ function calcUnitSimulator() {
             mPy = getAvgPy(mTargets, 'price');
 
             if (mTargets.length <= 1 || mPy === 0) {
-                mPy = finalRentPy * 200;
-                mReason = `[표본부족] 임대단가 × 200배 역산`;
+                // [수정됨] 기대수익률(cap) 슬라이더와 연동하여 동적 배수(Multiplier) 생성
+                const dynamicMult = cap > 0 ? Math.round(12 / (cap / 100)) : 240; 
+                mPy = finalRentPy * dynamicMult;
+                mReason = `[표본부족] 임대단가 × ${dynamicMult}배 역산 (수익률 ${cap}% 기준)`;
             }
 
             const yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
