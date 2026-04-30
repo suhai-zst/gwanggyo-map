@@ -3108,7 +3108,6 @@ function calcUnitSimulator() {
             const u = state.allData.find(x => String(x.id) === String(currentId));
             if(!u) return;
 
-            // [Phase 3 & 4] 실사용 및 현호가 체크박스 상태 확인
             const occEl = document.getElementById('usimUserOccupied');
             const isOccupied = occEl ? occEl.checked : false;
             
@@ -3120,11 +3119,10 @@ function calcUnitSimulator() {
             
             let dep = 0;
 
-            // [핵심 픽스] 현호가 체크 시 원본 데이터 강제 주입
             if (useOrig) {
                 rent = state.unitSimOrigRent || 0;
                 dep = state.unitSimOrigDep || 0;
-                document.getElementById('usimInputRent').value = rent.toLocaleString(); // 입력창 동기화
+                document.getElementById('usimInputRent').value = rent.toLocaleString(); 
                 if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
             } else if (isOccupied) {
                 mult = 0;
@@ -3150,6 +3148,7 @@ function calcUnitSimulator() {
             let isMainRoad = checkRoadside(u.building);
             const uPos = u.pos || '';
 
+            // [핵심 픽스 1] 가치평가 엔진 내부의 단가 계산기에도 i, g, x 라우팅 로직 완벽 이식
             const getAvgPy = (items, type) => {
                 let sumArea = 0, sumVal = 0;
                 let processed = new Set();
@@ -3159,23 +3158,40 @@ function calcUnitSimulator() {
                     processed.add(gid);
 
                     let members = item.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [item];
-                    let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
+                    
+                    let i_list = [], g_list = [], blank_list = [];
                     members.forEach(m => {
-                        groupArea += (parseFloat(m.area_p) || 0);
-                        groupRent += (parseFloat(m.rent) || 0);
-                        groupSell += (parseFloat(m.price_sell) || 0);
-                        groupDep += (parseFloat(m.deposit) || 0);
+                        const mk = m.mark || '';
+                        if (mk === 'i') i_list.push(m);
+                        else if (mk === 'g') g_list.push(m);
+                        else if (mk === 'x') { /* x 마커는 평균 단가 계산에서 완벽히 배제 (단가 깎아먹기 방지) */ }
+                        else blank_list.push(m);
                     });
 
-                    const val = type === 'rent' ? groupRent : groupSell;
-                    if (val > 0 && groupArea > 0) {
-                        let finalVal = val;
-                        if (type === 'rent' && groupDep > val * 12) {
-                            finalVal += (groupDep - (val * 12)) * 0.05 / 12;
+                    const processSubGroup = (subMembers) => {
+                        if (subMembers.length === 0) return;
+                        let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
+                        subMembers.forEach(m => {
+                            groupArea += (parseFloat(m.area_p) || 0);
+                            groupRent += (parseFloat(m.rent) || 0);
+                            groupSell += (parseFloat(m.price_sell) || 0);
+                            groupDep += (parseFloat(m.deposit) || 0);
+                        });
+
+                        const val = type === 'rent' ? groupRent : groupSell;
+                        if (val > 0 && groupArea > 0) {
+                            let finalVal = val;
+                            if (type === 'rent' && groupDep > val * 12) {
+                                finalVal += (groupDep - (val * 12)) * 0.05 / 12;
+                            }
+                            sumArea += groupArea;
+                            sumVal += finalVal;
                         }
-                        sumArea += groupArea;
-                        sumVal += finalVal;
-                    }
+                    };
+
+                    i_list.forEach(m => processSubGroup([m]));
+                    processSubGroup(g_list);
+                    processSubGroup(blank_list);
                 });
                 return sumArea > 0 ? (sumVal / sumArea) : 0;
             };
@@ -3227,7 +3243,6 @@ function calcUnitSimulator() {
                     return '0';
                 };
                 const sellTxt = origPrice > 0 ? fmtTop(origPrice) : '미정';
-                // [핵심 픽스] u.rent 가 아닌, 추출된 전체 그룹의 원본 임대료/보증금을 강제로 불러와 0/0 오류 완벽 해결
                 const rTxt = state.unitSimOrigRent > 0 ? fmtTop(state.unitSimOrigRent) : '0';
                 const dTxt = state.unitSimOrigDep > 0 ? fmtTop(state.unitSimOrigDep) : '0';
                 topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
@@ -3254,7 +3269,8 @@ function calcUnitSimulator() {
             const mV = Math.round((area * mPy)/100)*100;
             const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
 
-            const mx = Math.max(origPrice, mV, fP) * 1.3 || 1;
+            // [핵심 픽스 2] 막대그래프 비율 산정(mx)에 yV를 포함시키고 여유를 두어 찌그러짐 완벽 방지
+            const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
 
             const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
                 const b = document.getElementById(barId);
@@ -3277,7 +3293,7 @@ function calcUnitSimulator() {
             if (state.lastSimId !== currentId) {
                 state.lastSimId = currentId;
                 if(occEl) occEl.checked = false; 
-                if(origEl) origEl.checked = false; // [추가됨] 새로운 호실 열면 현호가 체크박스도 리셋
+                if(origEl) origEl.checked = false;
                 mult = parseInt(multEl.value) || 0; 
                 
                 appliedPrice = origPrice > 0 ? origPrice : fP;
@@ -3302,7 +3318,6 @@ function calcUnitSimulator() {
             const fee = Math.round(appliedPrice * 0.009);
             const loan = Math.round(appliedPrice * ltv);
             
-            // 현호가와 실사용이 동시에 켜질 수 있지만, 실사용이 우선시되어 실 보증금은 0으로 계산됨
             const realDep = isOccupied ? 0 : dep;
             const cash = appliedPrice + tF - loan - realDep;
             const mI = Math.round((loan * rate) / 12);
