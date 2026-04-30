@@ -727,10 +727,16 @@
                         <div class="flex justify-between items-center text-xs mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="font-bold text-slate-700">보증금 배수</span>
-                                <label class="flex items-center gap-1 cursor-pointer bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 hover:bg-blue-100 transition no-print-sim">
-                                    <input type="checkbox" id="usimUserOccupied" class="w-3 h-3 rounded text-blue-600 cursor-pointer" onchange="calcUnitSimulator()">
-                                    <span class="text-[9px] font-black text-blue-700 select-none">실사용(보증금 0)</span>
-                                </label>
+                                <div class="flex items-center gap-1.5 no-print-sim">
+                                    <label class="flex items-center gap-1 cursor-pointer bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 hover:bg-blue-100 transition">
+                                        <input type="checkbox" id="usimUserOccupied" class="w-3 h-3 rounded text-blue-600 cursor-pointer" onchange="calcUnitSimulator()">
+                                        <span class="text-[9px] font-black text-blue-700 select-none">실사용(보0)</span>
+                                    </label>
+                                    <label class="flex items-center gap-1 cursor-pointer bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 hover:bg-amber-100 transition">
+                                        <input type="checkbox" id="usimUseOrig" class="w-3 h-3 rounded text-amber-600 cursor-pointer" onchange="calcUnitSimulator()">
+                                        <span class="text-[9px] font-black text-amber-700 select-none">현호가 로드</span>
+                                    </label>
+                                </div>
                             </div>
                             <span class="font-extrabold text-slate-800"><span id="lblUsimDepMult">15</span>개월</span>
                         </div>
@@ -867,7 +873,17 @@
         const MASTER_PIN = "74107475";
         let sessionAuth = false;
 
-        const RENT_RANGES = [ { id: '100under', label: '100만 ↓', min: 0, max: 100 }, { id: '100-150', label: '100~150만', min: 100, max: 150 }, { id: '150-200', label: '150~200만', min: 150, max: 200 }, { id: '200-300', label: '200~300만', min: 200, max: 300 }, { id: '300-400', label: '300~400만', min: 300, max: 400 }, { id: '400-500', label: '400~500만', min: 400, max: 500 }, { id: '500over', label: '500만 ↑', min: 500, max: 99999 } ];
+        // [핵심 픽스] '100under'의 min 값을 0에서 1로 변경하여 0원(공실/미상) 강제 제외
+        const RENT_RANGES = [ 
+            { id: '100under', label: '100만 ↓', min: 1, max: 100 }, 
+            { id: '100-150', label: '100~150만', min: 100, max: 150 }, 
+            { id: '150-200', label: '150~200만', min: 150, max: 200 }, 
+            { id: '200-300', label: '200~300만', min: 200, max: 300 }, 
+            { id: '300-400', label: '300~400만', min: 300, max: 400 }, 
+            { id: '400-500', label: '400~500만', min: 400, max: 500 }, 
+            { id: '500over', label: '500만 ↑', min: 500, max: 99999 } 
+        ];
+        
         const AREA_RANGES = [ 
             { id: '10under', label: '10평 ↓', min: 0, max: 10 }, 
             { id: '10-15', label: '10~15평', min: 10, max: 15 }, 
@@ -1666,7 +1682,15 @@
         function toggleBuilding(b) { if (state.checkedBuildings.has(b)) state.checkedBuildings.delete(b); else state.checkedBuildings.add(b); renderList(); renderStacking(); }
         function toggleAllBuildings(chk) { state.checkedBuildings = chk ? new Set(state.buildings) : new Set(); renderList(); renderStacking(); }
 
-        function calcGroupedStats(units, type) {
+function calcGroupedStats(units, type) {
+            // [핵심 픽스] 엑셀 컬럼명 공백 무시 마커 추출기
+            const getMark = (obj) => {
+                for (let k in obj) {
+                    if (k.replace(/\s/g, '') === '통계') return (obj[k] || '').toString().trim().toLowerCase();
+                }
+                return '';
+            };
+
             let processedGroups = new Set(); let sumPrice = 0; let sumArea = 0;
             units.forEach(u => {
                 let gid = u.unique_group_id || `single_${u.id}`; 
@@ -1676,7 +1700,7 @@
                 // [스마트 복합 필터] i, g, blank, x 분리
                 let i_list = [], g_list = [], blank_list = [];
                 members.forEach(m => {
-                    const mark = (m['통계'] || '').toString().trim().toLowerCase();
+                    const mark = getMark(m);
                     if (mark === 'i') i_list.push(m);
                     else if (mark === 'g') g_list.push(m);
                     else if (mark === 'x') { /* x는 통계에서 완전히 무시 */ }
@@ -2299,9 +2323,13 @@ function openMiniRentAppraisal(id) {
                 const u = state.allData.find(x => String(x.id) === String(id));
                 if(!u) { alert('데이터를 찾을 수 없습니다.'); return; }
 
+                const getMark = (obj) => {
+                    for (let k in obj) { if (k.replace(/\s/g, '') === '통계') return (obj[k] || '').toString().trim().toLowerCase(); }
+                    return '';
+                };
+
                 const zone = u.exit || "미지정";
                 
-                // [핵심 픽스] 유령 함수 제거 및 안전한 대로변 판별 로직 도입
                 const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => bName.replace(/\s/g,'').includes(t.replace(/\s/g,'')));
                 let isMainRoad = checkRoadside(u.building);
                 let roadside = isMainRoad ? '대로변' : '기타구역';
@@ -2316,14 +2344,29 @@ function openMiniRentAppraisal(id) {
                 const uTier = getTier(u.floor);
                 const uPos = u.pos || '';
                 
-                // [스마트 필터 적용] 'i' 마커 검사 후 단독 추출
-                const mark = (u['통계'] || '').toString().trim().toLowerCase();
-                const groupUnits = (u.unique_group_id && mark !== 'i') ? state.allData.filter(x => x.unique_group_id === u.unique_group_id) : [u];
+                // [스마트 라우팅] 진원지 마커 기반 타겟(groupUnits) 추출 및 우회 로직
+                const mark = getMark(u);
+                let groupUnits = [];
+                if (u.unique_group_id) {
+                    let allMembers = state.allData.filter(x => x.unique_group_id === u.unique_group_id);
+                    if (mark === 'i') {
+                        groupUnits = [u];
+                    } else if (mark === 'g') {
+                        groupUnits = allMembers.filter(m => getMark(m) === 'g');
+                    } else if (mark === 'x') {
+                        let gMembers = allMembers.filter(m => getMark(m) === 'g');
+                        groupUnits = gMembers.length > 0 ? gMembers : [u];
+                    } else {
+                        groupUnits = allMembers;
+                    }
+                } else {
+                    groupUnits = [u];
+                }
+
                 const sumArea = groupUnits.reduce((a,c)=>a+(parseFloat(c.area_p)||0), 0);
                 const sumDep = groupUnits.reduce((a,c)=>a+(parseFloat(c.deposit)||0), 0);
                 const sumRent = groupUnits.reduce((a,c)=>a+(parseFloat(c.rent)||0), 0);
 
-                // [복합 필터 이식] 주변 상권/건물 평균 산출 시 i/x/g 로직 적용
                 const getPyPrice = items => {
                     let sumAreaTemp = 0, sumRentTemp = 0;
                     let processed = new Set();
@@ -2336,7 +2379,7 @@ function openMiniRentAppraisal(id) {
                         
                         let i_list = [], g_list = [], blank_list = [];
                         members.forEach(m => {
-                            const mk = (m['통계'] || '').toString().trim().toLowerCase();
+                            const mk = getMark(m); // 내부 평가기에도 엑셀 띄어쓰기 방어 이식
                             if (mk === 'i') i_list.push(m);
                             else if (mk === 'g') g_list.push(m);
                             else if (mk === 'x') { /* 무시 */ }
@@ -2423,7 +2466,10 @@ function openMiniRentAppraisal(id) {
                 const fairRent = Math.round(finalPy * sumArea);
                 const fNum = val => typeof fmtNum === 'function' ? fmtNum(val) : Math.round(val).toLocaleString();
                 
-                document.getElementById('miniPrintTitle').innerText = `${u.building ? u.building.split(' ')[0] : ''} ${u.unit}호 적정 임대료`;
+                // [수정됨] 단일 호실번호(u.unit)가 아닌, 스마트 추출된 전체 호실번호를 결합하여 타이틀 출력
+                const titleUnitStr = groupUnits.map(x=>x.unit).join(',');
+                document.getElementById('miniPrintTitle').innerText = `${u.building ? u.building.split(' ')[0] : ''} ${titleUnitStr}호 적정 임대료`;
+                
                 document.getElementById('miniStoreName').innerText = u.store_name || '공실/상호미상';
                 document.getElementById('miniCurrentArea').innerText = sumArea.toFixed(1);
                 
@@ -2534,7 +2580,15 @@ function openMiniRentAppraisal(id) {
     renderMacroDash();
 }
 
-        function getTierStats(units, filterFn) {
+function getTierStats(units, filterFn) {
+            // [핵심 픽스] 엑셀 컬럼명 공백 무시 마커 추출기
+            const getMark = (obj) => {
+                for (let k in obj) {
+                    if (k.replace(/\s/g, '') === '통계') return (obj[k] || '').toString().trim().toLowerCase();
+                }
+                return '';
+            };
+
             const tUnits = units.filter(filterFn);
             if(tUnits.length === 0) return null;
 
@@ -2552,7 +2606,7 @@ function openMiniRentAppraisal(id) {
                     // [핵심] x 여부와 상관없이 건물의 물리적 총면적은 무조건 누적 (AVM 보존)
                     tTotalArea += (m.area_p || 0);
 
-                    const mark = (m['통계'] || '').toString().trim().toLowerCase();
+                    const mark = getMark(m);
                     if (mark === 'i') i_list.push(m);
                     else if (mark === 'g') g_list.push(m);
                     else if (mark === 'x') { /* 가격 통계에서는 무시 */ }
@@ -2588,7 +2642,7 @@ function openMiniRentAppraisal(id) {
                 
                 let i_list = [], g_list = [], blank_list = [];
                 members.forEach(m => {
-                    const mark = (m['통계'] || '').toString().trim().toLowerCase();
+                    const mark = getMark(m);
                     if (mark === 'i') i_list.push(m);
                     else if (mark === 'g') g_list.push(m);
                     else if (mark === 'x') { }
@@ -2625,7 +2679,15 @@ function openMiniRentAppraisal(id) {
             return res.trim() + '원';
         }
 
-        function calcBuildingAVM(units) {
+function calcBuildingAVM(units) {
+            // [핵심 픽스] 엑셀 컬럼명 공백 무시 마커 추출기
+            const getMark = (obj) => {
+                for (let k in obj) {
+                    if (k.replace(/\s/g, '') === '통계') return (obj[k] || '').toString().trim().toLowerCase();
+                }
+                return '';
+            };
+
             let totalValManwon = 0;
             let bPrice = 0, bArea = 0;
             let processed = new Set();
@@ -2637,7 +2699,7 @@ function openMiniRentAppraisal(id) {
                 
                 let i_list = [], g_list = [], blank_list = [];
                 members.forEach(m => {
-                    const mark = (m['통계'] || '').toString().trim().toLowerCase();
+                    const mark = getMark(m);
                     if (mark === 'i') i_list.push(m);
                     else if (mark === 'g') g_list.push(m);
                     else if (mark === 'x') { }
@@ -3047,28 +3109,50 @@ function applyAvmToSimulator() {
             return sumA > 0 ? (sumP / sumA) : 0;
         }
 
-    function openUnitSimulator(id) {
+function openUnitSimulator(id) {
             const t = state.allData.find(d => d.id === id);
             if (!t) return; // 데이터가 없을 경우 1차 방어
 
-            // [스마트 필터 적용] 클릭한 호실이 'i' 마커를 가졌다면, 통합 기호 무시하고 단독 추출
-            const mark = (t['통계'] || '').toString().trim().toLowerCase();
-            let units = (t.unique_group_id && mark !== 'i') ? state.allData.filter(d => d.unique_group_id === t.unique_group_id) : [t];
+            // [핵심 픽스] 엑셀 컬럼명 공백 무시 마커 추출기
+            const getMark = (obj) => {
+                for (let k in obj) { if (k.replace(/\s/g, '') === '통계') return (obj[k] || '').toString().trim().toLowerCase(); }
+                return '';
+            };
 
-            const sA = units.reduce((a, c) => a + c.area_p, 0), 
-                  sP = units.reduce((a, c) => a + (c.price_sell || 0), 0), 
-                  sD = units.reduce((a, c) => a + (c.deposit || 0), 0), 
-                  sR = units.reduce((a, c) => a + (c.rent || 0), 0);
+            // [스마트 라우팅] 진원지 마커 기반 타겟(units) 추출 및 우회 로직
+            const mark = getMark(t);
+            let units = [];
+            if (t.unique_group_id) {
+                let allMembers = state.allData.filter(d => d.unique_group_id === t.unique_group_id);
+                if (mark === 'i') {
+                    units = [t]; // i는 진원지 단독 추출
+                } else if (mark === 'g') {
+                    units = allMembers.filter(m => getMark(m) === 'g'); // g는 그룹 내 g만 합산
+                } else if (mark === 'x') {
+                    // [스마트 우회] x를 눌렀을 경우, 빈껍데기 방지를 위해 그룹 내 본체(g)로 강제 우회
+                    let gMembers = allMembers.filter(m => getMark(m) === 'g');
+                    units = gMembers.length > 0 ? gMembers : [t]; 
+                } else {
+                    units = allMembers; // 공란은 기존처럼 전체 그룹 추출
+                }
+            } else {
+                units = [t];
+            }
+
+            const sA = units.reduce((a, c) => a + (parseFloat(c.area_p)||0), 0), 
+                  sP = units.reduce((a, c) => a + (parseFloat(c.price_sell)||0), 0), 
+                  sD = units.reduce((a, c) => a + (parseFloat(c.deposit)||0), 0), 
+                  sR = units.reduce((a, c) => a + (parseFloat(c.rent)||0), 0);
             
             const titleText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호";
             
-            // [수정됨] 타이틀 주입 방어 로직 (기존 체인 할당 분리)
             const titleEl = document.getElementById('usimTitle');
             if (titleEl) titleEl.innerText = titleText;
             
             const titlePrintEl = document.getElementById('usimTitlePrint');
             if (titlePrintEl) titlePrintEl.innerText = titleText;
 
+            // [핵심] 추출된 '진짜 바구니'의 합산 데이터를 전역변수에 안전하게 보관 (0/0 오류 픽스 기반)
             state.unitSimOrigPrice = sP; state.unitSimOrigDep = sD; state.unitSimOrigRent = sR; state.unitSimArea = sA;
             
             const b = t.building, f = t.floor, z = ROADSIDE_TARGETS.some(x => b.includes(x)) ? '대로변' : t.exit;
@@ -3078,7 +3162,6 @@ function applyAvmToSimulator() {
             const inputRentEl = document.getElementById('usimInputRent');
             if (inputRentEl) inputRentEl.value = (sR || 150).toLocaleString();
 
-            // [수정됨] 에러의 진원지였던 시장가치 산출근거 방어 로직
             const basisEl = document.getElementById('usimMarketBasis');
             if (basisEl) {
                 basisEl.innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
@@ -3089,7 +3172,6 @@ function applyAvmToSimulator() {
                 origStateEl.innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
             }
 
-            // [수정됨] 슬라이더 및 라벨 값 셋팅 안전 함수
             const setVal = (id, val, textId, textVal) => {
                 const el = document.getElementById(id);
                 const txtEl = document.getElementById(textId);
@@ -3110,7 +3192,7 @@ function applyAvmToSimulator() {
         }
 
 function calcUnitSimulator() {
-            const rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
+            let rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
             const cap = parseFloat(document.getElementById('usimCapRate').value), 
                   w = parseFloat(document.getElementById('usimWeight').value)/100, 
                   ltv = parseFloat(document.getElementById('usimLtv').value)/100,
@@ -3120,21 +3202,34 @@ function calcUnitSimulator() {
             const u = state.allData.find(x => String(x.id) === String(currentId));
             if(!u) return;
 
-            // [Phase 3] 실사용 체크박스 상태 확인 및 보증금 배수 0 강제 세팅
+            // [Phase 3 & 4] 실사용 및 현호가 체크박스 상태 확인
             const occEl = document.getElementById('usimUserOccupied');
             const isOccupied = occEl ? occEl.checked : false;
+            
+            const origEl = document.getElementById('usimUseOrig');
+            const useOrig = origEl ? origEl.checked : false;
+
             const multEl = document.getElementById('usimDepMult');
             let mult = parseInt(multEl.value) || 0;
             
-            if (isOccupied) {
+            let dep = 0;
+
+            // [핵심 픽스] 현호가 체크 시 원본 데이터 강제 주입
+            if (useOrig) {
+                rent = state.unitSimOrigRent || 0;
+                dep = state.unitSimOrigDep || 0;
+                document.getElementById('usimInputRent').value = rent.toLocaleString(); // 입력창 동기화
+                if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
+            } else if (isOccupied) {
                 mult = 0;
                 if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
+                dep = 0;
             } else {
                 if(multEl) { multEl.disabled = false; multEl.style.opacity = '1'; }
+                dep = Math.round((rent * mult)/100)*100;
             }
 
             const area = parseFloat(state.unitSimArea) || parseFloat(u.area_p) || 0;
-            const dep = Math.round((rent * mult)/100)*100;
 
             const getTier = (flr) => {
                 const f = parseInt(flr);
@@ -3226,8 +3321,9 @@ function calcUnitSimulator() {
                     return '0';
                 };
                 const sellTxt = origPrice > 0 ? fmtTop(origPrice) : '미정';
-                const rTxt = u.rent > 0 ? fmtTop(u.rent) : '0';
-                const dTxt = u.deposit > 0 ? fmtTop(u.deposit) : '0';
+                // [핵심 픽스] u.rent 가 아닌, 추출된 전체 그룹의 원본 임대료/보증금을 강제로 불러와 0/0 오류 완벽 해결
+                const rTxt = state.unitSimOrigRent > 0 ? fmtTop(state.unitSimOrigRent) : '0';
+                const dTxt = state.unitSimOrigDep > 0 ? fmtTop(state.unitSimOrigDep) : '0';
                 topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
             }
 
@@ -3250,7 +3346,7 @@ function calcUnitSimulator() {
 
             const yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
             const mV = Math.round((area * mPy)/100)*100;
-            const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; // AI 최종 도출 적정가
+            const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
 
             const mx = Math.max(origPrice, mV, fP) * 1.3 || 1;
 
@@ -3269,17 +3365,15 @@ function calcUnitSimulator() {
             updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
             updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
 
-            // [Phase 4] 최종 적용가 슬라이더 제어 및 하단 통계 연동
             const sliderEl = document.getElementById('usimAppliedPriceSlider');
             let appliedPrice = parseInt(sliderEl.value) || 0;
 
-            // 새로운 호실을 열었을 경우 슬라이더 및 실사용 체크박스 초기화
             if (state.lastSimId !== currentId) {
                 state.lastSimId = currentId;
-                if(occEl) occEl.checked = false; // 실사용 리셋
-                mult = parseInt(multEl.value) || 0; // 배수 원상복구
+                if(occEl) occEl.checked = false; 
+                if(origEl) origEl.checked = false; // [추가됨] 새로운 호실 열면 현호가 체크박스도 리셋
+                mult = parseInt(multEl.value) || 0; 
                 
-                // 처음엔 현재 호가(origPrice)로 세팅, 호가가 없으면 AI 적정가(fP)로 세팅
                 appliedPrice = origPrice > 0 ? origPrice : fP;
                 sliderEl.max = Math.max(mx, appliedPrice * 1.5);
                 sliderEl.value = appliedPrice;
@@ -3287,7 +3381,6 @@ function calcUnitSimulator() {
                 sliderEl.max = Math.max(sliderEl.max, mx);
             }
 
-            // 슬라이더 UI 렌더링
             const appliedBar = document.getElementById('barApplied');
             if(appliedBar) {
                 appliedBar.style.width = Math.min(100, (appliedPrice/sliderEl.max*100)) + '%';
@@ -3298,23 +3391,21 @@ function calcUnitSimulator() {
                 lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice/area).toLocaleString()}만` : '-';
             }
 
-            // --- [핵심] 이제 하단 통계는 fP(도출가)가 아닌 appliedPrice(적용가)를 기반으로 계산! ---
             const tF = Math.round(appliedPrice * 0.055);
             const tax = Math.round(appliedPrice * 0.046);
             const fee = Math.round(appliedPrice * 0.009);
             const loan = Math.round(appliedPrice * ltv);
             
-            // 실제 보증금(dep)은 isOccupied가 true면 0으로 계산되므로 실투자금이 정확히 늘어남
+            // 현호가와 실사용이 동시에 켜질 수 있지만, 실사용이 우선시되어 실 보증금은 0으로 계산됨
             const realDep = isOccupied ? 0 : dep;
             const cash = appliedPrice + tF - loan - realDep;
             const mI = Math.round((loan * rate) / 12);
             const net = rent - mI;
 
             const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-            setTxt('usimTopDeposit', fmtSmartMoney(realDep)); // 보증금 0 표기 연동
+            setTxt('usimTopDeposit', fmtSmartMoney(realDep)); 
             setTxt('resUsimFinalPrice', fmtSmartMoney(appliedPrice));
             
-            // 수익률도 appliedPrice 기반으로 재계산
             setTxt('resUsimCapRate', (appliedPrice-realDep > 0 ? (rent*12)/(appliedPrice-realDep)*100 : 0).toFixed(2) + '%');
             setTxt('resUsimCash', fmtSmartMoney(cash));
             setTxt('resUsimRoe', (cash > 0 ? (net*12)/cash*100 : 0).toFixed(2) + '%');
