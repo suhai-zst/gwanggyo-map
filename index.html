@@ -2577,69 +2577,78 @@ function openMiniRentAppraisal(id) {
 }
 
 function getTierStats(units, filterFn) {
-            const tUnits = units.filter(filterFn);
-            if(tUnits.length === 0) return null;
+    const tUnits = units.filter(filterFn);
+    if(tUnits.length === 0) return null;
 
-            let tPrice = 0, tRent = 0, tDep = 0, tArea = 0, tTotalArea = 0;
-            let tProcessed = new Set();
-            
-            tUnits.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`;
-                if(tProcessed.has(gid)) return; tProcessed.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                
-                let i_list = [], g_list = [], blank_list = [];
-                members.forEach(m => {
-                    tTotalArea += (m.area_p || 0);
-                    const mark = m.mark || '';
-                    if (mark === 'i') i_list.push(m);
-                    else if (mark === 'g') g_list.push(m);
-                    else if (mark === 'x') { }
-                    else blank_list.push(m);
-                });
+    let tPrice = 0, tRent = 0, tDep = 0, tArea = 0;
+    // 💡 물리적 총 면적: x 마커 등과 상관없이 해당 층에 존재하는 모든 호실의 실제 면적 합산
+    let tTotalArea = tUnits.reduce((sum, u) => sum + (parseFloat(u.area_p) || 0), 0);
+    let tProcessed = new Set();
+    
+    tUnits.forEach(u => {
+        const mk = u.mark || '';
+        
+        // 1. x 마커: 평균 단가 연산에서 완벽히 배제
+        if (mk === 'x') return;
 
-                const processSubGroup = (subMembers) => {
-                    if (subMembers.length === 0) return;
-                    let sPrice = 0, sRent = 0, sDep = 0, sArea = 0;
-                    subMembers.forEach(m => {
-                        sArea += (m.area_p || 0);
-                        if(m.price_sell > 0) sPrice += m.price_sell;
-                        if(m.rent > 0) { sRent += m.rent; sDep += m.deposit || 0; }
-                    });
-                    if(sPrice > 0) { tPrice += sPrice; tArea += sArea; }
-                    if(sRent > 0) { tRent += sRent; tDep += sDep; }
-                };
-                i_list.forEach(m => processSubGroup([m]));
-                processSubGroup(g_list); processSubGroup(blank_list);
-            });
+        // 2. i 마커 (또는 빈칸): 무조건 자기 자신만 독립 연산
+        if (mk === 'i' || !u.unique_group_id || mk === '') {
+            if(u.price_sell > 0) { tPrice += u.price_sell; tArea += (parseFloat(u.area_p) || 0); }
+            if(u.rent > 0) { tRent += u.rent; tDep += (parseFloat(u.deposit) || 0); }
+        } 
+        // 3. g 마커: 같은 그룹명 & 'g' 마커인 호실만 모아서 합산
+        else if (mk === 'g') {
+            let gid = u.unique_group_id;
+            if(tProcessed.has(gid)) return;
+            tProcessed.add(gid);
+
+            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+            let gSell = 0, gRent = 0, gDep = 0, gArea = 0;
             
-            let ppSell = tArea > 0 ? (tPrice / tArea) : 0;
-            let rArea = 0;
-            tProcessed.clear();
-            tUnits.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`;
-                if(tProcessed.has(gid)) return; tProcessed.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                let i_list = [], g_list = [], blank_list = [];
-                members.forEach(m => {
-                    const mark = m.mark || '';
-                    if (mark === 'i') i_list.push(m);
-                    else if (mark === 'g') g_list.push(m);
-                    else if (mark === 'x') { }
-                    else blank_list.push(m);
-                });
-                const addRentArea = (subMembers) => {
-                    let hasRent = subMembers.some(m => m.rent > 0);
-                    if(hasRent) subMembers.forEach(m => rArea += (m.area_p||0));
-                };
-                i_list.forEach(m => addRentArea([m]));
-                addRentArea(g_list); addRentArea(blank_list);
+            g_members.forEach(m => {
+                gArea += (parseFloat(m.area_p) || 0);
+                if(m.price_sell > 0) gSell += m.price_sell;
+                if(m.rent > 0) { gRent += m.rent; gDep += (parseFloat(m.deposit) || 0); }
             });
-            let ppRent = rArea > 0 ? (tRent / rArea) : 0;
-            let yieldRate = 0;
-            if (tPrice > 0 && tRent > 0) { const cost = tPrice - tDep; if (cost > 0) yieldRate = ((tRent * 12) / cost * 100); }
-            return { ppSell, ppRent, yieldRate, totalArea: tTotalArea, count: tUnits.length };
+
+            if(gSell > 0) { tPrice += gSell; tArea += gArea; }
+            if(gRent > 0) { tRent += gRent; tDep += gDep; }
         }
+    });
+
+    let ppSell = tArea > 0 ? (tPrice / tArea) : 0;
+    
+    // 임대 면적(rArea) 별도 계산 
+    let rArea = 0;
+    tProcessed.clear();
+    tUnits.forEach(u => {
+        const mk = u.mark || '';
+        if (mk === 'x') return;
+
+        if (mk === 'i' || !u.unique_group_id || mk === '') {
+            if(u.rent > 0) rArea += (parseFloat(u.area_p) || 0);
+        } else if (mk === 'g') {
+            let gid = u.unique_group_id;
+            if(tProcessed.has(gid)) return;
+            tProcessed.add(gid);
+
+            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+            let hasRent = g_members.some(m => m.rent > 0);
+            if(hasRent) {
+                g_members.forEach(m => rArea += (parseFloat(m.area_p) || 0));
+            }
+        }
+    });
+
+    let ppRent = rArea > 0 ? (tRent / rArea) : 0;
+    let yieldRate = 0;
+    if (tPrice > 0 && tRent > 0) { 
+        const cost = tPrice - tDep; 
+        if (cost > 0) yieldRate = ((tRent * 12) / cost * 100); 
+    }
+
+    return { ppSell, ppRent, yieldRate, totalArea: tTotalArea, count: tUnits.length };
+}
 
         function fmtKoreanMoney(valInManwon) {
             if (!valInManwon || isNaN(valInManwon) || valInManwon === 0) return '0원';
@@ -2652,45 +2661,53 @@ function getTierStats(units, filterFn) {
         }
 
 function calcBuildingAVM(units) {
-            let totalValManwon = 0; let bPrice = 0, bArea = 0; let processed = new Set();
-            units.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`;
-                if(processed.has(gid)) return; processed.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                let i_list = [], g_list = [], blank_list = [];
-                members.forEach(m => {
-                    const mark = m.mark || '';
-                    if (mark === 'i') i_list.push(m);
-                    else if (mark === 'g') g_list.push(m);
-                    else if (mark === 'x') { }
-                    else blank_list.push(m);
-                });
-                const addSubGroup = (subMembers) => {
-                    if(subMembers.length === 0) return;
-                    let sPrice = 0, sArea = 0;
-                    subMembers.forEach(m => { sPrice += (m.price_sell||0); sArea += (m.area_p||0); });
-                    bPrice += sPrice; bArea += sArea;
-                };
-                i_list.forEach(m => addSubGroup([m]));
-                addSubGroup(g_list); addSubGroup(blank_list);
+    let totalValManwon = 0; let bPrice = 0, bArea = 0; let processed = new Set();
+    
+    units.forEach(u => {
+        const mk = u.mark || '';
+        if (mk === 'x') return;
+
+        if (mk === 'i' || !u.unique_group_id || mk === '') {
+            bPrice += (parseFloat(u.price_sell) || 0);
+            bArea += (parseFloat(u.area_p) || 0);
+        } else if (mk === 'g') {
+            let gid = u.unique_group_id;
+            if(processed.has(gid)) return;
+            processed.add(gid);
+
+            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+            g_members.forEach(m => {
+                bPrice += (parseFloat(m.price_sell) || 0);
+                bArea += (parseFloat(m.area_p) || 0);
             });
-            let fallbackPP = bArea > 0 ? bPrice / bArea : 0;
-            const getF = f => { if(!f) return 0; if(f.includes('B')) return -parseInt(f.replace('B','')); return parseInt(f.replace(/\D/g,'')) || 0; };
-            const tiers = [
-                { id: '1f_front', f: u => getF(u.floor)===1 && ['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
-                { id: '1f_back', f: u => getF(u.floor)===1 && !['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
-                { id: '2f', f: u => getF(u.floor)===2 },
-                { id: '3f_up', f: u => getF(u.floor)>=3 }
-            ];
-            tiers.forEach(t => {
-                const stats = getTierStats(units, t.f);
-                if(stats) {
-                    let tierPP = stats.ppSell > 0 ? stats.ppSell : fallbackPP;
-                    totalValManwon += (stats.totalArea * tierPP);
-                }
-            });
-            return totalValManwon;
         }
+    });
+
+    let fallbackPP = bArea > 0 ? bPrice / bArea : 0;
+    
+    const getF = f => { 
+        if(!f) return 0; 
+        if(f.includes('B')) return -parseInt(f.replace('B','')); 
+        return parseInt(f.replace(/\D/g,'')) || 0; 
+    };
+
+    const tiers = [
+        { id: '1f_front', f: u => getF(u.floor)===1 && ['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
+        { id: '1f_back', f: u => getF(u.floor)===1 && !['전면','대로변','코너'].some(p=>u.pos.includes(p)) },
+        { id: '2f', f: u => getF(u.floor)===2 },
+        { id: '3f_up', f: u => getF(u.floor)>=3 }
+    ];
+
+    tiers.forEach(t => {
+        const stats = getTierStats(units, t.f);
+        if(stats) {
+            let tierPP = stats.ppSell > 0 ? stats.ppSell : fallbackPP;
+            totalValManwon += (stats.totalArea * tierPP);
+        }
+    });
+
+    return totalValManwon;
+}
 
 function renderMacroDash() {
     const selections = ['dashSel1', 'dashSel2', 'dashSel3'].map(id => document.getElementById(id).value).filter(Boolean);
