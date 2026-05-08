@@ -1682,37 +1682,49 @@ function processData(data) {
         function toggleAllBuildings(chk) { state.checkedBuildings = chk ? new Set(state.buildings) : new Set(); renderList(); renderStacking(); }
 
 function calcGroupedStats(units, type) {
-            let processedGroups = new Set(); let sumPrice = 0; let sumArea = 0;
-            units.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`; 
-                if (processedGroups.has(gid)) return; processedGroups.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                
-                let i_list = [], g_list = [], blank_list = [];
-                members.forEach(m => {
-                    const mark = m.mark || '';
-                    if (mark === 'i') i_list.push(m);
-                    else if (mark === 'g') g_list.push(m);
-                    else if (mark === 'x') { }
-                    else blank_list.push(m);
-                });
+    let processedGids = new Set(); 
+    let sumPrice = 0; 
+    let sumArea = 0;
 
-                const processSubGroup = (subMembers) => {
-                    if (subMembers.length === 0) return;
-                    let groupPrice = 0; let groupArea = 0;
-                    subMembers.forEach(m => {
-                        const area = m.area_p || 0; 
-                        if (type === 'sell') groupPrice += (m.price_sell || 0); else groupPrice += (m.rent || 0); 
-                        groupArea += area; 
-                    });
-                    if (groupPrice > 0 && groupArea >= 1) { sumPrice += groupPrice; sumArea += groupArea; }
-                };
-                i_list.forEach(m => processSubGroup([m]));
-                processSubGroup(g_list);
-                processSubGroup(blank_list);
+    units.forEach(u => {
+        const mk = u.mark || '';
+        
+        // 1. x 마커: 완전히 무시
+        if (mk === 'x') return;
+
+        // 2. i 마커 (또는 빈칸): 통합 그룹 무시하고 자기 자신만 독립 계산
+        if (mk === 'i' || !u.unique_group_id || mk === '') {
+            const area = parseFloat(u.area_p) || 0;
+            const val = type === 'sell' ? (parseFloat(u.price_sell) || 0) : (parseFloat(u.rent) || 0);
+            if (val > 0 && area >= 1) {
+                sumPrice += val;
+                sumArea += area;
+            }
+        } 
+        // 3. g 마커: 그룹원 중 'g'인 녀석들만 불러와서 묶음 계산
+        else if (mk === 'g') {
+            let gid = u.unique_group_id;
+            if (processedGids.has(gid)) return;
+            processedGids.add(gid);
+
+            // 전체 데이터에서 같은 그룹이면서 동시에 'g' 마커인 호실만 추출
+            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+            let groupPrice = 0; 
+            let groupArea = 0;
+            
+            g_members.forEach(m => {
+                groupArea += (parseFloat(m.area_p) || 0);
+                groupPrice += type === 'sell' ? (parseFloat(m.price_sell) || 0) : (parseFloat(m.rent) || 0);
             });
-            return sumArea > 0 ? sumPrice / sumArea : 0;
+
+            if (groupPrice > 0 && groupArea >= 1) {
+                sumPrice += groupPrice;
+                sumArea += groupArea;
+            }
         }
+    });
+    return sumArea > 0 ? sumPrice / sumArea : 0;
+}
         
         function fmtRentAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '만원'; }
         function fmtSellAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {maximumFractionDigits: 0}) + '만원'; }
@@ -2351,32 +2363,39 @@ function openMiniRentAppraisal(id) {
 
                 const getPyPrice = items => {
                     let sumAreaTemp = 0, sumRentTemp = 0;
-                    let processed = new Set();
+                    let processedGids = new Set();
+                
                     items.forEach(item => {
-                        let gid = item.unique_group_id || `single_${item.id}`;
-                        if (processed.has(gid)) return;
-                        processed.add(gid);
-
-                        let members = item.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [item];
+                        const mk = item.mark || '';
                         
-                        let i_list = [], g_list = [], blank_list = [];
-                        members.forEach(m => {
-                            const mk = m.mark || ''; // 내부 평가기에도 .mark 속성 호출 보정
-                            if (mk === 'i') i_list.push(m);
-                            else if (mk === 'g') g_list.push(m);
-                            else if (mk === 'x') { /* 무시 */ }
-                            else blank_list.push(m);
-                        });
-
-                        const processSubGroup = (subMembers) => {
-                            if(subMembers.length === 0) return;
+                        if (mk === 'x') return;
+                
+                        if (mk === 'i' || !item.unique_group_id || mk === '') {
+                            let finalVal = parseFloat(item.rent) || 0;
+                            let area = parseFloat(item.area_p) || 0;
+                            let dep = parseFloat(item.deposit) || 0;
+                
+                            if (finalVal > 0 && area > 0) {
+                                if (dep > finalVal * 12) {
+                                    finalVal += (dep - (finalVal * 12)) * 0.05 / 12;
+                                }
+                                sumAreaTemp += area;
+                                sumRentTemp += finalVal;
+                            }
+                        } else if (mk === 'g') {
+                            let gid = item.unique_group_id;
+                            if (processedGids.has(gid)) return;
+                            processedGids.add(gid);
+                
+                            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
                             let groupArea = 0, gRent = 0, gDep = 0;
-                            subMembers.forEach(m => {
+                            
+                            g_members.forEach(m => {
                                 groupArea += (parseFloat(m.area_p) || 0);
                                 gRent += (parseFloat(m.rent) || 0);
                                 gDep += (parseFloat(m.deposit) || 0);
                             });
-
+                
                             if (gRent > 0 && groupArea > 0) {
                                 let finalVal = gRent;
                                 if (gDep > gRent * 12) {
@@ -2385,11 +2404,7 @@ function openMiniRentAppraisal(id) {
                                 sumAreaTemp += groupArea;
                                 sumRentTemp += finalVal;
                             }
-                        };
-
-                        i_list.forEach(m => processSubGroup([m]));
-                        processSubGroup(g_list);
-                        processSubGroup(blank_list);
+                        }
                     });
                     return sumAreaTemp > 0 ? (sumRentTemp / sumAreaTemp) : 0;
                 };
@@ -3151,47 +3166,51 @@ function calcUnitSimulator() {
             // [핵심 픽스 1] 가치평가 엔진 내부의 단가 계산기에도 i, g, x 라우팅 로직 완벽 이식
             const getAvgPy = (items, type) => {
                 let sumArea = 0, sumVal = 0;
-                let processed = new Set();
+                let processedGids = new Set();
+            
                 items.forEach(item => {
-                    let gid = item.unique_group_id || `single_${item.id}`;
-                    if (processed.has(gid)) return;
-                    processed.add(gid);
-
-                    let members = item.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [item];
+                    const mk = item.mark || '';
                     
-                    let i_list = [], g_list = [], blank_list = [];
-                    members.forEach(m => {
-                        const mk = m.mark || '';
-                        if (mk === 'i') i_list.push(m);
-                        else if (mk === 'g') g_list.push(m);
-                        else if (mk === 'x') { /* x 마커는 평균 단가 계산에서 완벽히 배제 (단가 깎아먹기 방지) */ }
-                        else blank_list.push(m);
-                    });
-
-                    const processSubGroup = (subMembers) => {
-                        if (subMembers.length === 0) return;
+                    if (mk === 'x') return;
+            
+                    if (mk === 'i' || !item.unique_group_id || mk === '') {
+                        let area = parseFloat(item.area_p) || 0;
+                        let val = type === 'rent' ? (parseFloat(item.rent) || 0) : (parseFloat(item.price_sell) || 0);
+                        let dep = parseFloat(item.deposit) || 0;
+            
+                        if (val > 0 && area > 0) {
+                            let finalVal = val;
+                            if (type === 'rent' && dep > val * 12) {
+                                finalVal += (dep - (val * 12)) * 0.05 / 12;
+                            }
+                            sumArea += area;
+                            sumVal += finalVal;
+                        }
+                    } else if (mk === 'g') {
+                        let gid = item.unique_group_id;
+                        if (processedGids.has(gid)) return;
+                        processedGids.add(gid);
+            
+                        let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
                         let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
-                        subMembers.forEach(m => {
+            
+                        g_members.forEach(m => {
                             groupArea += (parseFloat(m.area_p) || 0);
                             groupRent += (parseFloat(m.rent) || 0);
                             groupSell += (parseFloat(m.price_sell) || 0);
                             groupDep += (parseFloat(m.deposit) || 0);
                         });
-
-                        const val = type === 'rent' ? groupRent : groupSell;
-                        if (val > 0 && groupArea > 0) {
-                            let finalVal = val;
-                            if (type === 'rent' && groupDep > val * 12) {
-                                finalVal += (groupDep - (val * 12)) * 0.05 / 12;
+            
+                        const groupVal = type === 'rent' ? groupRent : groupSell;
+                        if (groupVal > 0 && groupArea > 0) {
+                            let finalVal = groupVal;
+                            if (type === 'rent' && groupDep > groupVal * 12) {
+                                finalVal += (groupDep - (groupVal * 12)) * 0.05 / 12;
                             }
                             sumArea += groupArea;
                             sumVal += finalVal;
                         }
-                    };
-
-                    i_list.forEach(m => processSubGroup([m]));
-                    processSubGroup(g_list);
-                    processSubGroup(blank_list);
+                    }
                 });
                 return sumArea > 0 ? (sumVal / sumArea) : 0;
             };
