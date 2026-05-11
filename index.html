@@ -3076,58 +3076,114 @@ function applyAvmToSimulator() {
             return sumA > 0 ? (sumP / sumA) : 0;
         }
 
+// 통매각 모드 상태 관리를 위한 변수 (최초 1회만 선언되도록 방어 로직 추가)
+if (typeof state.isPackageMode === 'undefined') {
+    state.isPackageMode = false;
+}
+
 function openUnitSimulator(id) {
-            const t = state.allData.find(d => d.id === id);
-            if (!t) return;
-            const mark = t.mark || '';
-            let units = [];
-            if (t.unique_group_id) {
-                let allMembers = state.allData.filter(d => d.unique_group_id === t.unique_group_id);
-                if (mark === 'i') {
-                    units = [t];
-                } else if (mark === 'g') {
-                    units = allMembers.filter(m => (m.mark || '') === 'g');
-                } else if (mark === 'x') {
-                    let gMembers = allMembers.filter(m => (m.mark || '') === 'g');
-                    units = gMembers.length > 0 ? gMembers : [t]; 
-                } else {
-                    units = allMembers;
-                }
-            } else {
+    const t = state.allData.find(d => d.id === id);
+    if (!t) return;
+    
+    const mark = t.mark || '';
+    let units = [];
+    
+    // [개조 1] 데이터 수집 로직: 통매각 모드 ON vs OFF 분기
+    if (t.unique_group_id) {
+        let allMembers = state.allData.filter(d => d.unique_group_id === t.unique_group_id);
+        
+        if (state.isPackageMode) {
+            // 통매각 ON: 같은 그룹 중 x 마커만 칼같이 버리고 i, g는 모두 끌어모음
+            units = allMembers.filter(m => (m.mark || '') !== 'x');
+        } else {
+            // 통매각 OFF: 기존 철칙 유지 (i는 단독, g는 g끼리)
+            if (mark === 'i') {
                 units = [t];
+            } else if (mark === 'g') {
+                units = allMembers.filter(m => (m.mark || '') === 'g');
+            } else if (mark === 'x') {
+                let gMembers = allMembers.filter(m => (m.mark || '') === 'g');
+                units = gMembers.length > 0 ? gMembers : [t]; 
+            } else {
+                units = allMembers;
             }
-            const sA = units.reduce((a, c) => a + (parseFloat(c.area_p)||0), 0), 
-                  sP = units.reduce((a, c) => a + (parseFloat(c.price_sell)||0), 0), 
-                  sD = units.reduce((a, c) => a + (parseFloat(c.deposit)||0), 0), 
-                  sR = units.reduce((a, c) => a + (parseFloat(c.rent)||0), 0);
-            const titleText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호";
-            const titleEl = document.getElementById('usimTitle');
-            if (titleEl) titleEl.innerText = titleText;
-            const titlePrintEl = document.getElementById('usimTitlePrint');
-            if (titlePrintEl) titlePrintEl.innerText = titleText;
-            state.unitSimOrigPrice = sP; state.unitSimOrigDep = sD; state.unitSimOrigRent = sR; state.unitSimArea = sA;
-            const b = t.building, f = t.floor, z = ROADSIDE_TARGETS.some(x => b.includes(x)) ? '대로변' : t.exit;
-            let bS = getAvgPP(state.allData.filter(d => d.building === b && d.floor === f && d.price_sell > 0), 'sell') || getAvgPP(state.allData.filter(d => d.building === b && d.price_sell > 0), 'sell');
-            state.unitMarketAvg = bS || 4000;
-            const inputRentEl = document.getElementById('usimInputRent');
-            if (inputRentEl) inputRentEl.value = (sR || 150).toLocaleString();
-            const basisEl = document.getElementById('usimMarketBasis');
-            if (basisEl) basisEl.innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
-            const origStateEl = document.getElementById('usimOrigState');
-            if (origStateEl) origStateEl.innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
-            const setVal = (id, val, textId, textVal) => {
-                const el = document.getElementById(id); const txtEl = document.getElementById(textId);
-                if (el) el.value = val; if (txtEl) txtEl.innerText = textVal;
-            };
-            setVal('usimCapRate', 4.0, 'lblUsimCapRate', "4.0");
-            setVal('usimWeight', 50, 'lblUsimWeight', "50");
-            setVal('usimDepMult', 15, 'lblUsimDepMult', "15");
-            setVal('usimLtv', 30, 'lblUsimLtv', "30%");
-            setVal('usimRate', 4.5, 'lblUsimRate', "4.5%");
-            const modalEl = document.getElementById('unitSimulatorModal');
-            if (modalEl) modalEl.classList.remove('hidden');
-            calcUnitSimulator();
         }
+    } else {
+        units = [t];
+    }
+
+    // 합산 면적 및 가격 계산
+    const sA = units.reduce((a, c) => a + (parseFloat(c.area_p)||0), 0), 
+          sP = units.reduce((a, c) => a + (parseFloat(c.price_sell)||0), 0), 
+          sD = units.reduce((a, c) => a + (parseFloat(c.deposit)||0), 0), 
+          sR = units.reduce((a, c) => a + (parseFloat(c.rent)||0), 0);
+    
+    // 타이틀 세팅 (통매각 시 '901,902,903호' 형태로 표기됨)
+    const titleText = cleanBuildingName(t.building) + " " + units.map(u=>u.unit).join(',') + "호" + (state.isPackageMode ? " (통매각 패키지)" : "");
+    const titleEl = document.getElementById('usimTitle');
+    if (titleEl) titleEl.innerText = titleText;
+    const titlePrintEl = document.getElementById('usimTitlePrint');
+    if (titlePrintEl) titlePrintEl.innerText = titleText;
+    
+    // [개조 2] UI 스위치 주입 로직 (타이틀 아래에 스위치 생성)
+    const headerContainer = titleEl.parentElement;
+    let switchHtml = document.getElementById('packageSwitchContainer');
+    if (t.unique_group_id) { // 통합 그룹명이 있을 때만 스위치 노출
+        if (!switchHtml) {
+            switchHtml = document.createElement('div');
+            switchHtml.id = 'packageSwitchContainer';
+            switchHtml.className = 'mt-2 text-right';
+            headerContainer.appendChild(switchHtml);
+        }
+        switchHtml.innerHTML = `
+            <label class="inline-flex items-center cursor-pointer bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+                <input type="checkbox" id="chkPackageMode" class="sr-only peer" ${state.isPackageMode ? 'checked' : ''}>
+                <div class="relative w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                <span class="ms-2 text-xs font-bold ${state.isPackageMode ? 'text-emerald-700' : 'text-slate-600'}">그룹 통매각 패키지로 분석하기</span>
+            </label>
+        `;
+        // 스위치 클릭 이벤트 (토글 시 시뮬레이터 리로드)
+        document.getElementById('chkPackageMode').addEventListener('change', function(e) {
+            state.isPackageMode = e.target.checked;
+            // 스위치를 켤 때 lastSimId를 초기화하여 슬라이더와 호가가 리셋되도록 함
+            state.lastSimId = null; 
+            openUnitSimulator(id);
+        });
+    } else {
+        if (switchHtml) switchHtml.remove(); // 그룹이 없으면 스위치 숨김
+    }
+
+    state.unitSimOrigPrice = sP; state.unitSimOrigDep = sD; state.unitSimOrigRent = sR; state.unitSimArea = sA;
+    
+    const b = t.building, f = t.floor, z = ROADSIDE_TARGETS.some(x => b.includes(x)) ? '대로변' : t.exit;
+    let bS = getAvgPP(state.allData.filter(d => d.building === b && d.floor === f && d.price_sell > 0), 'sell') || getAvgPP(state.allData.filter(d => d.building === b && d.price_sell > 0), 'sell');
+    state.unitMarketAvg = bS || 4000;
+    
+    const inputRentEl = document.getElementById('usimInputRent');
+    if (inputRentEl) inputRentEl.value = (sR || 150).toLocaleString();
+    
+    const basisEl = document.getElementById('usimMarketBasis');
+    if (basisEl) basisEl.innerHTML = `💡 <b>시장가치 산출근거:</b> ${b} ${f}층 평단가 <b>${fmtSmartMoney(state.unitMarketAvg)}</b> 적용`;
+    
+    const origStateEl = document.getElementById('usimOrigState');
+    if (origStateEl) origStateEl.innerHTML = `현재 호가: <span class="text-red-500 font-bold">${fmtSmartMoney(sP)}</span> / ${sD}만 / ${sR}만`;
+    
+    const setVal = (id, val, textId, textVal) => {
+        const el = document.getElementById(id); const txtEl = document.getElementById(textId);
+        if (el) el.value = val; if (txtEl) txtEl.innerText = textVal;
+    };
+    
+    setVal('usimCapRate', 4.0, 'lblUsimCapRate', "4.0");
+    setVal('usimWeight', 50, 'lblUsimWeight', "50");
+    setVal('usimDepMult', 15, 'lblUsimDepMult', "15");
+    setVal('usimLtv', 30, 'lblUsimLtv', "30%");
+    setVal('usimRate', 4.5, 'lblUsimRate', "4.5%");
+    
+    const modalEl = document.getElementById('unitSimulatorModal');
+    if (modalEl) modalEl.classList.remove('hidden');
+    
+    calcUnitSimulator();
+}
 
 function calcUnitSimulator() {
             let rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
