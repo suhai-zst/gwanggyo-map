@@ -1867,6 +1867,20 @@ function calcGroupedStats(units, type) {
                 container.scrollTop = currentScroll;
             }
         }
+        
+        // [네고 기능 상태 변수] 각 호실별로 입력한 '최종 협의가'를 기억하는 객체
+        if (typeof state.negoPrices === 'undefined') state.negoPrices = {};
+
+        // [네고 입력 즉시 재계산 및 렌더링 함수]
+        window.updateNegoPrice = function(id, value) {
+            const numVal = parseInt(value.replace(/,/g, '')) || 0;
+            if (numVal > 0) {
+                state.negoPrices[id] = numVal;
+            } else {
+                delete state.negoPrices[id];
+            }
+            openCompareModal(); // 값 갱신 후 화면 즉시 다시 그리기
+        };
 
         function openCompareModal() {
             const modal = document.getElementById('compareModal');
@@ -1919,6 +1933,7 @@ function calcGroupedStats(units, type) {
 
                     const mergedItem = {
                         ...groupMembers[0], 
+                        id: 'group_' + gid, // 그룹의 가상 ID 부여 (네고 가격 저장용)
                         unit: groupMembers.map(m => m.unit).join(', '),
                         area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
                         yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
@@ -1943,7 +1958,7 @@ function calcGroupedStats(units, type) {
                     controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
                 }
 
-                html += `<th class="p-2 md:p-3 border">
+                html += `<th class="p-2 md:p-3 border relative">
                     <div class="flex flex-col items-center">
                         <span class="text-xs text-slate-500">${cleanBuildingName(d.building)}</span>
                         <div class="flex items-center justify-center mt-1">
@@ -1957,14 +1972,78 @@ function calcGroupedStats(units, type) {
 
             const commonRows = [ { label: '상호명', val: d => d.store_name || '-' }, { label: '전용면적', val: d => state.isSqm ? `${(d.area_p * 3.3058).toFixed(1)}㎡` : `${d.area_p.toFixed(1)}평` } ];
             const rentRows = [ { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `<strong class="text-emerald-700">${fmtNum(d.rent)}</strong>` }, { label: '권리금', val: d => d.premium ? fmtNum(d.premium) : '-' }, { label: '평당 임대가', val: d => d.pp_rent ? fmtRentAvg(d.pp_rent) : '-' } ];
-            const saleRows = [ { label: '매매가', val: d => `<span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>` }, { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `${fmtNum(d.rent)}` }, { label: '수익률', val: d => d.yield > 0 ? `<span class="text-red-500 font-bold">${d.yield}%</span>` : '-' }, { label: '평당 매매가', val: d => d.pp_sell ? fmtSellAvg(d.pp_sell) : '-' } ];
+            
+            // [핵심 개조] 매수 모드일 때 네고 가격 적용 로직 추가
+            const saleRows = [ 
+                { 
+                    label: '매매가', 
+                    val: d => {
+                        const nego = state.negoPrices[d.id];
+                        let negoInputHtml = `<div class="mt-1 no-print"><input type="text" placeholder="최종협의가(만)" class="w-24 border border-slate-300 rounded p-1 text-xs text-center text-blue-600 focus:ring-1 focus:ring-blue-500" value="${nego ? nego.toLocaleString() : ''}" onchange="updateNegoPrice('${d.id}', this.value)"></div>`;
+                        
+                        if (nego && d.price_sell > 0) {
+                            const diff = d.price_sell - nego;
+                            return `<div class="flex flex-col items-center">
+                                        <span class="text-slate-400 line-through text-xs">${fmtNum(d.price_sell)}</span>
+                                        <span class="text-red-600 font-extrabold text-[15px]">${fmtNum(nego)}</span>
+                                        <span class="text-[10px] text-blue-600 bg-blue-50 px-1 rounded mt-0.5">▼${fmtNum(diff)} 절감</span>
+                                        ${negoInputHtml}
+                                    </div>`;
+                        } else {
+                            return `<div class="flex flex-col items-center"><span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>${negoInputHtml}</div>`;
+                        }
+                    } 
+                }, 
+                { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, 
+                { label: '월세', val: d => `${fmtNum(d.rent)}` }, 
+                { 
+                    label: '수익률', 
+                    val: d => {
+                        const nego = state.negoPrices[d.id];
+                        const targetPrice = nego || d.price_sell;
+                        if (targetPrice > 0 && d.rent > 0) {
+                            const cost = targetPrice - (d.deposit || 0);
+                            if (cost > 0) {
+                                const newYield = ((d.rent * 12) / cost * 100).toFixed(2);
+                                if (nego) {
+                                    return `<div class="flex flex-col items-center">
+                                                <span class="text-slate-400 line-through text-[10px]">${d.yield}%</span>
+                                                <span class="text-red-500 font-extrabold text-[14px]">${newYield}%</span>
+                                            </div>`;
+                                }
+                                return `<span class="text-red-500 font-bold">${newYield}%</span>`;
+                            }
+                        }
+                        return '-';
+                    } 
+                }, 
+                { 
+                    label: '평당 매매가', 
+                    val: d => {
+                        const nego = state.negoPrices[d.id];
+                        const targetPrice = nego || d.price_sell;
+                        if (targetPrice > 0 && d.area_p > 0) {
+                            const newPp = targetPrice / d.area_p;
+                            if (nego) {
+                                return `<div class="flex flex-col items-center">
+                                            <span class="text-slate-400 line-through text-[10px]">${fmtSellAvg(d.pp_sell)}</span>
+                                            <span class="text-red-600 font-bold">${fmtSellAvg(newPp)}</span>
+                                        </div>`;
+                            }
+                            return fmtSellAvg(newPp);
+                        }
+                        return '-';
+                    } 
+                } 
+            ];
+            
             const bottomRows = [ { label: '관리비', val: d => state.buildingInfoMap[d.building]?.['관리비'] || '-' }, { label: '방향/위치', val: d => `${d.dir} / ${d.pos}` } ];
 
             let activeRows = state.compareMode === 'rent' ? [...commonRows, ...rentRows, ...bottomRows] : [...commonRows, ...saleRows, ...bottomRows];
 
             activeRows.forEach(r => {
                 html += `<tr><td class="p-2 md:p-3 border font-bold bg-slate-50">${r.label}</td>`;
-                processedList.forEach(d => html += `<td class="p-2 md:p-3 border font-medium">${r.val(d)}</td>`);
+                processedList.forEach(d => html += `<td class="p-2 md:p-3 border font-medium align-middle">${r.val(d)}</td>`);
                 html += `</tr>`;
             });
 
