@@ -1902,21 +1902,25 @@ function renderStacking() {
             openCompareModal(); // 값 갱신 후 화면 즉시 다시 그리기
         };
 
-        function openCompareModal() {
+function openCompareModal() {
             const modal = document.getElementById('compareModal');
             const container = document.getElementById('compareTableContainer');
             const dateSpan = document.getElementById('printDate');
+            
+            // 날짜 출력 (보안 적용 불필요 영역)
             dateSpan.innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
 
             const printTitle = document.getElementById('printTitle');
-            if (state.compareMode === 'rent') { printTitle.innerText = "상가 임대 비교 견적서"; } 
-            else { printTitle.innerText = "상가 매매/투자 비교 견적서"; }
+            printTitle.innerText = state.compareMode === 'rent' ? "상가 임대 비교 견적서" : "상가 매매/투자 비교 견적서";
 
-            document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
+            // [Step 3 반영] 엑셀 메모 소독 처리
+            const memoEl = document.getElementById('compareMemo');
+            document.getElementById('compareMemoPrint').innerHTML = escapeHTML(memoEl.value).replace(/\n/g, '<br>');
 
             const processedList = [];
             const groupedItems = {};
 
+            // 데이터 가공 단계
             state.comparisonList.forEach(id => {
                 const item = state.allData.find(d => d.id === id);
                 if (item) {
@@ -1937,7 +1941,7 @@ function renderStacking() {
                         processedList.push({...item, _isSplitMember: true});
                     });
                 } else {
-                    const sumArea = groupMembers.reduce((acc, cur) => acc + cur.area_p, 0);
+                    const sumArea = groupMembers.reduce((acc, cur) => acc + (cur.area_p || 0), 0);
                     const sumDep = groupMembers.reduce((acc, cur) => acc + (cur.deposit||0), 0);
                     const sumRent = groupMembers.reduce((acc, cur) => acc + (cur.rent||0), 0);
                     const sumPrem = groupMembers.reduce((acc, cur) => acc + (cur.premium||0), 0);
@@ -1951,19 +1955,19 @@ function renderStacking() {
                     const ppRent = sumArea > 0 ? (sumRent/sumArea) : 0; 
                     const ppSell = sumArea > 0 ? (sumPrice/sumArea) : 0;
 
-                    const mergedItem = {
+                    processedList.push({
                         ...groupMembers[0], 
-                        id: 'group_' + gid, // 그룹의 가상 ID 부여 (네고 가격 저장용)
+                        id: 'group_' + gid,
                         unit: groupMembers.map(m => m.unit).join(', '),
                         area_p: sumArea, deposit: sumDep, rent: sumRent, premium: sumPrem, price_sell: sumPrice,
                         yield: yieldRate, pp_rent: ppRent, pp_sell: ppSell, isVirtual: true
-                    };
-                    processedList.push(mergedItem);
+                    });
                 }
             });
             
             if (processedList.length === 0) { closeCompareModal(); return; }
 
+            // 테이블 렌더링 (보안 강화)
             let html = `<table class="w-full text-xs md:text-sm text-center border border-slate-300 whitespace-nowrap">
                 <thead class="bg-slate-100 font-bold text-slate-700">
                     <tr><th class="p-2 md:p-3 border w-20 md:w-24 bg-slate-200">구분</th>`;
@@ -1971,18 +1975,18 @@ function renderStacking() {
             processedList.forEach(d => {
                 let controlBtn = '';
                 if (d.isVirtual) {
-                    controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-white border border-slate-300 rounded px-1 text-slate-500 hover:text-blue-600 no-print transition" title="개별 호실로 분리">🔗분리</button>`;
+                    controlBtn = `<button onclick="toggleSplit('${escapeHTML(d.unique_group_id)}')" class="ml-1 text-[10px] bg-white border border-slate-300 rounded px-1 text-slate-500 hover:text-blue-600 no-print transition" title="개별 호실로 분리">🔗분리</button>`;
                 } else if (d._isSplitMember) {
-                    controlBtn = `<button onclick="toggleSplit('${d.unique_group_id}')" class="ml-1 text-[10px] bg-emerald-50 border border-emerald-200 rounded px-1 text-emerald-600 hover:bg-emerald-100 no-print transition" title="현재 남은 호실만 다시 통합">🔗통합</button><button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
+                    controlBtn = `<button onclick="toggleSplit('${escapeHTML(d.unique_group_id)}')" class="ml-1 text-[10px] bg-emerald-50 border border-emerald-200 rounded px-1 text-emerald-600 hover:bg-emerald-100 no-print transition" title="현재 남은 호실만 다시 통합">🔗통합</button><button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
                 } else {
                     controlBtn = `<button onclick="removeFromCompare(${d.id})" class="ml-1 text-xs text-red-400 hover:text-red-600 no-print font-bold" title="목록에서 제거">✕</button>`;
                 }
 
                 html += `<th class="p-2 md:p-3 border relative">
                     <div class="flex flex-col items-center">
-                        <span class="text-xs text-slate-500">${cleanBuildingName(d.building)}</span>
+                        <span class="text-xs text-slate-500">${escapeHTML(cleanBuildingName(d.building))}</span>
                         <div class="flex items-center justify-center mt-1">
-                            <span class="text-emerald-700 text-sm font-extrabold">${d.unit}호</span>
+                            <span class="text-emerald-700 text-sm font-extrabold">${escapeHTML(d.unit)}호</span>
                             <div class="flex items-center gap-1 ml-1">${controlBtn}</div>
                         </div>
                     </div>
@@ -1990,74 +1994,46 @@ function renderStacking() {
             });
             html += `</tr></thead><tbody>`;
 
-            const commonRows = [ { label: '상호명', val: d => d.store_name || '-' }, { label: '전용면적', val: d => state.isSqm ? `${(d.area_p * 3.3058).toFixed(1)}㎡` : `${d.area_p.toFixed(1)}평` } ];
+            // 로우 렌더링 (보안 강화)
+            const commonRows = [ { label: '상호명', val: d => escapeHTML(d.store_name || '-') }, { label: '전용면적', val: d => state.isSqm ? `${(d.area_p * 3.3058).toFixed(1)}㎡` : `${d.area_p.toFixed(1)}평` } ];
             const rentRows = [ { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, { label: '월세', val: d => `<strong class="text-emerald-700">${fmtNum(d.rent)}</strong>` }, { label: '권리금', val: d => d.premium ? fmtNum(d.premium) : '-' }, { label: '평당 임대가', val: d => d.pp_rent ? fmtRentAvg(d.pp_rent) : '-' } ];
             
-            // [핵심 개조] 매수 모드일 때 네고 가격 적용 로직 추가
             const saleRows = [ 
-                { 
-                    label: '매매가', 
-                    val: d => {
-                        const nego = state.negoPrices[d.id];
-                        let negoInputHtml = `<div class="mt-1 no-print"><input type="text" placeholder="최종협의가(만)" class="w-24 border border-slate-300 rounded p-1 text-xs text-center text-blue-600 focus:ring-1 focus:ring-blue-500" value="${nego ? nego.toLocaleString() : ''}" onchange="updateNegoPrice('${d.id}', this.value)"></div>`;
-                        
-                        if (nego && d.price_sell > 0) {
-                            const diff = d.price_sell - nego;
-                            return `<div class="flex flex-col items-center">
-                                        <span class="text-slate-400 line-through text-xs">${fmtNum(d.price_sell)}</span>
-                                        <span class="text-red-600 font-extrabold text-[15px]">${fmtNum(nego)}</span>
-                                        <span class="text-[10px] text-blue-600 bg-blue-50 px-1 rounded mt-0.5">▼${fmtNum(diff)} 절감</span>
-                                        ${negoInputHtml}
-                                    </div>`;
-                        } else {
-                            return `<div class="flex flex-col items-center"><span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>${negoInputHtml}</div>`;
-                        }
-                    } 
-                }, 
+                { label: '매매가', val: d => {
+                    const nego = state.negoPrices[d.id];
+                    let negoInputHtml = `<div class="mt-1 no-print"><input type="text" placeholder="최종협의가(만)" class="w-24 border border-slate-300 rounded p-1 text-xs text-center text-blue-600 focus:ring-1 focus:ring-blue-500" value="${nego ? nego.toLocaleString() : ''}" onchange="updateNegoPrice('${escapeHTML(String(d.id))}', this.value)"></div>`;
+                    if (nego && d.price_sell > 0) {
+                        const diff = d.price_sell - nego;
+                        return `<div class="flex flex-col items-center"><span class="text-slate-400 line-through text-xs">${fmtNum(d.price_sell)}</span><span class="text-red-600 font-extrabold text-[15px]">${fmtNum(nego)}</span><span class="text-[10px] text-blue-600 bg-blue-50 px-1 rounded mt-0.5">▼${fmtNum(diff)} 절감</span>${negoInputHtml}</div>`;
+                    } else {
+                        return `<div class="flex flex-col items-center"><span class="text-red-600 font-bold">${d.price_sell ? fmtNum(d.price_sell) : '-'}</span>${negoInputHtml}</div>`;
+                    }
+                }}, 
                 { label: '보증금', val: d => `${fmtNum(d.deposit)}` }, 
                 { label: '월세', val: d => `${fmtNum(d.rent)}` }, 
-                { 
-                    label: '수익률', 
-                    val: d => {
-                        const nego = state.negoPrices[d.id];
-                        const targetPrice = nego || d.price_sell;
-                        if (targetPrice > 0 && d.rent > 0) {
-                            const cost = targetPrice - (d.deposit || 0);
-                            if (cost > 0) {
-                                const newYield = ((d.rent * 12) / cost * 100).toFixed(2);
-                                if (nego) {
-                                    return `<div class="flex flex-col items-center">
-                                                <span class="text-slate-400 line-through text-[10px]">${d.yield}%</span>
-                                                <span class="text-red-500 font-extrabold text-[14px]">${newYield}%</span>
-                                            </div>`;
-                                }
-                                return `<span class="text-red-500 font-bold">${newYield}%</span>`;
-                            }
+                { label: '수익률', val: d => {
+                    const nego = state.negoPrices[d.id];
+                    const targetPrice = nego || d.price_sell;
+                    if (targetPrice > 0 && d.rent > 0) {
+                        const cost = targetPrice - (d.deposit || 0);
+                        if (cost > 0) {
+                            const newYield = ((d.rent * 12) / cost * 100).toFixed(2);
+                            return nego ? `<div class="flex flex-col items-center"><span class="text-slate-400 line-through text-[10px]">${d.yield}%</span><span class="text-red-500 font-extrabold text-[14px]">${newYield}%</span></div>` : `<span class="text-red-500 font-bold">${newYield}%</span>`;
                         }
-                        return '-';
-                    } 
-                }, 
-                { 
-                    label: '평당 매매가', 
-                    val: d => {
-                        const nego = state.negoPrices[d.id];
-                        const targetPrice = nego || d.price_sell;
-                        if (targetPrice > 0 && d.area_p > 0) {
-                            const newPp = targetPrice / d.area_p;
-                            if (nego) {
-                                return `<div class="flex flex-col items-center">
-                                            <span class="text-slate-400 line-through text-[10px]">${fmtSellAvg(d.pp_sell)}</span>
-                                            <span class="text-red-600 font-bold">${fmtSellAvg(newPp)}</span>
-                                        </div>`;
-                            }
-                            return fmtSellAvg(newPp);
-                        }
-                        return '-';
-                    } 
-                } 
+                    }
+                    return '-';
+                }}, 
+                { label: '평당 매매가', val: d => {
+                    const nego = state.negoPrices[d.id];
+                    const targetPrice = nego || d.price_sell;
+                    if (targetPrice > 0 && d.area_p > 0) {
+                        const newPp = targetPrice / d.area_p;
+                        return nego ? `<div class="flex flex-col items-center"><span class="text-slate-400 line-through text-[10px]">${fmtSellAvg(d.pp_sell)}</span><span class="text-red-600 font-bold">${fmtSellAvg(newPp)}</span></div>` : fmtSellAvg(newPp);
+                    }
+                    return '-';
+                }} 
             ];
-            
-            const bottomRows = [ { label: '관리비', val: d => state.buildingInfoMap[d.building]?.['관리비'] || '-' }, { label: '방향/위치', val: d => `${d.dir} / ${d.pos}` } ];
+            const bottomRows = [ { label: '관리비', val: d => escapeHTML(state.buildingInfoMap[d.building]?.['관리비'] || '-') }, { label: '방향/위치', val: d => `${escapeHTML(d.dir)} / ${escapeHTML(d.pos)}` } ];
 
             let activeRows = state.compareMode === 'rent' ? [...commonRows, ...rentRows, ...bottomRows] : [...commonRows, ...saleRows, ...bottomRows];
 
@@ -2070,9 +2046,9 @@ function renderStacking() {
             html += `</tbody></table>`;
             container.innerHTML = html;
 
+            // 페이지 2 부분
             const page2Container = document.getElementById('page2DynamicContent');
             page2Container.innerHTML = '';
-            
             let targetList = processedList.slice(0, 3);
             let colsClass = targetList.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : (targetList.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
             page2Container.className = `grid ${colsClass} gap-4 w-full`;
@@ -2081,7 +2057,7 @@ function renderStacking() {
             targetList.forEach((d) => {
                 p2Html += `
                     <div class="flex flex-col gap-3 border border-slate-200 p-3 rounded-lg bg-white shadow-sm h-full">
-                        <h4 class="font-extrabold text-emerald-700 text-center border-b pb-2">${cleanBuildingName(d.building)} <span class="text-slate-800">${d.unit}호</span></h4>
+                        <h4 class="font-extrabold text-emerald-700 text-center border-b pb-2">${escapeHTML(cleanBuildingName(d.building))} <span class="text-slate-800">${escapeHTML(d.unit)}호</span></h4>
                         <input type="text" class="url-input w-full border border-slate-300 rounded p-1.5 text-xs text-center focus:ring-1 focus:ring-emerald-500 text-blue-600" placeholder="네이버 부동산 단축 URL 입력">
                         <div class="flex flex-col gap-1 mb-2">
                             <span class="text-[10px] font-bold text-slate-500">🛣️ 현장 로드뷰</span>
@@ -2101,12 +2077,9 @@ function renderStacking() {
                 `;
             });
             page2Container.innerHTML = p2Html;
-
             bindPasteEvents();
-
             document.getElementById('togglePage2Btn').checked = false;
             document.getElementById('page2Container').classList.add('hidden');
-
             modal.classList.remove('hidden');
         }
 
@@ -3015,22 +2988,6 @@ function openSimulator(targetSel) {
             document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val)); 
         }
 
-        function syncSliderFromInput(type) {
-            const capType = type.charAt(0).toUpperCase() + type.slice(1);
-            const val = parseInt(document.getElementById('simInput' + capType).value.replace(/,/g,'')) || 0;
-            const slider = document.getElementById('simSlider' + capType);
-            if(val > slider.max) slider.max = val * 1.5;
-            slider.value = val;
-        }
-
-        function syncInputFromSlider(type, labelId) {
-            const capType = type.charAt(0).toUpperCase() + type.slice(1);
-            const val = document.getElementById('simSlider' + capType).value;
-            const input = document.getElementById('simInput' + capType);
-            input.value = parseInt(val).toLocaleString();
-            document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
-        }
-
 function applyAvmToSimulator() {
     if(!state.simTarget) return;
     
@@ -3126,24 +3083,31 @@ function applyAvmToSimulator() {
             document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
         }
 // 슬라이더 동기화 보조 함수 (unit 시뮬레이터 호환용으로 확장)
-        function syncSliderFromInput(prefix, type) {
-            const capType = type.charAt(0).toUpperCase() + type.slice(1);
-            let inputId = prefix === 'usim' ? 'usimInput' + capType : 'simInput' + capType;
-            let sliderId = prefix === 'usim' ? 'usimSlider' + capType : 'simSlider' + capType;
-            const val = parseInt(document.getElementById(inputId).value.replace(/,/g,'')) || 0;
-            const slider = document.getElementById(sliderId);
-            if(slider && val > slider.max) slider.max = val * 1.5;
-            if(slider) slider.value = val;
+        function syncSliderFromInput(type) {
+            // 엑셀에서 숫자를 읽어와 슬라이더에 반영
+            const inputEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1));
+            const sliderEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1) + 'Slider');
+            if (inputEl && sliderEl) {
+                const val = inputEl.value.replace(/,/g,'');
+                sliderEl.value = val;
+            }
+            // 계산기 즉시 실행
+            calcUnitSimulator();
         }
 
-        function syncInputFromSlider(prefix, type, labelId) {
-            const capType = type.charAt(0).toUpperCase() + type.slice(1);
-            let inputId = prefix === 'usim' ? 'usimInput' + capType : 'simInput' + capType;
-            let sliderId = prefix === 'usim' ? 'usimSlider' + capType : 'simSlider' + capType;
-            const val = document.getElementById(sliderId).value;
-            const input = document.getElementById(inputId);
-            input.value = parseInt(val).toLocaleString();
-            document.getElementById(labelId).innerText = fmtKoreanMoney(parseInt(val));
+        function syncInputFromSlider(type, labelId) {
+            // 슬라이더 값을 읽어와 입력창에 반영
+            const sliderEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1) + 'Slider');
+            const inputEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1));
+            const labelEl = document.getElementById(labelId);
+            
+            if (sliderEl && inputEl) {
+                const val = sliderEl.value;
+                inputEl.value = parseInt(val).toLocaleString();
+                if (labelEl) labelEl.innerText = parseInt(val).toLocaleString() + (type === 'ltv' ? '%' : '');
+            }
+            // 계산기 즉시 실행
+            calcUnitSimulator();
         }
 // [v8.4.4] 금액 표기 버그 수정 및 가독성 강화
         function fmtSmartMoney(val) {
