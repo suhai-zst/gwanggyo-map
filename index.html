@@ -1414,7 +1414,19 @@
 
         function parseNum(val) { if (!val) return 0; if (typeof val === 'number') return val; return parseFloat(val.toString().replace(/,/g, '')) || 0; }
 
-function processData(data) {
+// [Item 4-A] 보안 방어막 (XSS 방지 유틸리티 함수 신설)
+        // 향후 화면에 글자를 뿌릴 때 엑셀 내의 악성 스크립트나 특수문자가 시스템을 망가뜨리지 않도록 여과하는 함수입니다.
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function processData(data) {
             const today = new Date();
             state.allData = data.map((r, i) => {
                 if (!r['건물'] && !r['건물명']) return null;
@@ -1451,6 +1463,14 @@ function processData(data) {
                 const uniqueGId = gId ? `${b}_${gId}_${storeName}` : '';
                 const tTel = String(r['임차인_연락처'] || r['임차인연락처'] || r['임차인 연락처'] || '').trim();
 
+                // 엑셀에서 읽어온 '통계' 컬럼의 순수 텍스트
+                let markVal = String(r['통계'] || '').toString().trim().toLowerCase();
+                
+                // [Item 6 핫픽스] 그룹 통합 ID가 있는데 마커가 공란이면, 시스템이 강제로 'g'를 주입하여 통계 붕괴를 막음
+                if (uniqueGId && markVal === '') {
+                    markVal = 'g';
+                }
+
                 return { 
                     id: i, building: b, floor: f, unit: u, status: finalSt, rawStatus: displaySt, 
                     area_p: areaP, area_s: areaS, exit: String(r['출구'] || ''), 
@@ -1462,8 +1482,7 @@ function processData(data) {
                     pos: String(r['전후면'] || '').trim(), dir: String(r['방향'] || '').trim(), yield: yieldRate, 
                     group_id: gId, unique_group_id: uniqueGId, total_area_p: 0, total_price_sell: 0, total_deposit: 0, total_rent: 0, total_premium: 0,
                     _match: false, _isPartOfMerge: false, _mergeStartArea: 0,
-                    // [핵심 픽스] 통계 마커를 mark라는 속성으로 정식 보관함
-                    mark: String(r['통계'] || '').toString().trim().toLowerCase()
+                    mark: markVal
                 };
             }).filter(x => x);
 
