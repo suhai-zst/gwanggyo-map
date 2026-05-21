@@ -2679,44 +2679,38 @@ function getTierStats(units, filterFn) {
     if(tUnits.length === 0) return null;
 
     let tPrice = 0, tRent = 0, tDep = 0, tArea = 0;
-    // 💡 물리적 총 면적: x 마커 등과 상관없이 해당 층에 존재하는 모든 호실의 실제 면적 합산
     let tTotalArea = tUnits.reduce((sum, u) => sum + (parseFloat(u.area_p) || 0), 0);
     let tProcessed = new Set();
     
     tUnits.forEach(u => {
         const mk = u.mark || '';
-        
-        // 1. x 마커: 평균 단가 연산에서 완벽히 배제
         if (mk === 'x') return;
 
-        // 2. i 마커 (또는 빈칸): 무조건 자기 자신만 독립 연산
         if (mk === 'i' || !u.unique_group_id || mk === '') {
             if(u.price_sell > 0) { tPrice += u.price_sell; tArea += (parseFloat(u.area_p) || 0); }
             if(u.rent > 0) { tRent += u.rent; tDep += (parseFloat(u.deposit) || 0); }
         } 
-        // 3. g 마커: 같은 그룹명 & 'g' 마커인 호실만 모아서 합산
         else if (mk === 'g') {
             let gid = u.unique_group_id;
             if(tProcessed.has(gid)) return;
             tProcessed.add(gid);
 
             let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
-            let gSell = 0, gRent = 0, gDep = 0, gArea = 0;
+            let gSell = 0, gRent = 0, gDep = 0, gAreaSell = 0, gAreaRent = 0;
             
             g_members.forEach(m => {
-                gArea += (parseFloat(m.area_p) || 0);
-                if(m.price_sell > 0) gSell += m.price_sell;
-                if(m.rent > 0) { gRent += m.rent; gDep += (parseFloat(m.deposit) || 0); }
+                let aP = parseFloat(m.area_p) || 0;
+                if(m.price_sell > 0) { gSell += m.price_sell; gAreaSell += aP; }
+                if(m.rent > 0) { gRent += m.rent; gDep += (parseFloat(m.deposit) || 0); gAreaRent += aP; }
             });
 
-            if(gSell > 0) { tPrice += gSell; tArea += gArea; }
+            if(gSell > 0) { tPrice += gSell; tArea += gAreaSell; }
             if(gRent > 0) { tRent += gRent; tDep += gDep; }
         }
     });
 
     let ppSell = tArea > 0 ? (tPrice / tArea) : 0;
     
-    // 임대 면적(rArea) 별도 계산 
     let rArea = 0;
     tProcessed.clear();
     tUnits.forEach(u => {
@@ -2766,18 +2760,24 @@ function calcBuildingAVM(units) {
         if (mk === 'x') return;
 
         if (mk === 'i' || !u.unique_group_id || mk === '') {
-            bPrice += (parseFloat(u.price_sell) || 0);
-            bArea += (parseFloat(u.area_p) || 0);
+            if(u.price_sell > 0) {
+                bPrice += (parseFloat(u.price_sell) || 0);
+                bArea += (parseFloat(u.area_p) || 0);
+            }
         } else if (mk === 'g') {
             let gid = u.unique_group_id;
             if(processed.has(gid)) return;
             processed.add(gid);
 
             let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+            let gSumP = 0, gSumA = 0;
             g_members.forEach(m => {
-                bPrice += (parseFloat(m.price_sell) || 0);
-                bArea += (parseFloat(m.area_p) || 0);
+                if(m.price_sell > 0) {
+                    gSumP += (parseFloat(m.price_sell) || 0);
+                    gSumA += (parseFloat(m.area_p) || 0);
+                }
             });
+            if(gSumP > 0) { bPrice += gSumP; bArea += gSumA; }
         }
     });
 
@@ -3158,21 +3158,29 @@ function applyAvmToSimulator() {
             return t.toLocaleString() + "만원";
         }
 
-        function getAvgPP(units, type) {
-            let sumP = 0, sumA = 0, processed = new Set();
-            units.forEach(u => {
-                let gid = u.unique_group_id || `single_${u.id}`;
-                if(processed.has(gid)) return;
-                processed.add(gid);
-                let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
-                members.forEach(m => {
-                    if (type === 'sell') sumP += (m.price_sell || 0); 
-                    else if (type === 'rent') sumP += (m.rent || 0);
-                    sumA += (m.area_p || 0);
-                });
-            });
-            return sumA > 0 ? (sumP / sumA) : 0;
-        }
+function getAvgPP(units, type) {
+    let sumP = 0, sumA = 0, processed = new Set();
+    units.forEach(u => {
+        let gid = u.unique_group_id || `single_${u.id}`;
+        if(processed.has(gid)) return;
+        processed.add(gid);
+        
+        let members = u.unique_group_id ? state.allData.filter(x => x.unique_group_id === gid) : [u];
+        members.forEach(m => {
+            let val = 0;
+            if (type === 'sell') val = (m.price_sell || 0); 
+            else if (type === 'rent') val = (m.rent || 0);
+            let area = (m.area_p || 0);
+            
+            // [핫픽스] 가격(val)이 실제로 있을 때만 면적을 분모에 합산
+            if (val > 0 && area > 0) {
+                sumP += val;
+                sumA += area;
+            }
+        });
+    });
+    return sumA > 0 ? (sumP / sumA) : 0;
+}
 
 // 통매각 모드 상태 관리를 위한 변수 (최초 1회만 선언되도록 방어 로직 추가)
 if (typeof state.isPackageMode === 'undefined') {
@@ -3284,258 +3292,279 @@ function openUnitSimulator(id) {
 }
 
 function calcUnitSimulator() {
-            let rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
-            const cap = parseFloat(document.getElementById('usimCapRate').value), 
-                  w = parseFloat(document.getElementById('usimWeight').value)/100, 
-                  ltv = parseFloat(document.getElementById('usimLtv').value)/100,
-                  rate = parseFloat(document.getElementById('usimRate').value)/100;
-            
-            const currentId = document.getElementById('detailPanel').dataset.currentId;
-            const u = state.allData.find(x => String(x.id) === String(currentId));
-            if(!u) return;
+    let rent = parseInt(document.getElementById('usimInputRent').value.replace(/,/g,'')) || 0;
+    const cap = parseFloat(document.getElementById('usimCapRate').value), 
+          w = parseFloat(document.getElementById('usimWeight').value)/100, 
+          ltv = parseFloat(document.getElementById('usimLtv').value)/100,
+          rate = parseFloat(document.getElementById('usimRate').value)/100;
+    
+    const currentId = document.getElementById('detailPanel').dataset.currentId;
+    const u = state.allData.find(x => String(x.id) === String(currentId));
+    if(!u) return;
 
-            const occEl = document.getElementById('usimUserOccupied');
-            const isOccupied = occEl ? occEl.checked : false;
-            
-            const origEl = document.getElementById('usimUseOrig');
-            const useOrig = origEl ? origEl.checked : false;
+    const occEl = document.getElementById('usimUserOccupied');
+    const isOccupied = occEl ? occEl.checked : false;
+    
+    const origEl = document.getElementById('usimUseOrig');
+    const useOrig = origEl ? origEl.checked : false;
 
-            const multEl = document.getElementById('usimDepMult');
-            let mult = parseInt(multEl.value) || 0;
-            
-            let dep = 0;
+    const multEl = document.getElementById('usimDepMult');
+    let mult = parseInt(multEl.value) || 0;
+    
+    let dep = 0;
 
-            if (useOrig) {
-                rent = state.unitSimOrigRent || 0;
-                dep = state.unitSimOrigDep || 0;
-                document.getElementById('usimInputRent').value = rent.toLocaleString(); 
-                if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
-            } else if (isOccupied) {
-                mult = 0;
-                if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
-                dep = 0;
-            } else {
-                if(multEl) { multEl.disabled = false; multEl.style.opacity = '1'; }
-                dep = Math.round((rent * mult)/100)*100;
-            }
+    if (useOrig) {
+        rent = state.unitSimOrigRent || 0;
+        dep = state.unitSimOrigDep || 0;
+        document.getElementById('usimInputRent').value = rent.toLocaleString(); 
+        if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
+    } else if (isOccupied) {
+        mult = 0;
+        if(multEl) { multEl.disabled = true; multEl.style.opacity = '0.3'; }
+        dep = 0;
+    } else {
+        if(multEl) { multEl.disabled = false; multEl.style.opacity = '1'; }
+        dep = Math.round((rent * mult)/100)*100;
+    }
 
-            const area = parseFloat(state.unitSimArea) || parseFloat(u.area_p) || 0;
+    const area = parseFloat(state.unitSimArea) || parseFloat(u.area_p) || 0;
 
-            const getTier = (flr) => {
-                const f = parseInt(flr);
-                if (isNaN(f)) return '기타';
-                if (f === 1) return '1층';
-                if (f === 2) return '2층';
-                return '3층이상';
-            };
-            const uTier = getTier(u.floor);
-            
-            const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => bName.replace(/\s/g,'').includes(t.replace(/\s/g,'')));
-            let isMainRoad = checkRoadside(u.building);
-            const uPos = u.pos || '';
+    const getTier = (flr) => {
+        const f = parseInt(flr);
+        if (isNaN(f)) return '기타';
+        if (f === 1) return '1층';
+        if (f === 2) return '2층';
+        return '3층이상';
+    };
+    const uTier = getTier(u.floor);
+    
+    const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => bName.replace(/\s/g,'').includes(t.replace(/\s/g,'')));
+    let isMainRoad = checkRoadside(u.building);
+    const uPos = u.pos || '';
 
-            // [핵심 픽스 1] 가치평가 엔진 내부의 단가 계산기에도 i, g, x 라우팅 로직 완벽 이식
-            const getAvgPy = (items, type) => {
-                let sumArea = 0, sumVal = 0;
-                let processedGids = new Set();
-            
-                items.forEach(item => {
-                    const mk = item.mark || '';
-                    
-                    if (mk === 'x') return;
-            
-                    if (mk === 'i' || !item.unique_group_id || mk === '') {
-                        let area = parseFloat(item.area_p) || 0;
-                        let val = type === 'rent' ? (parseFloat(item.rent) || 0) : (parseFloat(item.price_sell) || 0);
-                        let dep = parseFloat(item.deposit) || 0;
-            
-                        if (val > 0 && area > 0) {
-                            let finalVal = val;
-                            if (type === 'rent' && dep > val * 12) {
-                                finalVal += (dep - (val * 12)) * 0.05 / 12;
-                            }
-                            sumArea += area;
-                            sumVal += finalVal;
-                        }
-                    } else if (mk === 'g') {
-                        let gid = item.unique_group_id;
-                        if (processedGids.has(gid)) return;
-                        processedGids.add(gid);
-            
-                        let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
-                        let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
-            
-                        g_members.forEach(m => {
-                            groupArea += (parseFloat(m.area_p) || 0);
-                            groupRent += (parseFloat(m.rent) || 0);
-                            groupSell += (parseFloat(m.price_sell) || 0);
-                            groupDep += (parseFloat(m.deposit) || 0);
-                        });
-            
-                        const groupVal = type === 'rent' ? groupRent : groupSell;
-                        if (groupVal > 0 && groupArea > 0) {
-                            let finalVal = groupVal;
-                            if (type === 'rent' && groupDep > groupVal * 12) {
-                                finalVal += (groupDep - (groupVal * 12)) * 0.05 / 12;
-                            }
-                            sumArea += groupArea;
-                            sumVal += finalVal;
-                        }
+    const getAvgPy = (items, type) => {
+        let sumArea = 0, sumVal = 0;
+        let processedGids = new Set();
+    
+        items.forEach(item => {
+            const mk = item.mark || '';
+            if (mk === 'x') return;
+    
+            if (mk === 'i' || !item.unique_group_id || mk === '') {
+                let itemArea = parseFloat(item.area_p) || 0;
+                let val = type === 'rent' ? (parseFloat(item.rent) || 0) : (parseFloat(item.price_sell) || 0);
+                let itemDep = parseFloat(item.deposit) || 0;
+    
+                if (val > 0 && itemArea > 0) {
+                    let finalVal = val;
+                    if (type === 'rent' && itemDep > val * 12) {
+                        finalVal += (itemDep - (val * 12)) * 0.05 / 12;
                     }
-                });
-                return sumArea > 0 ? (sumVal / sumArea) : 0;
-            };
-
-            const zone = u.exit || "미지정";
-            
-            let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-            let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-            if(bUnits.length <= 1) {
-                bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
-                bL = isMainRoad ? `${uTier}(${uPos||'미상'})` : uTier;
-            }
-            const bRentPy = getAvgPy(bUnits, 'rent');
-
-            let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-            let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-            if(zUnits.length <= 1) {
-                zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true));
-                zL = isMainRoad ? `${uTier}(${uPos||'미상'})` : uTier;
-            }
-            const zRentPy = getAvgPy(zUnits, 'rent');
-
-            const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
-            const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
-
-            const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
-            if (leftReasonBox) {
-                const fairRent = Math.round(finalRentPy * area);
-                leftReasonBox.innerHTML = `
-                    <div class="text-[11px] text-slate-600 space-y-1">
-                        <div class="font-bold text-amber-600 mb-1"><i class="ph-fill ph-lightbulb"></i> 적정임대료 산출 (70:30)</div>
-                        <div class="text-slate-500 pl-1 leading-relaxed tracking-tight">
-                            [${zone} ${roadsideLabel}] ${zL} 평균 (${zRentPy.toFixed(1)}만 × 70%) + 건물 ${bL} 평균 (${bRentPy.toFixed(1)}만 × 30%)
-                        </div>
-                        <div class="font-bold text-blue-700 pl-1 mt-1.5 pt-1.5 border-t border-slate-200">
-                            👉 기준 평단가: ${finalRentPy.toFixed(1)}만원 <span class="text-slate-400 font-normal">(매매가 환산용)</span> × ${area.toFixed(1)}평 = <span class="text-blue-700 font-black text-[13px] tracking-tight">월 ${fairRent.toLocaleString()}만원</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const origPrice = state.unitSimOrigPrice || u.price_sell || 0;
-
-            const topState = document.getElementById('usimOrigState');
-            if (topState) {
-                const fmtTop = (v) => {
-                    if (v >= 10000) return (v / 10000).toFixed(1).replace('.0', '') + '억';
-                    if (v > 0) return Math.round(v).toLocaleString() + '만';
-                    return '0';
-                };
-                const sellTxt = origPrice > 0 ? fmtTop(origPrice) : '미정';
-                const rTxt = state.unitSimOrigRent > 0 ? fmtTop(state.unitSimOrigRent) : '0';
-                const dTxt = state.unitSimOrigDep > 0 ? fmtTop(state.unitSimOrigDep) : '0';
-                topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
-            }
-
-            let mPy = 0; let mReason = "";
-            let mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true) && d.price_sell > 0);
-            mReason = `[1순위] 동일층(${u.floor}) 매매 적용`;
-
-            if (mTargets.length <= 1) {
-                mTargets = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier && (isMainRoad ? d.pos === uPos : true) && d.price_sell > 0);
-                mReason = `[2순위] 층급(${uTier}) 매매 적용`;
-            }
-
-            mPy = getAvgPy(mTargets, 'price');
-
-            if (mTargets.length <= 1 || mPy === 0) {
-                const dynamicMult = cap > 0 ? Math.round(12 / (cap / 100)) : 240; 
-                mPy = finalRentPy * dynamicMult;
-                mReason = `[표본부족] 임대단가 × ${dynamicMult}배 역산 (수익률 ${cap}% 기준)`;
-            }
-
-            const yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
-            const mV = Math.round((area * mPy)/100)*100;
-            const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
-
-            // [핵심 픽스 2] 막대그래프 비율 산정(mx)에 yV를 포함시키고 여유를 두어 찌그러짐 완벽 방지
-            const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
-
-            const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
-                const b = document.getElementById(barId);
-                const r = document.getElementById(reasonId);
-                if(b) {
-                    b.style.width = Math.min(100, (val/mx*100)) + '%';
-                    b.innerText = val > 0 ? `${fmtSmartMoney(val)} (평당 ${Math.round(pyVal).toLocaleString()}만)` : '데이터 없음';
+                    sumArea += itemArea;
+                    sumVal += finalVal;
                 }
-                if(r) r.innerText = reasonTxt;
-            };
-
-            updateUI('barOrig', 'reasonOrig', origPrice, (area > 0 ? origPrice/area : 0), '현재 시장 호가');
-            updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV/area : 0), `NOI / 기대수익률 ${cap}%`);
-            updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
-            updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
-
-            const sliderEl = document.getElementById('usimAppliedPriceSlider');
-            let appliedPrice = parseInt(sliderEl.value) || 0;
-
-            if (state.lastSimId !== currentId) {
-                state.lastSimId = currentId;
-                if(occEl) occEl.checked = false; 
-                if(origEl) origEl.checked = false;
-                mult = parseInt(multEl.value) || 0; 
-                
-                appliedPrice = origPrice > 0 ? origPrice : fP;
-                sliderEl.max = Math.max(mx, appliedPrice * 1.5);
-                sliderEl.value = appliedPrice;
-            } else {
-                sliderEl.max = Math.max(sliderEl.max, mx);
+            } else if (mk === 'g') {
+                let gid = item.unique_group_id;
+                if (processedGids.has(gid)) return;
+                processedGids.add(gid);
+    
+                let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+                let groupArea = 0, groupRent = 0, groupSell = 0, groupDep = 0;
+    
+                g_members.forEach(m => {
+                    let aP = parseFloat(m.area_p) || 0;
+                    if(m.rent > 0) { groupRent += parseFloat(m.rent); groupDep += parseFloat(m.deposit)||0; }
+                    if(m.price_sell > 0) groupSell += parseFloat(m.price_sell);
+                    groupArea += aP;
+                });
+    
+                const groupVal = type === 'rent' ? groupRent : groupSell;
+                if (groupVal > 0 && groupArea > 0) {
+                    let finalVal = groupVal;
+                    if (type === 'rent' && groupDep > groupVal * 12) {
+                        finalVal += (groupDep - (groupVal * 12)) * 0.05 / 12;
+                    }
+                    sumArea += groupArea;
+                    sumVal += finalVal;
+                }
             }
+        });
+        return sumArea > 0 ? (sumVal / sumArea) : 0;
+    };
 
-            const appliedBar = document.getElementById('barApplied');
-            if(appliedBar) {
-                appliedBar.style.width = Math.min(100, (appliedPrice/sliderEl.max*100)) + '%';
-                appliedBar.innerText = appliedPrice > 0 ? `${fmtSmartMoney(appliedPrice)}` : '0원';
-            }
-            const lblAppliedPy = document.getElementById('lblAppliedPy');
-            if(lblAppliedPy) {
-                lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice/area).toLocaleString()}만` : '-';
-            }
+    const zone = u.exit || "미지정";
+    
+    // [Item 5 개선] 건물 적정 임대료 3단 폴백
+    let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
+    let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+    let bRentPy = getAvgPy(bUnits, 'rent');
 
-            const tF = Math.round(appliedPrice * 0.055);
-            const tax = Math.round(appliedPrice * 0.046);
-            const fee = Math.round(appliedPrice * 0.009);
-            const loan = Math.round(appliedPrice * ltv);
-            
-            const realDep = isOccupied ? 0 : dep;
-            const cash = appliedPrice + tF - loan - realDep;
-            const mI = Math.round((loan * rate) / 12);
-            const net = rent - mI;
-
-            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-            setTxt('usimTopDeposit', fmtSmartMoney(realDep)); 
-            setTxt('resUsimFinalPrice', fmtSmartMoney(appliedPrice));
-            
-            setTxt('resUsimCapRate', (appliedPrice-realDep > 0 ? (rent*12)/(appliedPrice-realDep)*100 : 0).toFixed(2) + '%');
-            setTxt('resUsimCash', fmtSmartMoney(cash));
-            setTxt('resUsimRoe', (cash > 0 ? (net*12)/cash*100 : 0).toFixed(2) + '%');
-            setTxt('ldgLoan', fmtSmartMoney(loan));
-            setTxt('ldgInterest', fmtSmartMoney(mI));
-            setTxt('ldgNet', fmtSmartMoney(net));
-
-            const taxFeeEl = document.getElementById('ldgTaxFee');
-            if (taxFeeEl) {
-                taxFeeEl.innerHTML = `
-                    <div class="flex flex-col items-end text-right">
-                        <span class="text-slate-900 font-bold">${fmtSmartMoney(tF)}</span>
-                        <span class="text-[10px] text-slate-500 font-normal mt-0.5 whitespace-nowrap">
-                            취득세 4.6% ${fmtSmartMoney(tax)} / 수수료 0.9% ${fmtSmartMoney(fee)}
-                        </span>
-                    </div>
-                `;
-            }
+    if (bRentPy === 0) { 
+        bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor);
+        bL = isMainRoad ? `${u.floor}층(위치무관)` : `${u.floor}층`;
+        bRentPy = getAvgPy(bUnits, 'rent');
+        
+        if (bRentPy === 0) {
+            bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier);
+            bL = `${uTier} 평균`;
+            bRentPy = getAvgPy(bUnits, 'rent');
         }
+    }
+
+    // [Item 5 개선] 상권 적정 임대료 3단 폴백
+    let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
+    let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+    let zRentPy = getAvgPy(zUnits, 'rent');
+
+    if (zRentPy === 0) {
+        zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor);
+        zL = isMainRoad ? `${u.floor}층(위치무관)` : `${u.floor}층`;
+        zRentPy = getAvgPy(zUnits, 'rent');
+
+        if (zRentPy === 0) {
+            zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && getTier(d.floor) === uTier);
+            zL = `${uTier} 평균`;
+            zRentPy = getAvgPy(zUnits, 'rent');
+        }
+    }
+
+    const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
+    const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
+
+    const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
+    if (leftReasonBox) {
+        const fairRent = Math.round(finalRentPy * area);
+        leftReasonBox.innerHTML = `
+            <div class="text-[11px] text-slate-600 space-y-1">
+                <div class="font-bold text-amber-600 mb-1"><i class="ph-fill ph-lightbulb"></i> 적정임대료 산출 (70:30)</div>
+                <div class="text-slate-500 pl-1 leading-relaxed tracking-tight">
+                    [${zone} ${roadsideLabel}] ${zL} 평균 (${zRentPy.toFixed(1)}만 × 70%) + 건물 ${bL} 평균 (${bRentPy.toFixed(1)}만 × 30%)
+                </div>
+                <div class="font-bold text-blue-700 pl-1 mt-1.5 pt-1.5 border-t border-slate-200">
+                    👉 기준 평단가: ${finalRentPy.toFixed(1)}만원 <span class="text-slate-400 font-normal">(매매가 환산용)</span> × ${area.toFixed(1)}평 = <span class="text-blue-700 font-black text-[13px] tracking-tight">월 ${fairRent.toLocaleString()}만원</span>
+                </div>
+            </div>
+        `;
+    }
+
+    const origPrice = state.unitSimOrigPrice || u.price_sell || 0;
+
+    const topState = document.getElementById('usimOrigState');
+    if (topState) {
+        const fmtTop = (v) => {
+            if (v >= 10000) return (v / 10000).toFixed(1).replace('.0', '') + '억';
+            if (v > 0) return Math.round(v).toLocaleString() + '만';
+            return '0';
+        };
+        const sellTxt = origPrice > 0 ? fmtTop(origPrice) : '미정';
+        const rTxt = state.unitSimOrigRent > 0 ? fmtTop(state.unitSimOrigRent) : '0';
+        const dTxt = state.unitSimOrigDep > 0 ? fmtTop(state.unitSimOrigDep) : '0';
+        topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
+    }
+
+    // [Item 5 개선] 시장 매매 평단가 3단 폴백
+    let mPy = 0; let mReason = "";
+    let mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true) && d.price_sell > 0);
+    mReason = `[1순위] 동일층(${u.floor}층)+위치 매매 적용`;
+
+    if (mTargets.length === 0) { 
+        mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && d.price_sell > 0);
+        mReason = `[2순위] 해당층(${u.floor}층) 전체 평균 매매 적용`;
+        
+        if (mTargets.length === 0) {
+            mTargets = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier && d.price_sell > 0);
+            mReason = `[3순위] 층급(${uTier}) 전체 평균 매매 적용`;
+        }
+    }
+
+    mPy = getAvgPy(mTargets, 'price');
+
+    if (mTargets.length === 0 || mPy === 0) {
+        const dynamicMult = cap > 0 ? Math.round(12 / (cap / 100)) : 240; 
+        mPy = finalRentPy * dynamicMult;
+        mReason = `[표본부족] 임대단가 × ${dynamicMult}배 역산 (수익률 ${cap}% 기준)`;
+    }
+
+    const yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
+    const mV = Math.round((area * mPy)/100)*100;
+    const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
+
+    const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
+
+    const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
+        const b = document.getElementById(barId);
+        const r = document.getElementById(reasonId);
+        if(b) {
+            b.style.width = Math.min(100, (val/mx*100)) + '%';
+            b.innerText = val > 0 ? `${fmtSmartMoney(val)} (평당 ${Math.round(pyVal).toLocaleString()}만)` : '데이터 없음';
+        }
+        if(r) r.innerText = reasonTxt;
+    };
+
+    updateUI('barOrig', 'reasonOrig', origPrice, (area > 0 ? origPrice/area : 0), '현재 시장 호가');
+    updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV/area : 0), `NOI / 기대수익률 ${cap}%`);
+    updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
+    updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
+
+    const sliderEl = document.getElementById('usimAppliedPriceSlider');
+    let appliedPrice = parseInt(sliderEl.value) || 0;
+
+    if (state.lastSimId !== currentId) {
+        state.lastSimId = currentId;
+        if(occEl) occEl.checked = false; 
+        if(origEl) origEl.checked = false;
+        mult = parseInt(multEl.value) || 0; 
+        
+        appliedPrice = origPrice > 0 ? origPrice : fP;
+        sliderEl.max = Math.max(mx, appliedPrice * 1.5);
+        sliderEl.value = appliedPrice;
+    } else {
+        sliderEl.max = Math.max(sliderEl.max, mx);
+    }
+
+    const appliedBar = document.getElementById('barApplied');
+    if(appliedBar) {
+        appliedBar.style.width = Math.min(100, (appliedPrice/sliderEl.max*100)) + '%';
+        appliedBar.innerText = appliedPrice > 0 ? `${fmtSmartMoney(appliedPrice)}` : '0원';
+    }
+    const lblAppliedPy = document.getElementById('lblAppliedPy');
+    if(lblAppliedPy) {
+        lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice/area).toLocaleString()}만` : '-';
+    }
+
+    const tF = Math.round(appliedPrice * 0.055);
+    const tax = Math.round(appliedPrice * 0.046);
+    const fee = Math.round(appliedPrice * 0.009);
+    const loan = Math.round(appliedPrice * ltv);
+    
+    const realDep = isOccupied ? 0 : dep;
+    const cash = appliedPrice + tF - loan - realDep;
+    const mI = Math.round((loan * rate) / 12);
+    const net = rent - mI;
+
+    const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+    setTxt('usimTopDeposit', fmtSmartMoney(realDep)); 
+    setTxt('resUsimFinalPrice', fmtSmartMoney(appliedPrice));
+    
+    setTxt('resUsimCapRate', (appliedPrice-realDep > 0 ? (rent*12)/(appliedPrice-realDep)*100 : 0).toFixed(2) + '%');
+    setTxt('resUsimCash', fmtSmartMoney(cash));
+    setTxt('resUsimRoe', (cash > 0 ? (net*12)/cash*100 : 0).toFixed(2) + '%');
+    setTxt('ldgLoan', fmtSmartMoney(loan));
+    setTxt('ldgInterest', fmtSmartMoney(mI));
+    setTxt('ldgNet', fmtSmartMoney(net));
+
+    const taxFeeEl = document.getElementById('ldgTaxFee');
+    if (taxFeeEl) {
+        taxFeeEl.innerHTML = `
+            <div class="flex flex-col items-end text-right">
+                <span class="text-slate-900 font-bold">${fmtSmartMoney(tF)}</span>
+                <span class="text-[10px] text-slate-500 font-normal mt-0.5 whitespace-nowrap">
+                    취득세 4.6% ${fmtSmartMoney(tax)} / 수수료 0.9% ${fmtSmartMoney(fee)}
+                </span>
+            </div>
+        `;
+    }
+}
 
         function closeUnitSimulator() { document.getElementById('unitSimulatorModal').classList.add('hidden'); }
         
