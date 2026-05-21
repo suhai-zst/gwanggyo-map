@@ -1748,7 +1748,7 @@ function calcGroupedStats(units, type) {
         function fmtRentAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '만원'; }
         function fmtSellAvg(val) { if (!val || isNaN(val) || val === Infinity) return '-'; return val.toLocaleString(undefined, {maximumFractionDigits: 0}) + '만원'; }
 
-        function renderStacking() {
+function renderStacking() {
             const container = document.getElementById('stackingContainer'); container.innerHTML = '';
             [...state.checkedBuildings].sort((a,b) => {
                 const dA = state.allData.find(x => x.building === a); const dB = state.allData.find(x => x.building === b);
@@ -1758,7 +1758,7 @@ function calcGroupedStats(units, type) {
                 const units = state.allData.filter(d => d.building === b); if (!units.length) return;
                 const avgSell = calcGroupedStats(units, 'sell'); const avgRent = calcGroupedStats(units, 'rent');
                 const wrapper = document.createElement('div'); wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden";
-                wrapper.innerHTML = `<div class="bg-slate-50 px-3 md:px-4 py-3 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2"><div class="flex items-center gap-3"><h3 class="font-extrabold text-base md:text-lg text-slate-800">${cleanBuildingName(b)}</h3><button onclick="openBuildingModal('${b}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] md:text-xs font-bold text-slate-600 border border-slate-300">상세</button></div><div class="flex gap-2 text-[10px] md:text-xs"><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(매매)</span> <strong class="text-red-500">${fmtSellAvg(avgSell)}</strong></span><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(임대)</span> <strong class="text-emerald-600">${fmtRentAvg(avgRent)}</strong></span></div></div>`;
+                wrapper.innerHTML = `<div class="bg-slate-50 px-3 md:px-4 py-3 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2"><div class="flex items-center gap-3"><h3 class="font-extrabold text-base md:text-lg text-slate-800">${cleanBuildingName(b)}</h3><button onclick="openBuildingModal('${escapeHTML(b)}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] md:text-xs font-bold text-slate-600 border border-slate-300">상세</button></div><div class="flex gap-2 text-[10px] md:text-xs"><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(매매)</span> <strong class="text-red-500">${fmtSellAvg(avgSell)}</strong></span><span class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-600"><span class="text-slate-400 mr-1">평단가(임대)</span> <strong class="text-emerald-600">${fmtRentAvg(avgRent)}</strong></span></div></div>`;
                 const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
                 const fCont = document.createElement('div'); fCont.className = "p-3 md:p-4 space-y-2"; let visCnt = 0;
                 floors.forEach(f => {
@@ -1768,7 +1768,7 @@ function calcGroupedStats(units, type) {
                     
                     if (!state.isSummaryMode || hasMatch) {
                         visCnt++; const row = document.createElement('div'); row.className = "flex items-stretch min-h-[76px] border-b border-slate-100 pb-2 last:border-0";
-                        row.innerHTML = `<div class="w-12 md:w-16 flex-shrink-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500 rounded-l-lg p-1 border-r border-slate-200"><span class="font-extrabold text-sm md:text-base leading-none">${f}층</span><span class="text-[9px] md:text-[10px] text-emerald-600 font-bold mt-1 leading-none text-center">${fmtRentAvg(avgRentF)}</span></div>`;
+                        row.innerHTML = `<div class="w-12 md:w-16 flex-shrink-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500 rounded-l-lg p-1 border-r border-slate-200"><span class="font-extrabold text-sm md:text-base leading-none">${escapeHTML(f)}층</span><span class="text-[9px] md:text-[10px] text-emerald-600 font-bold mt-1 leading-none text-center">${fmtRentAvg(avgRentF)}</span></div>`;
                         const grid = document.createElement('div'); grid.className = "flex-1 flex flex-wrap gap-2 items-center pl-2 md:pl-3";
                         
                         fUnits.forEach(u => {
@@ -1784,7 +1784,7 @@ function calcGroupedStats(units, type) {
                             const adWarn = u.is_ad_warn ? `<div class="ad-warn-dot"></div>` : '';
                             const linkIcon = u.group_id ? `<i class="ph-bold ph-link text-blue-500 ml-1 text-[10px]"></i>` : ''; 
                             const groupClass = u.group_id ? 'is-grouped' : '';
-                            let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${u.status}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${u.status}</div>`; }
+                            let doneBadge = ''; if (u.status.includes('매매완료')) { doneBadge = `<div class="done-badge sale">${escapeHTML(u.status)}</div>`; } else if (u.status.includes('임대완료')) { doneBadge = `<div class="done-badge rent">${escapeHTML(u.status)}</div>`; }
                             
                             let noPremiumBadge = '';
                             const allowedRentStatuses = ['임대', '매매/임대', '타부동산'];
@@ -1812,7 +1812,8 @@ function calcGroupedStats(units, type) {
                                 mergeBadge = `<span class="absolute -top-2 left-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-md z-30 font-black tracking-tighter whitespace-nowrap animate-bounce" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">💡 +확장 ${u._mergeStartArea.toFixed(0)}p</span>`;
                             }
 
-                            el.innerHTML = `${mergeBadge}${star} ${question} ${adWarn} ${doneBadge} ${mergeLine} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${u.unit}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${u.store_name}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${u.dir}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
+                            // [Item 4-B 핫픽스]
+                            el.innerHTML = `${mergeBadge}${star} ${question} ${adWarn} ${doneBadge} ${mergeLine} ${compareBtn} <div class="flex justify-between items-start leading-none mb-1.5"><div class="flex items-center w-11/12"><span class="font-extrabold text-xs md:text-sm truncate text-slate-800 flex items-center">${escapeHTML(u.unit)}${linkIcon}</span>${noPremiumBadge}</div></div><div class="text-[10px] md:text-xs truncate font-bold opacity-90 text-slate-700 h-4">${escapeHTML(u.store_name)}</div><div class="flex justify-between items-end mt-1.5"><span class="text-[9px] md:text-[10px] font-bold text-slate-600">${escapeHTML(u.dir)}</span><div class="text-[9px] md:text-[10px] font-bold text-slate-600 bg-white/40 px-1 rounded flex items-center">${u.area_p.toFixed(1)}p ${yieldStr}</div></div>`;
                             
                             el.onclick = (e) => {
                                 if (e.target.closest('.btn-compare')) {
@@ -2273,15 +2274,13 @@ async function shareCompare() {
             document.body.appendChild(overlay);
         }
 
-        function openBuildingModal(bName) {
-            // [핵심 버그 픽스] 토글 시 데이터가 날아가지 않도록 모달 HTML에 원본 이름을 박아둡니다.
+function openBuildingModal(bName) {
             const modal = document.getElementById('buildingModal');
             modal.dataset.rawBuildingName = bName;
 
             const info = state.buildingInfoMap[bName] || {}; const units = state.allData.filter(d => d.building === bName);
             document.getElementById('modalTitle').innerText = cleanBuildingName(bName);
             
-            // 보안 토글 시 모달 상단 자물쇠 아이콘 모양 변경
             const lockIcon = document.getElementById('modalLockIcon');
             if(lockIcon) {
                 lockIcon.className = state.isPrivacyMode ? "ph-bold ph-lock-key text-green-600 text-xl" : "ph-bold ph-lock-key-open text-red-500 text-xl";
@@ -2294,7 +2293,6 @@ async function shareCompare() {
 
             const floors = [...new Set(units.map(u => u.floor))].sort((a,b) => { const gn = f => f.includes('B') ? -parseInt(f.replace('B','')) : parseInt(f); return gn(b) - gn(a); });
             
-            // [항상 보여줄 층별 평단가 테이블]
             let tableHTML = `<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4"><table class="w-full text-xs text-center border border-slate-200"><thead class="bg-slate-100 font-bold"><tr><th class="p-2 border">구분</th><th class="p-2 border">임대평단가</th><th class="p-2 border">매매평단가</th></tr></thead><tbody>`;
             floors.forEach(f => {
                 if (f === '1') {
@@ -2304,7 +2302,7 @@ async function shareCompare() {
                         const subUnits = f1Units.filter(u => u.pos === pos);
                         if (subUnits.length > 0) {
                             const rAvg = calcGroupedStats(subUnits, 'rent'); const sAvg = calcGroupedStats(subUnits, 'sell');
-                            tableHTML += `<tr><td class="p-2 border font-bold text-slate-600">1층 (${pos})</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
+                            tableHTML += `<tr><td class="p-2 border font-bold text-slate-600">1층 (${escapeHTML(pos)})</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
                         }
                     });
                     const rAvg1 = calcGroupedStats(f1Units, 'rent'); const sAvg1 = calcGroupedStats(f1Units, 'sell');
@@ -2312,37 +2310,36 @@ async function shareCompare() {
                 } else {
                     const subUnits = units.filter(u => u.floor === f);
                     const rAvg = calcGroupedStats(subUnits, 'rent'); const sAvg = calcGroupedStats(subUnits, 'sell');
-                    tableHTML += `<tr><td class="p-2 border font-bold">${f}층</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
+                    tableHTML += `<tr><td class="p-2 border font-bold">${escapeHTML(f)}층</td><td class="p-2 border">${fmtRentAvg(rAvg)}</td><td class="p-2 border text-red-500">${fmtSellAvg(sAvg)}</td></tr>`;
                 }
             });
             tableHTML += `</tbody></table></div>`;
             
-            const jibunAddr = info['지번 주소 - 상현동'] ? `상현동 ${info['지번 주소 - 상현동']}` : '-';
+            const jibunAddr = info['지번 주소 - 상현동'] ? `상현동 ${escapeHTML(info['지번 주소 - 상현동'])}` : '-';
             const mkRow = (lbl, val) => `<div class="flex flex-col"><span class="text-xs text-slate-400 font-bold">${lbl}</span><span class="font-bold text-slate-800">${val || '-'}</span></div>`;
             
             let extraMgmt = null;
             if(state.managementData) { extraMgmt = state.managementData.find(m => bName.includes(String(m['건물명']).trim())); }
-            const mngOffice = info['관리실'] || (extraMgmt ? extraMgmt['사무실'] : '');
-            const mngPhone = info['관리실 전화'] || (extraMgmt ? extraMgmt['사무실'] : ''); 
-            const mngManager = info['건물 담당자'] || (extraMgmt ? extraMgmt['소장'] : '');
-            let mngNote = info['기타설명'] || '';
-            if(extraMgmt && extraMgmt['비고']) mngNote += `\n[관리실 비고]\n${extraMgmt['비고']}`;
+            
+            // [Item 4-B 핫픽스]
+            const mngOffice = escapeHTML(info['관리실'] || (extraMgmt ? extraMgmt['사무실'] : ''));
+            const mngPhone = escapeHTML(info['관리실 전화'] || (extraMgmt ? extraMgmt['사무실'] : '')); 
+            const mngManager = escapeHTML(info['건물 담당자'] || (extraMgmt ? extraMgmt['소장'] : ''));
+            let mngNote = escapeHTML(info['기타설명'] || '');
+            if(extraMgmt && extraMgmt['비고']) mngNote += `\n[관리실 비고]\n${escapeHTML(extraMgmt['비고'])}`;
 
-            const pw = getBuildingPassword(bName);
+            const pw = escapeHTML(getBuildingPassword(bName));
             let pwHtml = '';
             if (pw) pwHtml = mkRow('오피스텔 중문 비번', `<span class="text-red-500 font-extrabold tracking-wider bg-red-50 px-2 py-0.5 rounded border border-red-200">${pw}</span>`);
 
             let statsHTML = '';
             let infoHTML = '';
             
-            // [보안 로직 분기]
             if (state.isPrivacyMode) {
-                // 고객용 모드: 민감 정보 제거, tableHTML(층별 평단가)은 무조건 포함!
-                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${mkRow('도로명 주소', info['도로명 주소'])}</div>`;
+                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', escapeHTML(info['준공연도']))} ${mkRow('엘리베이터', escapeHTML(info['엘리베이터']))} ${mkRow('주차정보', escapeHTML(info['주차정보']))} ${mkRow('관리비', escapeHTML(info['관리비']))} ${mkRow('도로명 주소', escapeHTML(info['도로명 주소']))}</div>`;
                 document.getElementById('modalContent').innerHTML = `${infoHTML}${tableHTML}`;
             } else {
-                // 관리용 모드: 민감 정보 + 통계 박스 + tableHTML(층별 평단가) 모두 표시
-                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', info['준공연도'])} ${mkRow('엘리베이터', info['엘리베이터'])} ${mkRow('주차정보', info['주차정보'])} ${mkRow('관리비', info['관리비'])} ${pwHtml} ${mkRow('관리실', mngOffice)} ${mkRow('관리실 전화', formatPhones(mngPhone))} ${mkRow('건물 담당자', formatPhones(mngManager))} ${mkRow('도로명 주소', info['도로명 주소'])} ${mkRow('지번 주소', jibunAddr)}</div><div class="mt-4"><h4 class="font-bold text-sm mb-1 text-slate-600">📝 관리자 메모</h4><p class="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">${mngNote || '내용 없음'}</p></div>`;
+                infoHTML = `<div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">${mkRow('준공연도', escapeHTML(info['준공연도']))} ${mkRow('엘리베이터', escapeHTML(info['엘리베이터']))} ${mkRow('주차정보', escapeHTML(info['주차정보']))} ${mkRow('관리비', escapeHTML(info['관리비']))} ${pwHtml} ${mkRow('관리실', mngOffice)} ${mkRow('관리실 전화', formatPhones(mngPhone))} ${mkRow('건물 담당자', formatPhones(mngManager))} ${mkRow('도로명 주소', escapeHTML(info['도로명 주소']))} ${mkRow('지번 주소', jibunAddr)}</div><div class="mt-4"><h4 class="font-bold text-sm mb-1 text-slate-600">📝 관리자 메모</h4><p class="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">${mngNote || '내용 없음'}</p></div>`;
                 statsHTML = `<div class="bg-white p-4 border border-slate-200 rounded-lg mt-4"><h4 class="font-bold text-sm mb-2 text-slate-600">📊 관리자 통계</h4><div class="grid grid-cols-4 gap-2 text-center text-xs"><div class="bg-slate-100 p-2 rounded"><div class="text-slate-500">총 호실</div><div class="font-bold text-lg">${total}</div></div><div class="bg-blue-50 p-2 rounded"><div class="text-blue-500">임대진행</div><div class="font-bold text-lg text-blue-600">${rentCnt}</div></div><div class="bg-red-50 p-2 rounded"><div class="text-red-500">매매진행</div><div class="font-bold text-lg text-red-600">${saleCnt}</div></div><div class="bg-orange-50 p-2 rounded"><div class="text-orange-500">타부동산</div><div class="font-bold text-lg text-orange-600">${otherCnt}</div></div></div></div>`;
                 document.getElementById('modalContent').innerHTML = `${infoHTML}${statsHTML}${tableHTML}`;
             }
@@ -2369,20 +2366,21 @@ function renderDetail(d) {
             const sumPrice = targets.reduce((acc, cur) => acc + (cur.price_sell || 0), 0);
             const sumPrem = targets.reduce((acc, cur) => acc + (parseInt(cur.premium) || 0), 0);
             
-            const owners = [...new Set(targets.map(t => t.owner).filter(Boolean))].join(', ');
-            const ownerTels = [...new Set(targets.map(t => t.owner_tel).filter(Boolean))].join(' / ');
-            const tenants = [...new Set(targets.map(t => t.tenant).filter(Boolean))].join(', ');
-            const tenantTels = [...new Set(targets.map(t => t.tenant_tel).filter(Boolean))].join(' / ');
-            const combinedMemo = [...new Set(targets.map(t => t.memo).filter(Boolean))].join('\n---\n');
+            // [Item 4-B 핫픽스] 엑셀에서 온 문자열 데이터를 안전하게 소독(escapeHTML) 처리
+            const owners = [...new Set(targets.map(t => escapeHTML(t.owner)).filter(Boolean))].join(', ');
+            const ownerTels = [...new Set(targets.map(t => escapeHTML(t.owner_tel)).filter(Boolean))].join(' / ');
+            const tenants = [...new Set(targets.map(t => escapeHTML(t.tenant)).filter(Boolean))].join(', ');
+            const tenantTels = [...new Set(targets.map(t => escapeHTML(t.tenant_tel)).filter(Boolean))].join(' / ');
+            const combinedMemo = [...new Set(targets.map(t => escapeHTML(t.memo)).filter(Boolean))].join('\n---\n');
 
             const groupPPRent = sumArea > 0 ? (sumRent / sumArea) : 0; 
             const groupPPSell = sumArea > 0 ? (sumPrice / sumArea) : 0;
 
-            const unitTitle = isGroup ? targets.map(t => t.unit).join(', ') + '호' : d.unit + '호';
+            const unitTitle = isGroup ? targets.map(t => escapeHTML(t.unit)).join(', ') + '호' : escapeHTML(d.unit) + '호';
             const groupBadge = isGroup ? '<span class="px-2 py-0.5 bg-violet-100 text-violet-600 text-xs font-bold rounded border border-violet-200 ml-1 whitespace-nowrap">🔗 통합매물</span>' : '';
             
-            let adBadge = ''; if(d.is_ad_warn) adBadge = `<span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded border border-red-200 ml-1 whitespace-nowrap">🔥 만료 임박 (~${d.ad_date})</span>`; else if(d.ad_date) adBadge = `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded border border-slate-200 ml-1 whitespace-nowrap">광고중</span>`;
-            const posInfo = d.pos ? `<span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded ml-2">${d.pos} / ${d.dir}</span>` : '';
+            let adBadge = ''; if(d.is_ad_warn) adBadge = `<span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded border border-red-200 ml-1 whitespace-nowrap">🔥 만료 임박 (~${escapeHTML(d.ad_date)})</span>`; else if(d.ad_date) adBadge = `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded border border-slate-200 ml-1 whitespace-nowrap">광고중</span>`;
+            const posInfo = d.pos ? `<span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded ml-2">${escapeHTML(d.pos)} / ${escapeHTML(d.dir)}</span>` : '';
             
             const areaP = state.isSqm ? (sumArea * 3.3058).toFixed(1) : sumArea.toFixed(1);
             const areaS = state.isSqm ? (sumAreaS * 3.3058).toFixed(1) : sumAreaS.toFixed(1);
@@ -2407,12 +2405,12 @@ function renderDetail(d) {
             if (!state.isPrivacyMode && isGroup) {
                 groupListHTML = `<div class="mt-3 pt-3 border-t border-slate-200"><h5 class="text-xs font-bold text-slate-500 mb-2">구성 호실별 상세 (관리자용)</h5><div class="space-y-1">`;
                 targets.forEach(t => {
-                    groupListHTML += `<div class="flex flex-col md:flex-row justify-between text-[11px] md:text-xs text-slate-700 bg-slate-50 p-2 rounded gap-1"><span class="font-bold">${t.unit}호</span><span class="text-slate-500">매 ${fmtNum(t.price_sell)} / 보 ${fmtNum(t.deposit)} / 월 ${fmtNum(t.rent)}</span></div>`;
+                    groupListHTML += `<div class="flex flex-col md:flex-row justify-between text-[11px] md:text-xs text-slate-700 bg-slate-50 p-2 rounded gap-1"><span class="font-bold">${escapeHTML(t.unit)}호</span><span class="text-slate-500">매 ${fmtNum(t.price_sell)} / 보 ${fmtNum(t.deposit)} / 월 ${fmtNum(t.rent)}</span></div>`;
                 });
                 groupListHTML += `</div></div>`;
             }
 
-            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${d.rawStatus}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${d.floor}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${d.store_name || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span><button onclick="openMiniRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition no-print"><i class="ph-bold ph-chart-bar"></i> 분석</button></div></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
+            document.getElementById('detailContent').innerHTML = `<div class="mb-4 md:mb-6"><div class="flex items-center gap-2 mb-2 flex-wrap"><span class="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm whitespace-nowrap ${badgeCls}">${escapeHTML(d.rawStatus)}</span>${impBadge}${qBadge}${groupBadge} ${adBadge} ${noPremiumDetailBadge}</div><h2 class="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">${unitTitle}</h2><div class="flex items-center mt-1"><p class="text-slate-500 text-sm md:text-base font-bold">${cleanBuildingName(d.building)} ${escapeHTML(d.floor)}</p>${posInfo}</div></div><div class="space-y-4 md:space-y-6"><div class="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100 shadow-sm"><div class="grid grid-cols-2 gap-4 text-sm"><div><div class="text-xs text-slate-400 font-bold mb-0.5">상호명</div><div class="font-bold text-slate-800 text-sm md:text-base truncate">${escapeHTML(d.store_name) || '-'}</div></div><div>${areaLabelBtn}<div class="font-bold text-slate-800 text-sm md:text-base">${areaDisplay}</div></div></div></div><div><h4 class="text-[10px] md:text-xs font-extrabold text-blue-600 mb-2 uppercase tracking-wider">Price Info</h4><div class="grid grid-cols-2 gap-y-3 md:gap-y-4 text-xs md:text-sm border-t border-slate-100 pt-3"><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">보증금/월세</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-slate-800">${fmtNum(sumDep)} / ${fmtNum(sumRent)}</span><button onclick="openMiniRentAppraisal(${d.id})" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100 shadow-sm flex items-center gap-1 transition no-print"><i class="ph-bold ph-chart-bar"></i> 분석</button></div></div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">매매가</span> <div class="flex items-center gap-2"><span class="font-extrabold text-base md:text-lg text-red-500">${fmtNum(sumPrice)}</span> ${sumPrice > 0 ? `<button onclick="openUnitSimulator(${d.id})" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow hover:bg-slate-700 transition"><i class="ph-bold ph-chart-line-up"></i> 시뮬</button>` : ''}</div></div><div class="flex items-center gap-1"><div class="flex flex-col"><span class="text-slate-400 text-[10px] md:text-xs block font-bold">권리금</span> <span class="font-bold">${fmtNum(sumPrem)}</span></div> ${noPremiumDetailBadge}</div><div><span class="text-slate-400 text-[10px] md:text-xs block font-bold">평단가(매/임)</span> <span class="text-[10px] md:text-xs text-slate-600">${fmtSellAvg(groupPPSell)} / ${fmtRentAvg(groupPPRent)}</span></div>${d.yield > 0 ? `<div class="col-span-2 bg-red-50 p-2 rounded-lg text-center border border-red-100 shadow-sm"><span class="text-[10px] md:text-xs font-bold text-red-500">예상 수익률</span> <span class="text-base md:text-lg font-extrabold text-red-600 ml-1">${d.yield}%</span></div>` : ''}</div>${groupListHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-emerald-600 mb-2 uppercase tracking-wider flex justify-between">Contact Info ${state.isPrivacyMode?'<i class="ph-fill ph-lock-key"></i>':'<i class="ph-fill ph-lock-open"></i>'}</h4>${contactHTML}</div><div><h4 class="text-[10px] md:text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-wider">Memo</h4>${memoHTML}</div></div>`;
         }
 
 function openMiniRentAppraisal(id) {
