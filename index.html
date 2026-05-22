@@ -3174,33 +3174,59 @@ function applyAvmToSimulator() {
             document.getElementById('resNetMonthly').innerText = fmtKoreanMoney(netMonthly);
             document.getElementById('resRoe').innerText = roe.toFixed(2) + '%';
         }
-// 슬라이더 동기화 보조 함수 (unit 시뮬레이터 호환용으로 확장)
-        function syncSliderFromInput(type) {
-            // 엑셀에서 숫자를 읽어와 슬라이더에 반영
-            const inputEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1));
-            const sliderEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1) + 'Slider');
-            if (inputEl && sliderEl) {
-                const val = inputEl.value.replace(/,/g,'');
-                sliderEl.value = val;
-            }
-            // 계산기 즉시 실행
-            calcUnitSimulator();
-        }
+// 통매각 시뮬레이터 전용 슬라이더 동기화 함수
+// 대상 ID 구조:
+// - simInputPrice / simSliderPrice
+// - simInputDep   / simSliderDep
+// - simInputRent  / simSliderRent
+//
+// 주의:
+// 호실 가치평가 시뮬레이터(usim...)와 섞지 않는다.
+// 계산 실행은 HTML의 onkeyup/oninput에서 calcSimulator()를 이미 호출하므로,
+// 이 함수들은 입력창 ↔ 슬라이더 값 동기화만 담당한다.
+function syncSliderFromInput(type) {
+    const capType = type.charAt(0).toUpperCase() + type.slice(1);
+    const inputEl = document.getElementById('simInput' + capType);
+    const sliderEl = document.getElementById('simSlider' + capType);
 
-        function syncInputFromSlider(type, labelId) {
-            // 슬라이더 값을 읽어와 입력창에 반영
-            const sliderEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1) + 'Slider');
-            const inputEl = document.getElementById('usim' + type.charAt(0).toUpperCase() + type.slice(1));
-            const labelEl = document.getElementById(labelId);
-            
-            if (sliderEl && inputEl) {
-                const val = sliderEl.value;
-                inputEl.value = parseInt(val).toLocaleString();
-                if (labelEl) labelEl.innerText = parseInt(val).toLocaleString() + (type === 'ltv' ? '%' : '');
-            }
-            // 계산기 즉시 실행
-            calcUnitSimulator();
-        }
+    if (!inputEl || !sliderEl) return;
+
+    let val = parseInt(String(inputEl.value || '').replace(/,/g, '').replace(/[^0-9]/g, ''), 10);
+    if (isNaN(val) || val < 0) val = 0;
+
+    const step = parseInt(sliderEl.step, 10) || 1;
+    const currentMax = parseInt(sliderEl.max, 10) || 0;
+
+    // AVM 불러오기 등으로 기존 max보다 큰 값이 들어오는 경우 슬라이더 max를 자동 확장한다.
+    if (val > currentMax) {
+        sliderEl.max = String(Math.ceil((val * 1.2) / step) * step);
+    }
+
+    const min = parseInt(sliderEl.min, 10) || 0;
+    const max = parseInt(sliderEl.max, 10) || val;
+
+    sliderEl.value = String(Math.min(Math.max(val, min), max));
+}
+
+function syncInputFromSlider(type, labelId) {
+    const capType = type.charAt(0).toUpperCase() + type.slice(1);
+    const sliderEl = document.getElementById('simSlider' + capType);
+    const inputEl = document.getElementById('simInput' + capType);
+    const labelEl = document.getElementById(labelId);
+
+    if (!sliderEl || !inputEl) return;
+
+    let val = parseInt(sliderEl.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+
+    inputEl.value = val.toLocaleString();
+
+    if (labelEl) {
+        labelEl.innerText = (typeof fmtKoreanMoney === 'function')
+            ? fmtKoreanMoney(val)
+            : val.toLocaleString() + '만원';
+    }
+}
 // [v8.4.4] 금액 표기 버그 수정 및 가독성 강화
         function fmtSmartMoney(val) {
             if (!val || val <= 0) return "0원";
