@@ -2389,14 +2389,15 @@ function renderDetail(d) {
 function openMiniRentAppraisal(id) {
             try {
                 const u = state.allData.find(x => String(x.id) === String(id));
-                if(!u) { alert('데이터를 찾을 수 없습니다.'); return; }
+                if (!u) { alert('데이터를 찾을 수 없습니다.'); return; }
 
                 const zone = u.exit || "미지정";
-                
-                const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => bName.replace(/\s/g,'').includes(t.replace(/\s/g,'')));
-                let isMainRoad = checkRoadside(u.building);
-                let roadside = isMainRoad ? '대로변' : '기타구역';
-                
+                const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => String(bName || '').replace(/\s/g,'').includes(String(t || '').replace(/\s/g,'')));
+                const isMainRoad = checkRoadside(u.building);
+                const roadside = isMainRoad ? '대로변' : '기타구역';
+                const uPos = u.pos || '';
+                const usePosition = isMainRoad && !!uPos;
+
                 const getTier = (flr) => {
                     const f = parseInt(flr);
                     if (isNaN(f)) return '기타';
@@ -2405,19 +2406,19 @@ function openMiniRentAppraisal(id) {
                     return '3층이상';
                 };
                 const uTier = getTier(u.floor);
-                const uPos = u.pos || '';
-                
-                // [핵심 픽스] 무거운 getMark 함수 삭제, processData에서 담아준 .mark 속성 직접 호출
+                const posLabel = uPos || '미상';
+
+                // 통합 매물 표시 대상은 기존 정책을 그대로 유지한다.
                 const mark = u.mark || '';
                 let groupUnits = [];
                 if (u.unique_group_id) {
-                    let allMembers = state.allData.filter(x => x.unique_group_id === u.unique_group_id);
+                    const allMembers = state.allData.filter(x => x.unique_group_id === u.unique_group_id);
                     if (mark === 'i') {
                         groupUnits = [u];
                     } else if (mark === 'g') {
                         groupUnits = allMembers.filter(m => (m.mark || '') === 'g');
                     } else if (mark === 'x') {
-                        let gMembers = allMembers.filter(m => (m.mark || '') === 'g');
+                        const gMembers = allMembers.filter(m => (m.mark || '') === 'g');
                         groupUnits = gMembers.length > 0 ? gMembers : [u];
                     } else {
                         groupUnits = allMembers;
@@ -2426,24 +2427,26 @@ function openMiniRentAppraisal(id) {
                     groupUnits = [u];
                 }
 
-                const sumArea = groupUnits.reduce((a,c)=>a+(parseFloat(c.area_p)||0), 0);
-                const sumDep = groupUnits.reduce((a,c)=>a+(parseFloat(c.deposit)||0), 0);
-                const sumRent = groupUnits.reduce((a,c)=>a+(parseFloat(c.rent)||0), 0);
+                const sumArea = groupUnits.reduce((a, c) => a + (parseFloat(c.area_p) || 0), 0);
+                const sumDep = groupUnits.reduce((a, c) => a + (parseFloat(c.deposit) || 0), 0);
+                const sumRent = groupUnits.reduce((a, c) => a + (parseFloat(c.rent) || 0), 0);
 
+                // 후보 호실들의 임대 평단가를 계산한다.
+                // x 마커는 통계 제외, g 마커는 동일 그룹을 한 번만 합산한다.
                 const getPyPrice = items => {
-                    let sumAreaTemp = 0, sumRentTemp = 0;
-                    let processedGids = new Set();
-                
+                    let sumAreaTemp = 0;
+                    let sumRentTemp = 0;
+                    const processedGids = new Set();
+
                     items.forEach(item => {
                         const mk = item.mark || '';
-                        
                         if (mk === 'x') return;
-                
+
                         if (mk === 'i' || !item.unique_group_id || mk === '') {
                             let finalVal = parseFloat(item.rent) || 0;
-                            let area = parseFloat(item.area_p) || 0;
-                            let dep = parseFloat(item.deposit) || 0;
-                
+                            const area = parseFloat(item.area_p) || 0;
+                            const dep = parseFloat(item.deposit) || 0;
+
                             if (finalVal > 0 && area > 0) {
                                 if (dep > finalVal * 12) {
                                     finalVal += (dep - (finalVal * 12)) * 0.05 / 12;
@@ -2452,121 +2455,210 @@ function openMiniRentAppraisal(id) {
                                 sumRentTemp += finalVal;
                             }
                         } else if (mk === 'g') {
-                            let gid = item.unique_group_id;
+                            const gid = item.unique_group_id;
                             if (processedGids.has(gid)) return;
                             processedGids.add(gid);
-                
-                            let g_members = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
-                            let groupArea = 0, gRent = 0, gDep = 0;
-                            
-                            g_members.forEach(m => {
+
+                            const gMembers = state.allData.filter(x => x.unique_group_id === gid && (x.mark || '') === 'g');
+                            let groupArea = 0;
+                            let groupRent = 0;
+                            let groupDep = 0;
+
+                            gMembers.forEach(m => {
                                 groupArea += (parseFloat(m.area_p) || 0);
-                                gRent += (parseFloat(m.rent) || 0);
-                                gDep += (parseFloat(m.deposit) || 0);
+                                groupRent += (parseFloat(m.rent) || 0);
+                                groupDep += (parseFloat(m.deposit) || 0);
                             });
-                
-                            if (gRent > 0 && groupArea > 0) {
-                                let finalVal = gRent;
-                                if (gDep > gRent * 12) {
-                                    finalVal += (gDep - (gRent * 12)) * 0.05 / 12;
+
+                            if (groupRent > 0 && groupArea > 0) {
+                                let finalVal = groupRent;
+                                if (groupDep > groupRent * 12) {
+                                    finalVal += (groupDep - (groupRent * 12)) * 0.05 / 12;
                                 }
                                 sumAreaTemp += groupArea;
                                 sumRentTemp += finalVal;
                             }
                         }
                     });
+
                     return sumAreaTemp > 0 ? (sumRentTemp / sumAreaTemp) : 0;
                 };
 
-                let bUnits = state.allData.filter(d => {
-                    let match = (d.building === u.building) && (d.floor === u.floor);
-                    if (isMainRoad) match = match && (d.pos === uPos);
-                    return match;
-                });
-                let bLabel = isMainRoad ? `해당 건물 [${u.floor}/${uPos||'미상'}] 평균 (30%)` : `해당 건물 [${u.floor}] 평균 (30%)`;
-                
-                if (bUnits.length <= 1) { 
-                    bUnits = state.allData.filter(d => {
-                        let match = (d.building === u.building) && (getTier(d.floor) === uTier);
-                        if (isMainRoad) match = match && (d.pos === uPos);
-                        return match;
-                    });
-                    bLabel = isMainRoad ? `해당 건물 [${uTier}/${uPos||'미상'}] 평균 (30%)` : `해당 건물 [${uTier}] 평균 (30%)`;
-                }
-                let bAvg = getPyPrice(bUnits);
+                const zoneMatcher = d => {
+                    const dIsMainRoad = checkRoadside(d.building);
+                    const dRoadside = dIsMainRoad ? '대로변' : '기타구역';
+                    return (d.exit || "미지정") === zone && dRoadside === roadside;
+                };
 
-                let zUnits = state.allData.filter(d => {
-                    let dIsMainRoad = checkRoadside(d.building);
-                    let dRoadside = dIsMainRoad ? '대로변' : '기타구역';
-                    let match = (d.exit || "미지정") === zone && dRoadside === roadside && d.floor === u.floor;
-                    if (isMainRoad) match = match && (d.pos === uPos);
-                    return match;
-                });
-                let zLabel = isMainRoad ? `[${zone} ${roadside}] ${u.floor}/${uPos||'미상'} 평균 (70%)` : `[${zone} ${roadside}] ${u.floor} 평균 (70%)`;
-                
-                if (zUnits.length <= 1) {
-                    zUnits = state.allData.filter(d => {
-                        let dIsMainRoad = checkRoadside(d.building);
-                        let dRoadside = dIsMainRoad ? '대로변' : '기타구역';
-                        let match = (d.exit || "미지정") === zone && dRoadside === roadside && getTier(d.floor) === uTier;
-                        if (isMainRoad) match = match && (d.pos === uPos);
-                        return match;
-                    });
-                    zLabel = isMainRoad ? `[${zone} ${roadside}] ${uTier}/${uPos||'미상'} 평균 (70%)` : `[${zone} ${roadside}] ${uTier} 평균 (70%)`;
+                // ========================================================
+                // 1. 해당 건물 평균
+                // 우선순위:
+                // ① 같은 건물 + 같은 층 + 같은 위치
+                // ② 같은 건물 + 같은 층 + 위치무관 전체
+                // ③ 같은 건물 + 같은 층급 + 같은 위치
+                // ④ 같은 건물 + 같은 층급 + 위치무관 전체
+                // ========================================================
+                const bSameFloorSamePosUnits = state.allData.filter(d =>
+                    d.building === u.building &&
+                    d.floor === u.floor &&
+                    (!usePosition || d.pos === uPos)
+                );
+                const bSameFloorAllUnits = state.allData.filter(d =>
+                    d.building === u.building &&
+                    d.floor === u.floor
+                );
+                const bTierSamePosUnits = state.allData.filter(d =>
+                    d.building === u.building &&
+                    getTier(d.floor) === uTier &&
+                    (!usePosition || d.pos === uPos)
+                );
+                const bTierAllUnits = state.allData.filter(d =>
+                    d.building === u.building &&
+                    getTier(d.floor) === uTier
+                );
+
+                const bSameFloorSamePosAvg = getPyPrice(bSameFloorSamePosUnits);
+                const bSameFloorAllAvg = getPyPrice(bSameFloorAllUnits);
+                const bTierSamePosAvg = getPyPrice(bTierSamePosUnits);
+                const bTierAllAvg = getPyPrice(bTierAllUnits);
+
+                let bAvg = 0;
+                let bLabel = '';
+                let sameFloorPriorityAvg = 0;
+
+                if (bSameFloorSamePosAvg > 0) {
+                    bAvg = bSameFloorSamePosAvg;
+                    bLabel = usePosition ? `해당 건물 [${u.floor}/${posLabel}] 평균 (30%)` : `해당 건물 [${u.floor}] 평균 (30%)`;
+                } else if (bSameFloorAllAvg > 0) {
+                    bAvg = bSameFloorAllAvg;
+                    bLabel = `해당 건물 [${u.floor}/위치무관] 평균 (30%)`;
+                    sameFloorPriorityAvg = bSameFloorAllAvg;
+                } else if (bTierSamePosAvg > 0) {
+                    bAvg = bTierSamePosAvg;
+                    bLabel = usePosition ? `해당 건물 [${uTier}/${posLabel}] 평균 (30%)` : `해당 건물 [${uTier}] 평균 (30%)`;
+                } else if (bTierAllAvg > 0) {
+                    bAvg = bTierAllAvg;
+                    bLabel = `해당 건물 [${uTier}/위치무관] 평균 (30%)`;
+                } else {
+                    bLabel = usePosition ? `해당 건물 [${u.floor}/${posLabel}] 평균 (30%)` : `해당 건물 [${u.floor}] 평균 (30%)`;
                 }
-                let zAvg = getPyPrice(zUnits);
+
+                // ========================================================
+                // 2. 출구/상권 평균
+                // 건물 평균과 동일하게, 같은 층 위치무관 평균을 층급 평균보다 먼저 본다.
+                // ========================================================
+                const zSameFloorSamePosUnits = state.allData.filter(d =>
+                    zoneMatcher(d) &&
+                    d.floor === u.floor &&
+                    (!usePosition || d.pos === uPos)
+                );
+                const zSameFloorAllUnits = state.allData.filter(d =>
+                    zoneMatcher(d) &&
+                    d.floor === u.floor
+                );
+                const zTierSamePosUnits = state.allData.filter(d =>
+                    zoneMatcher(d) &&
+                    getTier(d.floor) === uTier &&
+                    (!usePosition || d.pos === uPos)
+                );
+                const zTierAllUnits = state.allData.filter(d =>
+                    zoneMatcher(d) &&
+                    getTier(d.floor) === uTier
+                );
+
+                const zSameFloorSamePosAvg = getPyPrice(zSameFloorSamePosUnits);
+                const zSameFloorAllAvg = getPyPrice(zSameFloorAllUnits);
+                const zTierSamePosAvg = getPyPrice(zTierSamePosUnits);
+                const zTierAllAvg = getPyPrice(zTierAllUnits);
+
+                let zAvg = 0;
+                let zLabel = '';
+
+                if (zSameFloorSamePosAvg > 0) {
+                    zAvg = zSameFloorSamePosAvg;
+                    zLabel = usePosition ? `[${zone} ${roadside}] ${u.floor}/${posLabel} 평균 (70%)` : `[${zone} ${roadside}] ${u.floor} 평균 (70%)`;
+                } else if (zSameFloorAllAvg > 0) {
+                    zAvg = zSameFloorAllAvg;
+                    zLabel = `[${zone} ${roadside}] ${u.floor}/위치무관 평균 (70%)`;
+                } else if (zTierSamePosAvg > 0) {
+                    zAvg = zTierSamePosAvg;
+                    zLabel = usePosition ? `[${zone} ${roadside}] ${uTier}/${posLabel} 평균 (70%)` : `[${zone} ${roadside}] ${uTier} 평균 (70%)`;
+                } else if (zTierAllAvg > 0) {
+                    zAvg = zTierAllAvg;
+                    zLabel = `[${zone} ${roadside}] ${uTier}/위치무관 평균 (70%)`;
+                } else {
+                    zLabel = usePosition ? `[${zone} ${roadside}] ${u.floor}/${posLabel} 평균 (70%)` : `[${zone} ${roadside}] ${u.floor} 평균 (70%)`;
+                }
 
                 if (zAvg === 0) zAvg = bAvg;
                 if (bAvg === 0) bAvg = zAvg;
 
-                let finalPy = (zAvg * 0.7) + (bAvg * 0.3);
-                if (finalPy === 0) finalPy = sumRent > 0 ? (sumRent / sumArea) : 0;
+                let finalPy = 0;
+                if (zAvg > 0 && bAvg > 0) {
+                    finalPy = (zAvg * 0.7) + (bAvg * 0.3);
+                } else {
+                    finalPy = zAvg || bAvg || 0;
+                }
+
+                // 핵심 보정:
+                // 같은 위치 표본은 없지만 같은 층의 다른 위치에 실임대 데이터가 있으면,
+                // 70:30 가중 평균 결과가 그 동일층 평균보다 낮아지지 않게 한다.
+                let priorityNote = '';
+                if (sameFloorPriorityAvg > 0 && finalPy < sameFloorPriorityAvg) {
+                    finalPy = sameFloorPriorityAvg;
+                    priorityNote = ' (동일층 실거래 우선)';
+                }
+
+                if (finalPy === 0 && sumArea > 0) {
+                    finalPy = sumRent > 0 ? (sumRent / sumArea) : 0;
+                }
 
                 let currentPy = 0;
                 if (sumArea > 0 && sumRent > 0) {
                     let tRent = sumRent;
-                    if (sumDep > sumRent * 12) tRent += (sumDep - (sumRent * 12)) * 0.05 / 12;
+                    if (sumDep > sumRent * 12) {
+                        tRent += (sumDep - (sumRent * 12)) * 0.05 / 12;
+                    }
                     currentPy = tRent / sumArea;
                 }
 
                 const fairRent = Math.round(finalPy * sumArea);
                 const fNum = val => typeof fmtNum === 'function' ? fmtNum(val) : Math.round(val).toLocaleString();
-                
-                const titleUnitStr = groupUnits.map(x=>x.unit).join(',');
+                const titleUnitStr = groupUnits.map(x => x.unit).join(',');
+
                 document.getElementById('miniPrintTitle').innerText = `${u.building ? u.building.split(' ')[0] : ''} ${titleUnitStr}호 적정 임대료`;
-                
                 document.getElementById('miniStoreName').innerText = u.store_name || '공실/상호미상';
                 document.getElementById('miniCurrentArea').innerText = sumArea.toFixed(1);
-                
+
                 let rentText = '공실/미상';
-                if(sumDep > 0 || sumRent > 0) rentText = `${fNum(sumDep)}만 / ${fNum(sumRent)}만`;
+                if (sumDep > 0 || sumRent > 0) rentText = `${fNum(sumDep)}만 / ${fNum(sumRent)}만`;
                 document.getElementById('miniCurrentRent').innerText = rentText;
 
                 document.getElementById('miniLblZone').innerText = zLabel;
                 document.getElementById('miniLblBuilding').innerText = bLabel;
-                
+
                 document.getElementById('miniValZone').innerText = zAvg.toFixed(1) + '만';
                 document.getElementById('miniValBuilding').innerText = bAvg.toFixed(1) + '만';
                 document.getElementById('miniValCurrent').innerText = currentPy > 0 ? currentPy.toFixed(1) + '만' : '데이터없음';
                 document.getElementById('miniValFinalPy').innerText = finalPy.toFixed(1) + '만';
-                
+
                 const maxVal = Math.max(zAvg, bAvg, finalPy, currentPy) * 1.1;
-                const setBar = (elId, val) => { 
+                const setBar = (elId, val) => {
                     const el = document.getElementById(elId);
-                    if(el) el.style.width = maxVal > 0 ? `${(val/maxVal)*100}%` : '0%'; 
+                    if (el) el.style.width = maxVal > 0 ? `${(val / maxVal) * 100}%` : '0%';
                 };
-                
+
                 setBar('miniBarZone', zAvg);
                 setBar('miniBarBuilding', bAvg);
                 setBar('miniBarCurrent', currentPy);
                 setBar('miniBarFinalPy', finalPy);
 
-                document.getElementById('miniFormula').innerText = `${finalPy.toFixed(1)}만 × ${sumArea.toFixed(1)}평`;
+                document.getElementById('miniFormula').innerText = `${finalPy.toFixed(1)}만 × ${sumArea.toFixed(1)}평${priorityNote}`;
                 document.getElementById('miniFairRent').innerText = `월 ${fairRent.toLocaleString()}만원`;
 
                 const modal = document.getElementById('miniRentAppraisalModal');
                 if (modal) modal.classList.remove('hidden');
-            } catch(e) {
+            } catch (e) {
                 alert('팝업을 여는 중 문제가 발생했습니다: ' + e.message);
             }
         }
