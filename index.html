@@ -3355,43 +3355,49 @@ function calcUnitSimulator() {
     };
 
     const zone = u.exit || "미지정";
-    
-    // [Item 5 개선] 건물 적정 임대료 3단 폴백
-    let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-    let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-    let bRentPy = getAvgPy(bUnits, 'rent');
+            
+            // ========================================================
+            // 🚨 [핫픽스] 1. 건물 적정 임대료 (bRentPy) 3단 폭포수 로직
+            // ========================================================
+            let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
+            let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+            let bRentPy = getAvgPy(bUnits, 'rent');
 
-    if (bRentPy === 0) { 
-        bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor);
-        bL = isMainRoad ? `${u.floor}층(위치무관)` : `${u.floor}층`;
-        bRentPy = getAvgPy(bUnits, 'rent');
-        
-        if (bRentPy === 0) {
-            bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier);
-            bL = `${uTier} 평균`;
-            bRentPy = getAvgPy(bUnits, 'rent');
-        }
-    }
+            // 1순위 실패 (데이터 없거나 임대료 0원) -> 무조건 [해당 층 전체]로 넘어감 (위치 무시, 303/304호 흡수)
+            if (bRentPy === 0) { 
+                bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor);
+                bL = `${u.floor}층(전체)`;
+                bRentPy = getAvgPy(bUnits, 'rent');
+            }
+            
+            // 2순위도 실패했을 때만 최후의 수단으로 [층급 전체]로 넘어감
+            if (bRentPy === 0) {
+                bUnits = state.allData.filter(d => d.building === u.building && getTier(d.floor) === uTier);
+                bL = `${uTier} 평균`;
+                bRentPy = getAvgPy(bUnits, 'rent');
+            }
 
-    // [Item 5 개선] 상권 적정 임대료 3단 폴백
-    let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-    let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
-    let zRentPy = getAvgPy(zUnits, 'rent');
+            // ========================================================
+            // 🚨 [핫픽스] 2. 상권 적정 임대료 (zRentPy) 3단 폭포수 로직
+            // ========================================================
+            let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
+            let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+            let zRentPy = getAvgPy(zUnits, 'rent');
 
-    if (zRentPy === 0) {
-        zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor);
-        zL = isMainRoad ? `${u.floor}층(위치무관)` : `${u.floor}층`;
-        zRentPy = getAvgPy(zUnits, 'rent');
+            if (zRentPy === 0) {
+                zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor);
+                zL = `${u.floor}층(전체)`;
+                zRentPy = getAvgPy(zUnits, 'rent');
+            }
 
-        if (zRentPy === 0) {
-            zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && getTier(d.floor) === uTier);
-            zL = `${uTier} 평균`;
-            zRentPy = getAvgPy(zUnits, 'rent');
-        }
-    }
+            if (zRentPy === 0) {
+                zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && getTier(d.floor) === uTier);
+                zL = `${uTier} 평균`;
+                zRentPy = getAvgPy(zUnits, 'rent');
+            }
 
-    const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
-    const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
+            const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
+            const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
 
     const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
     if (leftReasonBox) {
