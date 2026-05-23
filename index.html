@@ -3690,7 +3690,10 @@ function calcUnitSimulator() {
     
                 g_members.forEach(m => {
                     let aP = parseFloat(m.area_p) || 0;
-                    if(m.rent > 0) { groupRent += parseFloat(m.rent); groupDep += parseFloat(m.deposit)||0; }
+                    if(m.rent > 0) { 
+                        groupRent += parseFloat(m.rent); 
+                        groupDep += parseFloat(m.deposit) || 0; 
+                    }
                     if(m.price_sell > 0) groupSell += parseFloat(m.price_sell);
                     groupArea += aP;
                 });
@@ -3706,6 +3709,7 @@ function calcUnitSimulator() {
                 }
             }
         });
+
         return sumArea > 0 ? (sumVal / sumArea) : 0;
     };
 
@@ -3716,8 +3720,12 @@ function calcUnitSimulator() {
     // 1순위: 같은 건물 + 같은 층 + 같은 위치
     // 2순위: 같은 건물 + 같은 층 전체
     // ========================================================
-    let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-    let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+    let bL = isMainRoad ? `${u.floor}층(${uPos || '미상'})` : `${u.floor}층`;
+    let bUnits = state.allData.filter(d => 
+        d.building === u.building && 
+        d.floor === u.floor && 
+        (isMainRoad ? d.pos === uPos : true)
+    );
     let bRentPy = getAvgPy(bUnits, 'rent');
 
     if (bRentPy === 0) { 
@@ -3731,7 +3739,7 @@ function calcUnitSimulator() {
     // 1순위: 같은 출구/구역 + 같은 층 + 같은 위치
     // 2순위: 같은 출구/구역 + 같은 층 전체
     // ========================================================
-    let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
+    let zL = isMainRoad ? `${u.floor}층(${uPos || '미상'})` : `${u.floor}층`;
     let zUnits = state.allData.filter(d =>
         (d.exit || "미지정") === zone &&
         checkRoadside(d.building) === isMainRoad &&
@@ -3750,7 +3758,10 @@ function calcUnitSimulator() {
         zRentPy = getAvgPy(zUnits, 'rent');
     }
 
-    const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (area > 0 ? rent/area : 0));
+    const finalRentPy = (zRentPy > 0 && bRentPy > 0) 
+        ? (zRentPy * 0.7 + bRentPy * 0.3) 
+        : (zRentPy || bRentPy || (area > 0 ? rent / area : 0));
+
     const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
 
     const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
@@ -3790,7 +3801,8 @@ function calcUnitSimulator() {
     // 2순위: 해당층 전체
     // 표본 부족 시 임대단가 × 수익률 역산
     // ========================================================
-    let mPy = 0; let mReason = "";
+    let mPy = 0; 
+    let mReason = "";
     let mTargets = state.allData.filter(d =>
         d.building === u.building &&
         d.floor === u.floor &&
@@ -3800,7 +3812,11 @@ function calcUnitSimulator() {
     mReason = `[1순위] 동일층(${u.floor}층)+위치 매매 적용`;
 
     if (mTargets.length === 0) { 
-        mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && d.price_sell > 0);
+        mTargets = state.allData.filter(d => 
+            d.building === u.building && 
+            d.floor === u.floor && 
+            d.price_sell > 0
+        );
         mReason = `[2순위] 해당층(${u.floor}층) 전체 평균 매매 적용`;
     }
 
@@ -3812,10 +3828,17 @@ function calcUnitSimulator() {
         mReason = `[표본부족] 임대단가 × ${dynamicMult}배 역산 (수익률 ${cap}% 기준)`;
     }
 
-    const yV = cap > 0 ? Math.round((((rent*12)/(cap/100))+dep)/100)*100 : 0;
-    const mV = Math.round((area * mPy)/100)*100;
-    const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
+    const yV = cap > 0 ? Math.round((((rent * 12) / (cap / 100)) + dep) / 100) * 100 : 0;
+    const mV = Math.round((area * mPy) / 100) * 100;
+    const fP = Math.round(((yV * (1 - w)) + (mV * w)) / 100) * 100; 
 
+    // ========================================================
+    // 4. 슬라이더 안정화
+    // 핵심:
+    // - max는 현재 슬라이더 값으로 키우지 않는다.
+    // - max는 현재 호실의 고정 기준값들만 보고 산정한다.
+    // - appliedPrice는 500만원 단위로 스냅 후 stableMax 안으로 제한한다.
+    // ========================================================
     const appliedStep = 500;
 
     const snapToStep = (val) => {
@@ -3828,12 +3851,26 @@ function calcUnitSimulator() {
         return Math.ceil(n / appliedStep) * appliedStep;
     };
 
+    const clamp = (val, min, max) => {
+        return Math.min(Math.max(val, min), max);
+    };
+
+    const baseMax = Math.max(
+        parseFloat(origPrice) || 0,
+        parseFloat(yV) || 0,
+        parseFloat(mV) || 0,
+        parseFloat(fP) || 0,
+        appliedStep
+    );
+
+    // 여유율 1.5배. 단, 현재 슬라이더 값은 max 산정에 절대 사용하지 않는다.
+    const stableMax = snapUpToStep(baseMax * 1.5);
+
+    // 일반 바 차트 기준값은 기존처럼 별도 사용.
     const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
 
     // ========================================================
-    // 4. 바 차트 업데이트
-    // bar div는 폭만 담당하고, 라벨 span은 별도 고정.
-    // 라벨은 transform을 쓰지 않고 height/line-height로 중앙 정렬한다.
+    // 5. 바 차트 업데이트
     // ========================================================
     const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
         const b = document.getElementById(barId);
@@ -3862,43 +3899,40 @@ function calcUnitSimulator() {
         if (r) r.innerText = reasonTxt;
     };
 
-    updateUI('barOrig', 'reasonOrig', origPrice, (area > 0 ? origPrice/area : 0), '현재 시장 호가');
-    updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV/area : 0), `NOI / 기대수익률 ${cap}%`);
+    updateUI('barOrig', 'reasonOrig', origPrice, (area > 0 ? origPrice / area : 0), '현재 시장 호가');
+    updateUI('barYield', 'reasonYield', yV, (area > 0 ? yV / area : 0), `NOI / 기대수익률 ${cap}%`);
     updateUI('barMarket', 'reasonMarket', mV, mPy, mReason);
-    updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
+    updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP / area : 0), `수익 ${100 - w * 100}% + 시장 ${w * 100}%`);
 
     const sliderEl = document.getElementById('usimAppliedPriceSlider');
     if (!sliderEl) return;
 
-    // 매수 협의가 슬라이더: 500만원 단위 강제 스냅
     sliderEl.min = '0';
     sliderEl.step = String(appliedStep);
+    sliderEl.max = String(stableMax);
 
-    let appliedPrice = parseInt(sliderEl.value) || 0;
+    let appliedPrice = 0;
 
     if (state.lastSimId !== currentId) {
         state.lastSimId = currentId;
-        if(occEl) occEl.checked = false; 
-        if(origEl) origEl.checked = false;
+        if (occEl) occEl.checked = false; 
+        if (origEl) origEl.checked = false;
         mult = parseInt(multEl.value) || 0; 
-        
+
         appliedPrice = snapToStep(origPrice > 0 ? origPrice : fP);
-        sliderEl.max = String(snapUpToStep(Math.max(mx, appliedPrice * 1.5, appliedStep)));
-        sliderEl.value = String(appliedPrice);
     } else {
-        const currentMax = parseFloat(sliderEl.max) || 0;
-        appliedPrice = snapToStep(parseInt(sliderEl.value) || 0);
-        sliderEl.max = String(snapUpToStep(Math.max(currentMax, mx, appliedPrice * 1.5, appliedStep)));
-        sliderEl.value = String(appliedPrice);
+        appliedPrice = snapToStep(parseInt(sliderEl.value, 10) || 0);
     }
+
+    appliedPrice = clamp(appliedPrice, 0, stableMax);
+    sliderEl.value = String(appliedPrice);
 
     const appliedBar = document.getElementById('barApplied');
     const appliedLabel = document.getElementById('barAppliedLabel');
 
-    if(appliedBar) {
-        const appliedMax = parseFloat(sliderEl.max) || appliedStep;
-        const appliedWidth = appliedMax > 0
-            ? Math.min(100, (appliedPrice / appliedMax * 100))
+    if (appliedBar) {
+        const appliedWidth = stableMax > 0
+            ? Math.min(100, (appliedPrice / stableMax * 100))
             : 0;
 
         appliedBar.style.width = `${isFinite(appliedWidth) ? appliedWidth : 0}%`;
@@ -3917,8 +3951,8 @@ function calcUnitSimulator() {
     }
 
     const lblAppliedPy = document.getElementById('lblAppliedPy');
-    if(lblAppliedPy) {
-        lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice/area).toLocaleString()}만` : '-';
+    if (lblAppliedPy) {
+        lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice / area).toLocaleString()}만` : '-';
     }
 
     const tF = Math.round(appliedPrice * 0.055);
@@ -3933,14 +3967,14 @@ function calcUnitSimulator() {
 
     const setTxt = (id, val) => {
         const el = document.getElementById(id);
-        if(el) el.innerText = val;
+        if (el) el.innerText = val;
     };
 
     setTxt('usimTopDeposit', fmtSmartMoney(realDep)); 
     setTxt('resUsimFinalPrice', fmtSmartMoney(appliedPrice));
-    setTxt('resUsimCapRate', (appliedPrice-realDep > 0 ? (rent*12)/(appliedPrice-realDep)*100 : 0).toFixed(2) + '%');
+    setTxt('resUsimCapRate', (appliedPrice - realDep > 0 ? (rent * 12) / (appliedPrice - realDep) * 100 : 0).toFixed(2) + '%');
     setTxt('resUsimCash', fmtSmartMoney(cash));
-    setTxt('resUsimRoe', (cash > 0 ? (net*12)/cash*100 : 0).toFixed(2) + '%');
+    setTxt('resUsimRoe', (cash > 0 ? (net * 12) / cash * 100 : 0).toFixed(2) + '%');
     setTxt('ldgLoan', fmtSmartMoney(loan));
     setTxt('ldgInterest', fmtSmartMoney(mI));
     setTxt('ldgNet', fmtSmartMoney(net));
