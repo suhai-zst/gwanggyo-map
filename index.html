@@ -214,28 +214,211 @@
             body.is-dashboard-mode:not(.is-sim-print-mode):not(.is-mini-print-mode) table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 0; }
             body.is-dashboard-mode:not(.is-sim-print-mode):not(.is-mini-print-mode) th, body.is-dashboard-mode:not(.is-sim-print-mode):not(.is-mini-print-mode) td { border: 1px solid #e2e8f0 !important; padding: 4px 2px !important; color: black !important; }
 
-            /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 */
-            body.is-sim-print-mode > *:not(#simulatorModal) { display: none !important; }
-            body.is-sim-print-mode #simulatorModal { position: static !important; display: block !important; width: 100% !important; height: auto !important; background: white !important; z-index: auto !important; padding: 0 !important; }
-            body.is-sim-print-mode .modal-backdrop { background: none !important; align-items: start !important; justify-content: center !important; }
-            body.is-sim-print-mode #simulatorModal > div { max-width: 100% !important; max-height: none !important; box-shadow: none !important; border: none !important; height: auto !important; margin: 0 !important; overflow: visible !important; }
-            body.is-sim-print-mode #simPrintContentBody { padding-bottom: 160px !important; background-color: white !important; overflow: visible !important; }
-            body.is-sim-print-mode .no-print-sim { display: none !important; }
-            body.is-sim-print-mode .print-sim-only { display: block !important; }
-            
-            body.is-sim-print-mode .text-slate-400, body.is-sim-print-mode .text-slate-500, body.is-sim-print-mode .text-slate-600 { color: #1e293b !important; font-weight: 800 !important; }
-            body.is-sim-print-mode #simulatorModal .text-xs, body.is-sim-print-mode #simulatorModal .text-\\[10px\\] { font-size: 14px !important; }
-            body.is-sim-print-mode #simulatorModal .text-sm { font-size: 16px !important; }
-            body.is-sim-print-mode #simulatorModal .text-base { font-size: 20px !important; }
-            body.is-sim-print-mode #simulatorModal .text-lg { font-size: 24px !important; }
-            body.is-sim-print-mode #simulatorModal .text-xl { font-size: 28px !important; }
-            body.is-sim-print-mode #simulatorModal .text-2xl { font-size: 32px !important; margin-bottom: 8px !important; }
+            /* [모드3] 통매각 시뮬레이터 팝업 단독 인쇄 모드 - A4 가로 1페이지 최적화 */
+            body.is-sim-print-mode > *:not(#simulatorModal) { 
+                display: none !important; 
+            }
 
-            body.is-sim-print-mode .bg-slate-800 { background-color: #f8fafc !important; border: 2px solid #94a3b8 !important; }
-            body.is-sim-print-mode .bg-slate-800 .text-white, body.is-sim-print-mode .bg-slate-800 .text-slate-200, body.is-sim-print-mode .bg-slate-800 .text-slate-300 { color: #0f172a !important; }
-            body.is-sim-print-mode .bg-slate-700 { background-color: #ffffff !important; border: 1px solid #cbd5e1 !important; }
-            body.is-sim-print-mode .bg-slate-600 { background-color: #cbd5e1 !important; } 
-            body.is-sim-print-mode .bg-emerald-600 { background-color: #ecfdf5 !important; border: 2px solid #059669 !important; }
+            body.is-sim-print-mode #simulatorModal { 
+                position: static !important; 
+                display: block !important; 
+                width: 100% !important; 
+                height: auto !important; 
+                background: white !important; 
+                z-index: auto !important; 
+                padding: 0 !important; 
+                overflow: visible !important;
+            }
+
+            body.is-sim-print-mode .modal-backdrop { 
+                background: none !important; 
+                align-items: flex-start !important; 
+                justify-content: center !important; 
+            }
+
+            body.is-sim-print-mode #simulatorModal > div { 
+                width: 100% !important;
+                max-width: none !important; 
+                max-height: none !important; 
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important; 
+                padding: 0 !important;
+                box-shadow: none !important; 
+                border: none !important; 
+                border-radius: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                background: white !important;
+            }
+
+            body.is-sim-print-mode .no-print-sim { 
+                display: none !important; 
+            }
+
+            body.is-sim-print-mode .print-sim-only { 
+                display: block !important; 
+            }
+
+            body.is-sim-print-mode #simulatorModal .hidden.print-sim-only {
+                display: block !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody { 
+                display: block !important;
+                padding: 5mm 6mm 22mm 6mm !important;
+                margin: 0 !important;
+                background-color: white !important; 
+                overflow: visible !important;
+                height: auto !important;
+                min-height: 0 !important;
+            }
+
+            /* Tailwind mt-auto가 결과 박스를 아래로 밀어 2페이지를 만드는 현상 방지 */
+            body.is-sim-print-mode #simPrintContentBody .mt-auto {
+                margin-top: 0 !important;
+            }
+
+            /* 인쇄 제목 압축 */
+            body.is-sim-print-mode #simulatorModal .print-sim-only.px-6 {
+                padding: 4mm 6mm 2.5mm 6mm !important;
+                margin: 0 !important;
+                border-bottom: 2px solid #1e293b !important;
+            }
+
+            body.is-sim-print-mode #simulatorModal .print-sim-only h1 {
+                font-size: 18px !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
+                color: #0f172a !important;
+                font-weight: 900 !important;
+            }
+
+            /* 기본 자산 조건 박스 압축 */
+            body.is-sim-print-mode #simPrintContentBody > .bg-white {
+                margin: 0 0 3mm 0 !important;
+                padding: 3mm 4mm !important;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                border-radius: 6px !important;
+                background: #ffffff !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-white .flex.flex-col.gap-4 {
+                gap: 2mm !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-white label,
+            body.is-sim-print-mode #simPrintContentBody > .bg-white span {
+                line-height: 1.2 !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-white .print-sim-only {
+                font-size: 15px !important;
+                line-height: 1.2 !important;
+                padding-bottom: 1mm !important;
+                color: #0f172a !important;
+            }
+
+            body.is-sim-print-mode #printValPrice {
+                font-size: 18px !important;
+                color: #dc2626 !important;
+                font-weight: 900 !important;
+            }
+
+            body.is-sim-print-mode #printValDep {
+                font-size: 16px !important;
+                color: #334155 !important;
+                font-weight: 900 !important;
+            }
+
+            body.is-sim-print-mode #printValRent {
+                font-size: 16px !important;
+                color: #059669 !important;
+                font-weight: 900 !important;
+            }
+
+            /* 적용 조건 문구 압축 */
+            body.is-sim-print-mode #simPrintContentBody > .print-sim-only.mb-4 {
+                margin: 0 0 3mm 0 !important;
+                font-size: 10px !important;
+                line-height: 1.2 !important;
+                color: #334155 !important;
+                font-weight: 800 !important;
+            }
+
+            /* 결과 박스 1페이지 최적화 */
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 {
+                margin: 0 !important;
+                padding: 3.5mm 4mm !important;
+                border-radius: 7px !important;
+                background-color: #f8fafc !important; 
+                border: 2px solid #94a3b8 !important;
+                color: #0f172a !important;
+                box-shadow: none !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 .mb-3 {
+                margin-bottom: 2mm !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 .my-3 {
+                margin-top: 2mm !important;
+                margin-bottom: 2mm !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 .space-y-2 > * + * {
+                margin-top: 1.5mm !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 .p-2 {
+                padding: 1.5mm 2mm !important;
+            }
+
+            body.is-sim-print-mode #simPrintContentBody > .bg-slate-800 .p-3 {
+                padding: 2mm 2.5mm !important;
+            }
+
+            body.is-sim-print-mode #simulatorModal .text-slate-400, 
+            body.is-sim-print-mode #simulatorModal .text-slate-500, 
+            body.is-sim-print-mode #simulatorModal .text-slate-600,
+            body.is-sim-print-mode #simulatorModal .text-slate-700 {
+                color: #1e293b !important; 
+                font-weight: 800 !important; 
+            }
+
+            body.is-sim-print-mode #simulatorModal .text-\[10px\] { font-size: 9px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-\[11px\] { font-size: 9.5px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-xs { font-size: 10px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-sm { font-size: 11px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-base { font-size: 12px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-lg { font-size: 15px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-xl { font-size: 18px !important; line-height: 1.2 !important; }
+            body.is-sim-print-mode #simulatorModal .text-2xl { font-size: 20px !important; line-height: 1.2 !important; margin-bottom: 2mm !important; }
+
+            body.is-sim-print-mode .bg-slate-800 .text-white, 
+            body.is-sim-print-mode .bg-slate-800 .text-slate-200, 
+            body.is-sim-print-mode .bg-slate-800 .text-slate-300 { 
+                color: #0f172a !important; 
+            }
+
+            body.is-sim-print-mode .bg-slate-700 { 
+                background-color: #ffffff !important; 
+                border: 1px solid #cbd5e1 !important; 
+            }
+
+            body.is-sim-print-mode .bg-slate-600 { 
+                background-color: #cbd5e1 !important; 
+            } 
+
+            body.is-sim-print-mode .bg-emerald-600 { 
+                background-color: #ecfdf5 !important; 
+                border: 2px solid #059669 !important; 
+            }
             
             body.is-sim-print-mode #resCapRate { color: #ea580c !important; font-weight: 900 !important; }
             body.is-sim-print-mode #resTotalCost { color: #000000 !important; font-weight: 900 !important; }
@@ -243,15 +426,36 @@
             body.is-sim-print-mode #resCash { color: #059669 !important; font-weight: 900 !important; } 
             body.is-sim-print-mode #resInterest { color: #dc2626 !important; font-weight: 900 !important; } 
             body.is-sim-print-mode #resNetMonthly { color: #000000 !important; font-weight: 900 !important; }
-            body.is-sim-print-mode #resRoe { color: #047857 !important; font-weight: 900 !important; }
+            body.is-sim-print-mode #resRoe { color: #047857 !important; font-weight: 900 !important; font-size: 20px !important; }
             body.is-sim-print-mode .text-emerald-100 { color: #047857 !important; font-weight: 900 !important; }
 
+            /* 푸터: 고정하되 본문을 과하게 밀지 않도록 축소 */
             body.is-sim-print-mode #simPrintFooter { 
-                position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important;
-                display: block !important; padding: 16px 24px !important; page-break-inside: avoid !important; 
-                z-index: 1000 !important; background-color: #065f46 !important; border-top: 4px solid #064e3b !important;
+                position: fixed !important; 
+                bottom: 0 !important; 
+                left: 0 !important; 
+                width: 100% !important;
+                display: block !important; 
+                padding: 3mm 6mm !important; 
+                page-break-inside: avoid !important; 
+                z-index: 1000 !important; 
+                background-color: #065f46 !important; 
+                border-top: 2px solid #064e3b !important;
+                border-radius: 0 !important;
             }
 
+            body.is-sim-print-mode #simPrintFooter p {
+                margin: 0 !important;
+                line-height: 1.25 !important;
+            }
+
+            body.is-sim-print-mode #simPrintFooter .text-sm {
+                font-size: 10.5px !important;
+            }
+
+            body.is-sim-print-mode #simPrintFooter .text-\[10px\] {
+                font-size: 8.5px !important;
+            }
            /* ==================================================== */
             /* [모드4] 미니 임대료 분석 팝업 단독 인쇄 모드 (디자인 완벽 보정) */
             /* ==================================================== */
@@ -974,12 +1178,17 @@
                 style.id = 'dynamic-print-style';
                 document.head.appendChild(style);
             }
-            style.innerHTML = `@media print { @page { size: ${orientation}; margin: 5mm; } }`;
+
+            const pageSize = orientation === 'landscape'
+                ? 'A4 landscape'
+                : (orientation === 'portrait' ? 'A4 portrait' : orientation);
+
+            style.innerHTML = `@media print { @page { size: ${pageSize}; margin: 5mm; } }`;
         }
 
         window.addEventListener('beforeprint', () => {
             if (document.body.classList.contains('is-sim-print-mode')) { 
-                setPrintStyle('portrait'); 
+                setPrintStyle('landscape'); 
             } 
             else if (!document.getElementById('compareModal').classList.contains('hidden')) { 
                 if(state.comparisonList.size >= 2) { setPrintStyle('landscape'); } 
@@ -991,7 +1200,11 @@
             else { setPrintStyle('portrait'); }
         });
 
-        function printDashboard() { setPrintStyle('landscape'); setTimeout(() => window.print(), 100); }
+        function printDashboard() { 
+            setPrintStyle('landscape'); 
+            setTimeout(() => window.print(), 100); 
+        }
+
         function printCompare() {
             // [수정됨] PDF 인쇄 시 브라우저 타이틀(파일명) 동적 변경 로직 추가
             const originalTitle = document.title;
@@ -1016,9 +1229,17 @@
                 document.title = originalTitle; 
             }, 100);
         }
+
         function printSimulator() {
-            document.body.classList.add('is-sim-print-mode'); setPrintStyle('portrait');
-            setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('is-sim-print-mode'), 500); }, 100);
+            document.body.classList.add('is-sim-print-mode');
+            setPrintStyle('landscape');
+
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    document.body.classList.remove('is-sim-print-mode');
+                }, 700);
+            }, 100);
         }
 
         function togglePage2() {
