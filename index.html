@@ -990,7 +990,7 @@
                         </div>
                         <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
                             <div id="barOrig" class="absolute left-0 top-0 h-full bg-slate-400 transition-all" style="width:0%">
-                                <span id="barOrigLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                <span id="barOrigLabel" class="absolute right-2 text-white font-bold text-xs whitespace-nowrap drop-shadow-sm pointer-events-none" style="top:0; height:20px; line-height:20px !important; transform:none !important;">0원</span>
                             </div>
                         </div>
                     </div>
@@ -1002,7 +1002,7 @@
                         </div>
                         <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
                             <div id="barYield" class="absolute left-0 top-0 h-full bg-emerald-500 transition-all" style="width:0%">
-                                <span id="barYieldLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                <span id="barYieldLabel" class="absolute right-2 text-white font-bold text-xs whitespace-nowrap drop-shadow-sm pointer-events-none" style="top:0; height:20px; line-height:20px !important; transform:none !important;">0원</span>
                             </div>
                         </div>
                     </div>
@@ -1014,7 +1014,7 @@
                         </div>
                         <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
                             <div id="barMarket" class="absolute left-0 top-0 h-full bg-orange-400 transition-all" style="width:0%">
-                                <span id="barMarketLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                <span id="barMarketLabel" class="absolute right-2 text-white font-bold text-xs whitespace-nowrap drop-shadow-sm pointer-events-none" style="top:0; height:20px; line-height:20px !important; transform:none !important;">0원</span>
                             </div>
                         </div>
                     </div>
@@ -1026,7 +1026,7 @@
                         </div>
                         <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
                             <div id="barFinal" class="absolute left-0 top-0 h-full bg-purple-500 transition-all" style="width:0%">
-                                <span id="barFinalLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                <span id="barFinalLabel" class="absolute right-2 text-white font-bold text-xs whitespace-nowrap drop-shadow-sm pointer-events-none" style="top:0; height:20px; line-height:20px !important; transform:none !important;">0원</span>
                             </div>
                         </div>
                     </div>
@@ -1040,10 +1040,10 @@
                         <div class="relative w-full h-8 group">
                             <div class="absolute inset-0 bg-blue-100 rounded-lg overflow-hidden shadow-inner border border-blue-200 pointer-events-none">
                                 <div id="barApplied" class="relative h-full bg-blue-600 transition-all" style="width:0%">
-                                    <span id="barAppliedLabel" class="absolute right-3 top-1/2 -translate-y-1/2 text-white font-extrabold text-sm leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                    <span id="barAppliedLabel" class="absolute right-3 text-white font-extrabold text-sm whitespace-nowrap drop-shadow-sm pointer-events-none" style="top:0; height:32px; line-height:32px !important; transform:none !important;">0원</span>
                                 </div>
                             </div>
-                            <input type="range" id="usimAppliedPriceSlider" step="500" class="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10" oninput="calcUnitSimulator()">
+                            <input type="range" id="usimAppliedPriceSlider" min="0" step="500" class="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10" oninput="calcUnitSimulator()">
                             <div class="absolute -top-1 -bottom-1 left-0 right-0 pointer-events-none hidden group-hover:block border-2 border-blue-400 rounded-lg z-20"></div>
                         </div>
                     </div>
@@ -3816,13 +3816,24 @@ function calcUnitSimulator() {
     const mV = Math.round((area * mPy)/100)*100;
     const fP = Math.round(((yV*(1-w))+(mV*w))/100)*100; 
 
+    const appliedStep = 500;
+
+    const snapToStep = (val) => {
+        const n = parseFloat(val) || 0;
+        return Math.round(n / appliedStep) * appliedStep;
+    };
+
+    const snapUpToStep = (val) => {
+        const n = parseFloat(val) || 0;
+        return Math.ceil(n / appliedStep) * appliedStep;
+    };
+
     const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
 
     // ========================================================
     // 4. 바 차트 업데이트
-    // 기존 방식: bar div 안에 innerText 직접 삽입
-    // 수정 방식: bar div는 색상 폭만 담당, barIdLabel span이 텍스트 담당
-    // html2canvas 캡처 시 라벨이 바닥에 붙는 현상을 줄이기 위한 구조
+    // bar div는 폭만 담당하고, 라벨 span은 별도 고정.
+    // 라벨은 transform을 쓰지 않고 height/line-height로 중앙 정렬한다.
     // ========================================================
     const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
         const b = document.getElementById(barId);
@@ -3839,8 +3850,11 @@ function calcUnitSimulator() {
 
             if (label) {
                 label.innerText = labelText;
+                label.style.top = '0';
+                label.style.height = '20px';
+                label.style.lineHeight = '20px';
+                label.style.transform = 'none';
             } else {
-                // HTML 블록이 아직 교체되지 않은 경우를 위한 안전 fallback
                 b.innerText = labelText;
             }
         }
@@ -3856,8 +3870,8 @@ function calcUnitSimulator() {
     const sliderEl = document.getElementById('usimAppliedPriceSlider');
     if (!sliderEl) return;
 
-    // 매수 협의가 슬라이더 step 보정: 100만원 → 500만원
-    const appliedStep = 500;
+    // 매수 협의가 슬라이더: 500만원 단위 강제 스냅
+    sliderEl.min = '0';
     sliderEl.step = String(appliedStep);
 
     let appliedPrice = parseInt(sliderEl.value) || 0;
@@ -3868,20 +3882,23 @@ function calcUnitSimulator() {
         if(origEl) origEl.checked = false;
         mult = parseInt(multEl.value) || 0; 
         
-        appliedPrice = origPrice > 0 ? origPrice : fP;
-        sliderEl.max = Math.ceil(Math.max(mx, appliedPrice * 1.5, appliedStep) / appliedStep) * appliedStep;
-        sliderEl.value = appliedPrice;
+        appliedPrice = snapToStep(origPrice > 0 ? origPrice : fP);
+        sliderEl.max = String(snapUpToStep(Math.max(mx, appliedPrice * 1.5, appliedStep)));
+        sliderEl.value = String(appliedPrice);
     } else {
         const currentMax = parseFloat(sliderEl.max) || 0;
-        sliderEl.max = Math.ceil(Math.max(currentMax, mx, appliedStep) / appliedStep) * appliedStep;
+        appliedPrice = snapToStep(parseInt(sliderEl.value) || 0);
+        sliderEl.max = String(snapUpToStep(Math.max(currentMax, mx, appliedPrice * 1.5, appliedStep)));
+        sliderEl.value = String(appliedPrice);
     }
 
     const appliedBar = document.getElementById('barApplied');
     const appliedLabel = document.getElementById('barAppliedLabel');
 
     if(appliedBar) {
-        const appliedWidth = parseFloat(sliderEl.max) > 0
-            ? Math.min(100, (appliedPrice / parseFloat(sliderEl.max) * 100))
+        const appliedMax = parseFloat(sliderEl.max) || appliedStep;
+        const appliedWidth = appliedMax > 0
+            ? Math.min(100, (appliedPrice / appliedMax * 100))
             : 0;
 
         appliedBar.style.width = `${isFinite(appliedWidth) ? appliedWidth : 0}%`;
@@ -3890,8 +3907,11 @@ function calcUnitSimulator() {
 
         if (appliedLabel) {
             appliedLabel.innerText = appliedText;
+            appliedLabel.style.top = '0';
+            appliedLabel.style.height = '32px';
+            appliedLabel.style.lineHeight = '32px';
+            appliedLabel.style.transform = 'none';
         } else {
-            // HTML 블록이 아직 교체되지 않은 경우를 위한 안전 fallback
             appliedBar.innerText = appliedText;
         }
     }
