@@ -976,59 +976,79 @@
 
             <div class="w-full md:w-[62%] p-5 bg-white flex flex-col gap-4 overflow-hidden">
                 
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                            <h4 class="text-xs font-extrabold text-slate-800">AI 적정가 산출 엔진</h4>
-                            <div class="text-xs font-bold text-slate-500" id="usimOrigState">로딩 중...</div>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
+                    <h4 class="text-xs font-extrabold text-slate-800">AI 적정가 산출 엔진</h4>
+                    <div class="text-xs font-bold text-slate-500" id="usimOrigState">로딩 중...</div>
+                </div>
+            
+                <div class="space-y-2">
+                    <div>
+                        <div class="flex justify-between items-end mb-0.5">
+                            <div class="text-[11px] font-bold text-slate-400">현 희망 매도가 (호가)</div>
+                            <div id="reasonOrig" class="text-[10px] font-bold text-slate-500 tracking-tight"></div>
                         </div>
-                        <div class="space-y-2">
-                            <div>
-                                <div class="flex justify-between items-end mb-0.5">
-                                    <div class="text-[11px] font-bold text-slate-400">현 희망 매도가 (호가)</div>
-                                    <div id="reasonOrig" class="text-[10px] font-bold text-slate-500 tracking-tight"></div>
-                                </div>
-                                <div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barOrig" class="h-full bg-slate-400 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-end mb-0.5">
-                                    <div class="text-[11px] font-bold text-emerald-600">수익가치 (투자 관점)</div>
-                                    <div id="reasonYield" class="text-[10px] font-bold text-emerald-600 tracking-tight"></div>
-                                </div>
-                                <div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barYield" class="h-full bg-emerald-500 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-end mb-0.5">
-                                    <div class="text-[11px] font-bold text-orange-600">시장가치 (시세 관점)</div>
-                                    <div id="reasonMarket" class="text-[10px] font-bold text-orange-600 tracking-tight"></div>
-                                </div>
-                                <div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barMarket" class="h-full bg-orange-400 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div>
-                            </div>
-                            
-                            <div class="pt-1">
-                                <div class="flex justify-between items-end mb-0.5">
-                                    <div class="text-[11px] font-bold text-purple-600">AI 도출 적정가</div>
-                                    <div id="reasonFinal" class="text-[10px] font-bold text-purple-500 tracking-tight"></div>
-                                </div>
-                                <div class="w-full bg-slate-200 rounded h-5 overflow-hidden"><div id="barFinal" class="h-full bg-purple-500 flex items-center justify-end px-2 text-white font-bold text-xs">0원</div></div>
-                            </div>
-                
-                            <div class="pt-2 border-t border-slate-200">
-                                <div class="flex justify-between items-end mb-1">
-                                    <div class="text-[13px] font-extrabold text-blue-700">🎯 매수 협의가 (최종 적용가)</div>
-                                    <div id="lblAppliedPy" class="text-[11px] font-bold text-blue-600 tracking-tight"></div>
-                                </div>
-                                <div class="relative w-full h-8 group">
-                                    <div class="absolute inset-0 bg-blue-100 rounded-lg overflow-hidden shadow-inner border border-blue-200 pointer-events-none">
-                                        <div id="barApplied" class="h-full bg-blue-600 flex items-center justify-end px-3 text-white font-extrabold text-sm transition-all" style="width:0%">0원</div>
-                                    </div>
-                                    <input type="range" id="usimAppliedPriceSlider" step="100" class="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10" oninput="calcUnitSimulator()">
-                                    <div class="absolute -top-1 -bottom-1 left-0 right-0 pointer-events-none hidden group-hover:block border-2 border-blue-400 rounded-lg z-20"></div>
-                                </div>
-                                
+                        <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
+                            <div id="barOrig" class="absolute left-0 top-0 h-full bg-slate-400 transition-all" style="width:0%">
+                                <span id="barOrigLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
                             </div>
                         </div>
                     </div>
-                
+            
+                    <div>
+                        <div class="flex justify-between items-end mb-0.5">
+                            <div class="text-[11px] font-bold text-emerald-600">수익가치 (투자 관점)</div>
+                            <div id="reasonYield" class="text-[10px] font-bold text-emerald-600 tracking-tight"></div>
+                        </div>
+                        <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
+                            <div id="barYield" class="absolute left-0 top-0 h-full bg-emerald-500 transition-all" style="width:0%">
+                                <span id="barYieldLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <div>
+                        <div class="flex justify-between items-end mb-0.5">
+                            <div class="text-[11px] font-bold text-orange-600">시장가치 (시세 관점)</div>
+                            <div id="reasonMarket" class="text-[10px] font-bold text-orange-600 tracking-tight"></div>
+                        </div>
+                        <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
+                            <div id="barMarket" class="absolute left-0 top-0 h-full bg-orange-400 transition-all" style="width:0%">
+                                <span id="barMarketLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <div class="pt-1">
+                        <div class="flex justify-between items-end mb-0.5">
+                            <div class="text-[11px] font-bold text-purple-600">AI 도출 적정가</div>
+                            <div id="reasonFinal" class="text-[10px] font-bold text-purple-500 tracking-tight"></div>
+                        </div>
+                        <div class="relative w-full bg-slate-200 rounded h-5 overflow-hidden">
+                            <div id="barFinal" class="absolute left-0 top-0 h-full bg-purple-500 transition-all" style="width:0%">
+                                <span id="barFinalLabel" class="absolute right-2 top-1/2 -translate-y-1/2 text-white font-bold text-xs leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <div class="pt-2 border-t border-slate-200">
+                        <div class="flex justify-between items-end mb-1">
+                            <div class="text-[13px] font-extrabold text-blue-700">🎯 매수 협의가 (최종 적용가)</div>
+                            <div id="lblAppliedPy" class="text-[11px] font-bold text-blue-600 tracking-tight"></div>
+                        </div>
+            
+                        <div class="relative w-full h-8 group">
+                            <div class="absolute inset-0 bg-blue-100 rounded-lg overflow-hidden shadow-inner border border-blue-200 pointer-events-none">
+                                <div id="barApplied" class="relative h-full bg-blue-600 transition-all" style="width:0%">
+                                    <span id="barAppliedLabel" class="absolute right-3 top-1/2 -translate-y-1/2 text-white font-extrabold text-sm leading-none whitespace-nowrap drop-shadow-sm pointer-events-none">0원</span>
+                                </div>
+                            </div>
+                            <input type="range" id="usimAppliedPriceSlider" step="500" class="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10" oninput="calcUnitSimulator()">
+                            <div class="absolute -top-1 -bottom-1 left-0 right-0 pointer-events-none hidden group-hover:block border-2 border-blue-400 rounded-lg z-20"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm"><div class="text-[10px] font-bold text-blue-600 mb-1">최종 적용가</div><div class="text-xl font-extrabold text-blue-900" id="resUsimFinalPrice">0원</div></div>
                         <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 shadow-sm"><div class="text-[10px] font-bold text-yellow-700 mb-1">명목 수익률</div><div class="text-xl font-extrabold text-yellow-900" id="resUsimCapRate">0.00%</div></div>
@@ -3632,7 +3652,10 @@ function calcUnitSimulator() {
     };
     const uTier = getTier(u.floor);
     
-    const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t => bName.replace(/\s/g,'').includes(t.replace(/\s/g,'')));
+    const checkRoadside = (bName) => ROADSIDE_TARGETS.some(t =>
+        String(bName || '').replace(/\s/g,'').includes(String(t || '').replace(/\s/g,''))
+    );
+
     let isMainRoad = checkRoadside(u.building);
     const uPos = u.pos || '';
 
@@ -3689,35 +3712,45 @@ function calcUnitSimulator() {
     const zone = u.exit || "미지정";
             
     // ========================================================
-    // 🚨 1. 건물 적정 임대료 (고층부 끌어오는 악성 로직 제거)
+    // 1. 건물 적정 임대료
+    // 1순위: 같은 건물 + 같은 층 + 같은 위치
+    // 2순위: 같은 건물 + 같은 층 전체
     // ========================================================
     let bL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
     let bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
     let bRentPy = getAvgPy(bUnits, 'rent');
 
-    // 1순위 실패 시 무조건 [해당 층 전체]로 넘어감 (측면 데이터 흡수)
     if (bRentPy === 0) { 
         bUnits = state.allData.filter(d => d.building === u.building && d.floor === u.floor);
         bL = `${u.floor}층(전체)`;
         bRentPy = getAvgPy(bUnits, 'rent');
     }
-    // (삭제됨) 3층이상 층급 전체로 넘어가는 3순위 블록 영구 삭제
 
     // ========================================================
-    // 🚨 2. 상권 적정 임대료 (마찬가지로 고층부 끌어오기 삭제)
+    // 2. 상권 적정 임대료
+    // 1순위: 같은 출구/구역 + 같은 층 + 같은 위치
+    // 2순위: 같은 출구/구역 + 같은 층 전체
     // ========================================================
     let zL = isMainRoad ? `${u.floor}층(${uPos||'미상'})` : `${u.floor}층`;
-    let zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true));
+    let zUnits = state.allData.filter(d =>
+        (d.exit || "미지정") === zone &&
+        checkRoadside(d.building) === isMainRoad &&
+        d.floor === u.floor &&
+        (isMainRoad ? d.pos === uPos : true)
+    );
     let zRentPy = getAvgPy(zUnits, 'rent');
 
     if (zRentPy === 0) {
-        zUnits = state.allData.filter(d => (d.exit || "미지정") === zone && checkRoadside(d.building) === isMainRoad && d.floor === u.floor);
+        zUnits = state.allData.filter(d =>
+            (d.exit || "미지정") === zone &&
+            checkRoadside(d.building) === isMainRoad &&
+            d.floor === u.floor
+        );
         zL = `${u.floor}층(전체)`;
         zRentPy = getAvgPy(zUnits, 'rent');
     }
-    // (삭제됨) 3층이상 층급 전체로 넘어가는 3순위 블록 영구 삭제
 
-    const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (rent/area));
+    const finalRentPy = (zRentPy > 0 && bRentPy > 0) ? (zRentPy * 0.7 + bRentPy * 0.3) : (zRentPy || bRentPy || (area > 0 ? rent/area : 0));
     const roadsideLabel = isMainRoad ? '대로변' : '기타구역';
 
     const leftReasonBox = document.getElementById('dynamicLeftReasonBox');
@@ -3751,15 +3784,24 @@ function calcUnitSimulator() {
         topState.innerHTML = `<span class="text-slate-500 font-medium">현재 호가: <b class="text-slate-800">${sellTxt}</b>, 임대료: ${dTxt} / ${rTxt}</span>`;
     }
 
-    // 🚨 [핵심 수정 3] 매매 단가에서도 층급 전체로 넘어가는 블록 삭제
+    // ========================================================
+    // 3. 시장가치 평단가
+    // 1순위: 동일층 + 위치
+    // 2순위: 해당층 전체
+    // 표본 부족 시 임대단가 × 수익률 역산
+    // ========================================================
     let mPy = 0; let mReason = "";
-    let mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && (isMainRoad ? d.pos === uPos : true) && d.price_sell > 0);
+    let mTargets = state.allData.filter(d =>
+        d.building === u.building &&
+        d.floor === u.floor &&
+        (isMainRoad ? d.pos === uPos : true) &&
+        d.price_sell > 0
+    );
     mReason = `[1순위] 동일층(${u.floor}층)+위치 매매 적용`;
 
     if (mTargets.length === 0) { 
         mTargets = state.allData.filter(d => d.building === u.building && d.floor === u.floor && d.price_sell > 0);
         mReason = `[2순위] 해당층(${u.floor}층) 전체 평균 매매 적용`;
-        // (삭제됨) 3순위 층급 블록 삭제
     }
 
     mPy = getAvgPy(mTargets, 'price');
@@ -3776,14 +3818,34 @@ function calcUnitSimulator() {
 
     const mx = Math.max(origPrice, yV, mV, fP) * 1.15 || 1;
 
+    // ========================================================
+    // 4. 바 차트 업데이트
+    // 기존 방식: bar div 안에 innerText 직접 삽입
+    // 수정 방식: bar div는 색상 폭만 담당, barIdLabel span이 텍스트 담당
+    // html2canvas 캡처 시 라벨이 바닥에 붙는 현상을 줄이기 위한 구조
+    // ========================================================
     const updateUI = (barId, reasonId, val, pyVal, reasonTxt) => {
         const b = document.getElementById(barId);
         const r = document.getElementById(reasonId);
-        if(b) {
-            b.style.width = Math.min(100, (val/mx*100)) + '%';
-            b.innerText = val > 0 ? `${fmtSmartMoney(val)} (평당 ${Math.round(pyVal).toLocaleString()}만)` : '데이터 없음';
+        const label = document.getElementById(barId + 'Label');
+
+        if (b) {
+            const width = mx > 0 ? Math.min(100, (val / mx * 100)) : 0;
+            b.style.width = `${isFinite(width) ? width : 0}%`;
+
+            const labelText = val > 0
+                ? `${fmtSmartMoney(val)} (평당 ${Math.round(pyVal).toLocaleString()}만)`
+                : '데이터 없음';
+
+            if (label) {
+                label.innerText = labelText;
+            } else {
+                // HTML 블록이 아직 교체되지 않은 경우를 위한 안전 fallback
+                b.innerText = labelText;
+            }
         }
-        if(r) r.innerText = reasonTxt;
+
+        if (r) r.innerText = reasonTxt;
     };
 
     updateUI('barOrig', 'reasonOrig', origPrice, (area > 0 ? origPrice/area : 0), '현재 시장 호가');
@@ -3792,6 +3854,12 @@ function calcUnitSimulator() {
     updateUI('barFinal', 'reasonFinal', fP, (area > 0 ? fP/area : 0), `수익 ${100-w*100}% + 시장 ${w*100}%`);
 
     const sliderEl = document.getElementById('usimAppliedPriceSlider');
+    if (!sliderEl) return;
+
+    // 매수 협의가 슬라이더 step 보정: 100만원 → 500만원
+    const appliedStep = 500;
+    sliderEl.step = String(appliedStep);
+
     let appliedPrice = parseInt(sliderEl.value) || 0;
 
     if (state.lastSimId !== currentId) {
@@ -3801,17 +3869,33 @@ function calcUnitSimulator() {
         mult = parseInt(multEl.value) || 0; 
         
         appliedPrice = origPrice > 0 ? origPrice : fP;
-        sliderEl.max = Math.max(mx, appliedPrice * 1.5);
+        sliderEl.max = Math.ceil(Math.max(mx, appliedPrice * 1.5, appliedStep) / appliedStep) * appliedStep;
         sliderEl.value = appliedPrice;
     } else {
-        sliderEl.max = Math.max(sliderEl.max, mx);
+        const currentMax = parseFloat(sliderEl.max) || 0;
+        sliderEl.max = Math.ceil(Math.max(currentMax, mx, appliedStep) / appliedStep) * appliedStep;
     }
 
     const appliedBar = document.getElementById('barApplied');
+    const appliedLabel = document.getElementById('barAppliedLabel');
+
     if(appliedBar) {
-        appliedBar.style.width = Math.min(100, (appliedPrice/sliderEl.max*100)) + '%';
-        appliedBar.innerText = appliedPrice > 0 ? `${fmtSmartMoney(appliedPrice)}` : '0원';
+        const appliedWidth = parseFloat(sliderEl.max) > 0
+            ? Math.min(100, (appliedPrice / parseFloat(sliderEl.max) * 100))
+            : 0;
+
+        appliedBar.style.width = `${isFinite(appliedWidth) ? appliedWidth : 0}%`;
+
+        const appliedText = appliedPrice > 0 ? `${fmtSmartMoney(appliedPrice)}` : '0원';
+
+        if (appliedLabel) {
+            appliedLabel.innerText = appliedText;
+        } else {
+            // HTML 블록이 아직 교체되지 않은 경우를 위한 안전 fallback
+            appliedBar.innerText = appliedText;
+        }
     }
+
     const lblAppliedPy = document.getElementById('lblAppliedPy');
     if(lblAppliedPy) {
         lblAppliedPy.innerText = area > 0 ? `평당 ${Math.round(appliedPrice/area).toLocaleString()}만` : '-';
@@ -3827,10 +3911,13 @@ function calcUnitSimulator() {
     const mI = Math.round((loan * rate) / 12);
     const net = rent - mI;
 
-    const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+    const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if(el) el.innerText = val;
+    };
+
     setTxt('usimTopDeposit', fmtSmartMoney(realDep)); 
     setTxt('resUsimFinalPrice', fmtSmartMoney(appliedPrice));
-    
     setTxt('resUsimCapRate', (appliedPrice-realDep > 0 ? (rent*12)/(appliedPrice-realDep)*100 : 0).toFixed(2) + '%');
     setTxt('resUsimCash', fmtSmartMoney(cash));
     setTxt('resUsimRoe', (cash > 0 ? (net*12)/cash*100 : 0).toFixed(2) + '%');
