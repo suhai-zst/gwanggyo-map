@@ -649,19 +649,6 @@
             </div>
         </div>
     </div>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
-    <style>
-        #unitSimulatorModal * { font-family: 'Nanum Gothic', sans-serif; line-height: 1.3; }
-        .print-sim-only { display: none; }
-        @media print { 
-            @page { size: A4 landscape; margin: 0; }
-            body { margin: 0; padding: 0; background-color: #fff; }
-            .no-print-sim { display: none !important; } 
-            .print-sim-only { display: block !important; }
-            #unitSimulatorModal { position: absolute !important; inset: 0 !important; display: block !important; background: #fff !important; }
-            #unitSimulatorModal > div { max-width: none !important; width: 1123px !important; height: 794px !important; max-height: 794px !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; overflow: hidden !important; }
-        }
-    </style>
 
     <div id="buildingModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center backdrop-blur-sm p-4" style="z-index: 999999 !important;" onclick="if(event.target === this) closeBuildingModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden max-h-[90vh]">
