@@ -1225,29 +1225,105 @@
             setTimeout(() => window.print(), 100); 
         }
 
-        function printCompare() {
-            // [수정됨] PDF 인쇄 시 브라우저 타이틀(파일명) 동적 변경 로직 추가
-            const originalTitle = document.title;
+        // 비교견적서 출력 공통 유틸
+        // - 메모 HTML 실행 방지
+        // - Windows/Mac/일반 줄바꿈 모두 처리
+        // - 긴 문장 자동 줄바꿈 보정
+        // - 파일명 특수문자 제거
+        function escapeHTMLSafe(value) {
+            if (typeof escapeHTML === 'function') {
+                return escapeHTML(value);
+            }
+        
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+        
+        function formatCompareMemoForOutput(text) {
+            return escapeHTMLSafe(text || '')
+                .replace(/\r\n|\r|\n/g, '<br>');
+        }
+        
+        function applyCompareMemoOutput(root) {
+            const memoSource = document.getElementById('compareMemo');
+            const targetRoot = root && root.querySelector ? root : document;
+            const memoTarget = targetRoot.querySelector('#compareMemoPrint');
+        
+            if (!memoTarget) return;
+        
+            const memoText = memoSource ? memoSource.value : '';
+            memoTarget.innerHTML = formatCompareMemoForOutput(memoText);
+        
+            // Tailwind 클래스만 믿지 않고, 인쇄/캡처용 스타일을 직접 보강한다.
+            memoTarget.style.whiteSpace = 'pre-wrap';
+            memoTarget.style.overflowWrap = 'anywhere';
+            memoTarget.style.wordBreak = 'break-word';
+            memoTarget.style.lineHeight = '1.6';
+            memoTarget.style.minHeight = '5rem';
+        }
+        
+        function safeFilePart(value, fallback = '상호미상') {
+            const cleaned = String(value || fallback)
+                .replace(/[\\/:*?"<>|]/g, '')
+                .replace(/[\u0000-\u001F]/g, '')
+                .replace(/\s+/g, '')
+                .trim()
+                .slice(0, 30);
+        
+            return cleaned || fallback;
+        }
+        
+        function buildCompareFileName() {
             const today = new Date();
-            const dateStr = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+            const dateStr =
+                today.getFullYear() +
+                String(today.getMonth() + 1).padStart(2, '0') +
+                String(today.getDate()).padStart(2, '0');
+        
             const prefix = state.compareMode === 'rent' ? '임대견적' : '매매견적';
+        
             const storeNames = [...new Set(Array.from(state.comparisonList).map(id => {
                 const d = state.allData.find(x => x.id === id);
-                return (d && d.store_name) ? d.store_name.replace(/\s/g, '') : '상호미상';
-            }))].join('_');
-            const fileName = `${prefix}_${dateStr}_${storeNames}`;
-
-            // 인쇄 창의 기본 파일명 인식을 위해 일시적으로 타이틀 변경
-            document.title = fileName; 
-
-            document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
-            if (state.comparisonList.size >= 2) { setPrintStyle('landscape'); } else { setPrintStyle('portrait'); }
-            
-            setTimeout(() => {
-                window.print();
-                // 인쇄 다이얼로그 호출 후 원래 타이틀로 원상 복구
-                document.title = originalTitle; 
-            }, 100);
+                return safeFilePart(d && d.store_name ? d.store_name : '상호미상');
+            }))].filter(Boolean).join('_') || '상호미상';
+        
+            return `${prefix}_${dateStr}_${storeNames}`.slice(0, 140);
+        }
+        
+        function printCompare() {
+            const originalTitle = document.title;
+            const fileName = buildCompareFileName();
+        
+            try {
+                // 인쇄/PDF 기본 파일명 인식을 위해 일시적으로 타이틀 변경
+                document.title = fileName;
+        
+                // 메모 최신화: HTML 소독 + 모든 줄바꿈 처리 + 긴 문장 줄바꿈 보정
+                applyCompareMemoOutput(document);
+        
+                if (state.comparisonList.size >= 2) {
+                    setPrintStyle('landscape');
+                } else {
+                    setPrintStyle('portrait');
+                }
+        
+                setTimeout(() => {
+                    window.print();
+        
+                    // 인쇄 다이얼로그 호출 후 원래 타이틀 복구
+                    setTimeout(() => {
+                        document.title = originalTitle;
+                    }, 700);
+                }, 100);
+        
+            } catch (e) {
+                document.title = originalTitle;
+                alert('비교견적서 인쇄 준비 중 오류가 발생했습니다: ' + e.message);
+            }
         }
 
         function printSimulator() {
@@ -2319,131 +2395,151 @@ function openCompareModal() {
 
         function closeCompareModal() { document.getElementById('compareModal').classList.add('hidden'); }
 
-async function shareCompare() {
+        async function shareCompare() {
             const btn = document.getElementById('shareBtn');
+            if (!btn) return;
+        
             const originalText = btn.innerHTML;
-
-            // [추가됨] 파일명 동적 생성 로직
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const dateStr = `${yyyy}${mm}${dd}`;
-            const prefix = state.compareMode === 'rent' ? '임대견적' : '매매견적';
-            
-            // 장바구니 호실들의 상호명 추출 (공백 및 중복 제거)
-            const storeNames = [...new Set(Array.from(state.comparisonList).map(id => {
-                const d = state.allData.find(x => x.id === id);
-                return (d && d.store_name) ? d.store_name.replace(/\s/g, '') : '상호미상';
-            }))].join('_');
-            
-            const fileName = `${prefix}_${dateStr}_${storeNames}`;
-
+            const fileName = buildCompareFileName();
+        
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 캡처중...`;
             btn.disabled = true;
-            
-            // 텍스트 최신화
-            document.getElementById('compareMemoPrint').innerHTML = document.getElementById('compareMemo').value.replace(/\n/g, '<br>');
-            
-            let shareText = '📍 광교마을 상가 비교 견적서\n';
-            const urlInputs = document.querySelectorAll('#page2DynamicContent .url-input');
-            const buildingHeaders = document.querySelectorAll('#page2DynamicContent h4');
-            let hasLinks = false;
-            
-            urlInputs.forEach((input, index) => {
-                if(input.value.trim() !== '') {
-                    hasLinks = true;
-                    const title = buildingHeaders[index] ? buildingHeaders[index].innerText.replace('\n', ' ') : `매물 ${index+1}`;
-                    shareText += `\n🔗 ${title} : ${input.value.trim()}`;
-                }
-            });
-            
-            const content = document.getElementById('compareContent');
-            const clone = content.cloneNode(true);
-            
-            // [핵심 픽스] 이미지 캡처용 가상 DOM 대청소 (노프린트 숨김, 프린트온리 노출)
-            clone.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-            clone.querySelectorAll('.print-only').forEach(el => {
-                el.style.display = 'block';
-                el.classList.remove('hidden');
-            });
-            
-            const clonedInputs = clone.querySelectorAll('.url-input');
-            clonedInputs.forEach(input => {
-                const textDiv = document.createElement('div');
-                textDiv.className = 'w-full p-1.5 text-xs text-center text-blue-600 font-bold bg-slate-50 border border-slate-200 rounded';
-                textDiv.innerText = input.value || '';
-                input.parentNode.replaceChild(textDiv, input);
-            });
-            
-            const cloneContainer = document.createElement('div');
-            cloneContainer.id = 'offscreen-capture-container';
-            cloneContainer.appendChild(clone);
-            document.body.appendChild(cloneContainer);
-            
-            await new Promise(r => setTimeout(r, 100));
-            
+        
+            let cloneContainer = null;
+        
             try {
-                const canvas = await html2canvas(cloneContainer, { 
-                    scale: 2, 
-                    useCORS: true, 
+                // 메모 최신화: HTML 소독 + 모든 줄바꿈 처리 + 긴 문장 줄바꿈 보정
+                applyCompareMemoOutput(document);
+        
+                let shareText = '📍 광교마을 상가 비교 견적서\n';
+                const urlInputs = document.querySelectorAll('#page2DynamicContent .url-input');
+                const buildingHeaders = document.querySelectorAll('#page2DynamicContent h4');
+                let hasLinks = false;
+        
+                urlInputs.forEach((input, index) => {
+                    const url = (input.value || '').trim();
+                    if (url !== '') {
+                        hasLinks = true;
+                        const title = buildingHeaders[index]
+                            ? buildingHeaders[index].innerText.replace(/\r\n|\r|\n/g, ' ').trim()
+                            : `매물 ${index + 1}`;
+        
+                        shareText += `\n🔗 ${title} : ${url}`;
+                    }
+                });
+        
+                const content = document.getElementById('compareContent');
+                if (!content) throw new Error('compareContent 영역을 찾을 수 없습니다.');
+        
+                const clone = content.cloneNode(true);
+        
+                // 이미지 캡처용 가상 DOM 정리: 노프린트 숨김, 프린트온리 노출
+                clone.querySelectorAll('.no-print').forEach(el => {
+                    el.style.display = 'none';
+                });
+        
+                clone.querySelectorAll('.print-only').forEach(el => {
+                    el.style.display = 'block';
+                    el.classList.remove('hidden');
+                });
+        
+                // clone 내부의 메모도 동일하게 보정한다.
+                applyCompareMemoOutput(clone);
+        
+                // URL input은 html2canvas에서 잘리는 경우가 있어 div로 치환한다.
+                const clonedInputs = clone.querySelectorAll('.url-input');
+                clonedInputs.forEach(input => {
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'w-full p-1.5 text-xs text-center text-blue-600 font-bold bg-slate-50 border border-slate-200 rounded';
+                    textDiv.style.whiteSpace = 'pre-wrap';
+                    textDiv.style.overflowWrap = 'anywhere';
+                    textDiv.style.wordBreak = 'break-word';
+                    textDiv.innerText = input.value || '';
+                    input.parentNode.replaceChild(textDiv, input);
+                });
+        
+                cloneContainer = document.createElement('div');
+                cloneContainer.id = 'offscreen-capture-container';
+                cloneContainer.appendChild(clone);
+                document.body.appendChild(cloneContainer);
+        
+                await new Promise(r => setTimeout(r, 150));
+        
+                const canvas = await html2canvas(cloneContainer, {
+                    scale: 2,
+                    useCORS: true,
                     backgroundColor: '#ffffff'
                 });
-                
-                document.body.removeChild(cloneContainer);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                
-                canvas.toBlob(async (blob) => {
-                    // [수정됨] 하드코딩 제거 및 동적 파일명 주입
-                    const file = new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' });
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                    
-                    if (!isMobile) {
-                        const imgUrl = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        // [수정됨] 다운로드 파일명 동적 주입
-                        link.download = `${fileName}.jpg`;
-                        link.href = imgUrl;
-                        link.click();
-                        
-                        if(hasLinks) {
-                            navigator.clipboard.writeText(shareText);
+        
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.9);
+                });
+        
+                if (!blob) throw new Error('이미지 Blob 생성에 실패했습니다.');
+        
+                const file = new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' });
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+                // PC: 이미지 다운로드 + 링크는 클립보드 복사
+                if (!isMobile) {
+                    const imgUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = `${fileName}.jpg`;
+                    link.href = imgUrl;
+                    link.click();
+        
+                    setTimeout(() => URL.revokeObjectURL(imgUrl), 1000);
+        
+                    if (hasLinks) {
+                        try {
+                            await navigator.clipboard.writeText(shareText);
                             alert('1. 갤러리 이미지가 다운로드 되었습니다.\n2. 네이버 지도 링크는 클립보드에 자동 복사되었습니다.\n\n[카카오톡 PC버전에 다운받은 이미지를 넣고, Ctrl+V를 눌러 링크를 함께 전송하세요]');
-                        } else {
-                            alert('갤러리 이미지가 다운로드 되었습니다.\n[카카오톡 PC버전에 이미지를 끌어다 놓으세요]');
+                        } catch (clipErr) {
+                            alert('갤러리 이미지가 다운로드 되었습니다.\n단, 클립보드 복사가 차단되었습니다. 위치/로드뷰 링크는 화면에서 직접 복사해 주세요.');
                         }
-                        return; 
+                    } else {
+                        alert('갤러리 이미지가 다운로드 되었습니다.\n[카카오톡 PC버전에 이미지를 끌어다 놓으세요]');
                     }
-
-                    let shareSuccess = false;
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try { 
-                            await navigator.share({ 
-                                files: [file], 
-                                title: '광교마을 상가 비교 견적서',
-                                text: hasLinks ? shareText : ''
-                            }); 
+        
+                    return;
+                }
+        
+                // 모바일: Web Share API 우선 사용
+                let shareSuccess = false;
+        
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: '광교마을 상가 비교 견적서',
+                            text: hasLinks ? shareText : ''
+                        });
+                        shareSuccess = true;
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
                             shareSuccess = true;
-                        } catch (err) { 
-                            if (err.name !== 'AbortError') shareSuccess = false;
-                            else shareSuccess = true; 
+                        } else {
+                            shareSuccess = false;
                         }
                     }
-                    
-                    if (!shareSuccess) {
-                        const imgUrl = URL.createObjectURL(blob);
-                        showImageFallback(imgUrl, hasLinks ? shareText : '');
-                    }
-                }, 'image/jpeg', 0.9);
-                
+                }
+        
+                if (!shareSuccess) {
+                    const imgUrl = URL.createObjectURL(blob);
+                    showImageFallback(imgUrl, hasLinks ? shareText : '');
+                }
+        
             } catch (e) {
                 console.error(e);
-                if (document.getElementById('offscreen-capture-container')) {
-                    document.body.removeChild(document.getElementById('offscreen-capture-container'));
+                alert('이미지 캡처 중 오류가 발생했습니다: ' + e.message);
+        
+            } finally {
+                if (cloneContainer && cloneContainer.parentNode) {
+                    cloneContainer.parentNode.removeChild(cloneContainer);
                 }
-                btn.innerHTML = originalText; btn.disabled = false;
-                alert('이미지 캡처 중 오류가 발생했습니다.');
+        
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
